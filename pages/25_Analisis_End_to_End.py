@@ -2,10 +2,11 @@ import streamlit as st
 import math
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from fpdf import FPDF
 
 st.set_page_config(
-    page_title="Análisis End-to-End | Teoría de Colas",
+    page_title="Modo Analista | Dimensionamiento de Operadores",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -18,40 +19,69 @@ st.markdown(
     """
     <style>
     .stApp { background: #F6F8FB; }
-    .block-container { padding-top: 1.2rem; padding-bottom: 2.5rem; max-width: 1500px; }
-    .exec-hero {
-        background: linear-gradient(135deg, #163A5F 0%, #1F4E78 58%, #2D6A9F 100%);
-        border-radius: 22px; padding: 26px 30px; color: white;
-        box-shadow: 0 12px 28px rgba(23, 50, 77, 0.16); margin-bottom: 1rem;
+    .block-container { padding-top: 1.1rem; padding-bottom: 2.3rem; max-width: 1450px; }
+    .hero {
+        background: linear-gradient(135deg, #163A5F 0%, #1F4E78 62%, #2D6A9F 100%);
+        border-radius: 22px;
+        padding: 28px 32px;
+        color: white;
+        box-shadow: 0 12px 28px rgba(23, 50, 77, 0.16);
+        margin-bottom: 1rem;
     }
-    .exec-hero h1 { margin: 0; font-size: 2.05rem; line-height: 1.15; }
-    .exec-hero p { margin: .55rem 0 0; opacity: .92; max-width: 1000px; }
-    .eyebrow { font-size: .76rem; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; opacity: .80; }
+    .hero h1 { margin: 0; font-size: 2.1rem; line-height: 1.15; }
+    .hero p { margin: .6rem 0 0; opacity: .93; max-width: 1050px; font-size: 1.02rem; }
+    .eyebrow { font-size: .76rem; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; opacity: .82; }
     .decision-card {
-        background: #FFFFFF; border: 1px solid #DDE5EC; border-left: 6px solid #1F4E78;
-        border-radius: 16px; padding: 18px 20px; box-shadow: 0 6px 18px rgba(31,78,120,.06);
+        background: #FFFFFF;
+        border: 1px solid #DDE5EC;
+        border-left: 6px solid #1F4E78;
+        border-radius: 16px;
+        padding: 18px 20px;
+        box-shadow: 0 6px 18px rgba(31, 78, 120, 0.06);
         margin: .35rem 0 1rem;
     }
     .decision-card h3 { margin: 0 0 .35rem; color: #17324D; }
     .decision-card p { margin: .25rem 0; color: #4B5563; }
-    .status-ok, .status-warn, .status-critical {
-        display: inline-block; padding: 5px 10px; border-radius: 999px;
-        font-size: .78rem; font-weight: 750; margin-bottom: 8px;
+    .alert-card {
+        background: #FFF7E6;
+        border: 1px solid #F1D6A8;
+        border-left: 6px solid #D97706;
+        border-radius: 14px;
+        padding: 15px 18px;
+        margin: .4rem 0 1rem;
+        color: #7C4A03;
     }
-    .status-ok { background: #E9F7EF; color: #166534; }
-    .status-warn { background: #FFF7E6; color: #9A6700; }
-    .status-critical { background: #FDECEC; color: #B42318; }
-    .info-card {
-        background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px;
-        padding: 15px 17px; min-height: 112px;
+    .critical-card {
+        background: #FDECEC;
+        border: 1px solid #F3C6C6;
+        border-left: 6px solid #B42318;
+        border-radius: 14px;
+        padding: 15px 18px;
+        margin: .4rem 0 1rem;
+        color: #8A1C15;
     }
-    .info-card strong { color: #1F4E78; }
-    .muted { color: #667085; font-size: .88rem; }
+    .ok-card {
+        background: #EAF7EF;
+        border: 1px solid #CBE8D5;
+        border-left: 6px solid #15803D;
+        border-radius: 14px;
+        padding: 15px 18px;
+        margin: .4rem 0 1rem;
+        color: #14532D;
+    }
+    .small-note { color: #667085; font-size: .88rem; }
     div[data-testid="stMetric"] {
-        background: #FFFFFF; border: 1px solid #E1E7EE; padding: 14px 16px;
-        border-radius: 14px; box-shadow: 0 4px 12px rgba(31,78,120,.04);
+        background: #FFFFFF;
+        border: 1px solid #E1E7EE;
+        padding: 14px 16px;
+        border-radius: 14px;
+        box-shadow: 0 4px 12px rgba(31, 78, 120, 0.04);
     }
-    div[data-testid="stDataFrame"] { border: 1px solid #E1E7EE; border-radius: 12px; overflow: hidden; }
+    div[data-testid="stDataFrame"] {
+        border: 1px solid #E1E7EE;
+        border-radius: 12px;
+        overflow: hidden;
+    }
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
     </style>
@@ -60,625 +90,531 @@ st.markdown(
 )
 
 # -----------------------------------------------------------------------------
-# Motor matemático
+# Motor M/M/s - Erlang C
 # -----------------------------------------------------------------------------
-def _safe_div(a, b):
-    if abs(b) < 1e-12:
-        return float("inf")
-    return a / b
+def calcular_mms(t_llegada_min, t_atencion_min, servidores):
+    lam = 60.0 / t_llegada_min
+    mu = 60.0 / t_atencion_min
+    rho = lam / (servidores * mu)
 
-
-def mm1(lam, mu):
-    rho = lam / mu
     if rho >= 1:
         return {
-            "modelo": "M/M/1", "estable": False, "rho": rho,
-            "L": float("inf"), "Lq": float("inf"), "W": float("inf"), "Wq": float("inf"),
-            "P_bloqueo": 0.0, "P_espera": 1.0, "lambda_efectiva": lam,
-        }
-    L = rho / (1 - rho)
-    Lq = rho**2 / (1 - rho)
-    W = 1 / (mu - lam)
-    Wq = lam / (mu * (mu - lam))
-    return {
-        "modelo": "M/M/1", "estable": True, "rho": rho,
-        "L": L, "Lq": Lq, "W": W, "Wq": Wq,
-        "P_bloqueo": 0.0, "P_espera": rho, "lambda_efectiva": lam,
-    }
-
-
-def mms(lam, mu, s):
-    rho = lam / (s * mu)
-    if rho >= 1:
-        return {
-            "modelo": "M/M/s", "estable": False, "rho": rho,
-            "L": float("inf"), "Lq": float("inf"), "W": float("inf"), "Wq": float("inf"),
-            "P_bloqueo": 0.0, "P_espera": 1.0, "lambda_efectiva": lam,
+            "estable": False,
+            "lambda": lam,
+            "mu": mu,
+            "rho": rho,
+            "P_espera": 1.0,
+            "Lq": float("inf"),
+            "Wq": float("inf"),
+            "W": float("inf"),
         }
 
     a = lam / mu
-    term = 1.0
+    termino = 1.0
     suma = 1.0
-    for n in range(1, s):
-        term *= a / n
-        suma += term
-    term_s = term * a / s
-    cola = term_s / (1 - rho)
-    p0 = 1 / (suma + cola)
-    p_espera = cola * p0
-    Lq = p_espera * rho / (1 - rho)
-    L = Lq + a
-    Wq = Lq / lam
-    W = Wq + 1 / mu
+
+    for n in range(1, servidores):
+        termino *= a / n
+        suma += termino
+
+    termino_s = termino * a / servidores
+    erlang_c_term = termino_s / (1 - rho)
+    p0 = 1.0 / (suma + erlang_c_term)
+    p_espera = erlang_c_term * p0
+
+    lq = p_espera * rho / (1 - rho)
+    wq = lq / lam
+    w = wq + 1 / mu
+
     return {
-        "modelo": "M/M/s", "estable": True, "rho": rho,
-        "L": L, "Lq": Lq, "W": W, "Wq": Wq,
-        "P_bloqueo": 0.0, "P_espera": p_espera, "lambda_efectiva": lam,
+        "estable": True,
+        "lambda": lam,
+        "mu": mu,
+        "rho": rho,
+        "P_espera": p_espera,
+        "Lq": lq,
+        "Wq": wq,
+        "W": w,
     }
 
 
-def mm1k(lam, mu, k):
-    rho_nominal = lam / mu
-    if abs(rho_nominal - 1.0) < 1e-12:
-        probs = [1 / (k + 1)] * (k + 1)
-    else:
-        p0 = (1 - rho_nominal) / (1 - rho_nominal ** (k + 1))
-        probs = [p0 * (rho_nominal ** n) for n in range(k + 1)]
-
-    p_bloqueo = probs[-1]
-    p_espera = sum(probs[1:k]) if k > 1 else 0.0
-    lam_eff = lam * (1 - p_bloqueo)
-    L = sum(n * probs[n] for n in range(k + 1))
-    ocupados = lam_eff / mu
-    Lq = max(0.0, L - ocupados)
-    W = _safe_div(L, lam_eff)
-    Wq = _safe_div(Lq, lam_eff)
-    return {
-        "modelo": "M/M/1/K", "estable": True, "rho": ocupados,
-        "L": L, "Lq": Lq, "W": W, "Wq": Wq,
-        "P_bloqueo": p_bloqueo, "P_espera": p_espera, "lambda_efectiva": lam_eff,
-    }
-
-
-def mmsk(lam, mu, s, k):
-    if k < s:
-        raise ValueError("La capacidad total K debe ser mayor o igual al número de servidores.")
-
-    weights = [1.0]
-    for n in range(1, k + 1):
-        tasa_salida = min(n, s) * mu
-        weights.append(weights[-1] * lam / tasa_salida)
-        if weights[-1] > 1e180:
-            escala = max(weights)
-            weights = [w / escala for w in weights]
-
-    total = sum(weights)
-    probs = [w / total for w in weights]
-    p_bloqueo = probs[-1]
-    p_espera = sum(probs[s:k]) if k > s else 0.0
-    lam_eff = lam * (1 - p_bloqueo)
-    L = sum(n * probs[n] for n in range(k + 1))
-    ocupados = lam_eff / mu
-    Lq = max(0.0, L - ocupados)
-    W = _safe_div(L, lam_eff)
-    Wq = _safe_div(Lq, lam_eff)
-    rho_efectiva = _safe_div(ocupados, s)
-    return {
-        "modelo": "M/M/s/K", "estable": True, "rho": rho_efectiva,
-        "L": L, "Lq": Lq, "W": W, "Wq": Wq,
-        "P_bloqueo": p_bloqueo, "P_espera": p_espera, "lambda_efectiva": lam_eff,
-    }
-
-
-def seleccionar_modelo(s, capacidad_limitada):
-    if s == 1 and not capacidad_limitada:
-        return "M/M/1"
-    if s > 1 and not capacidad_limitada:
-        return "M/M/s"
-    if s == 1 and capacidad_limitada:
-        return "M/M/1/K"
-    return "M/M/s/K"
-
-
-def calcular_modelo(lam, mu, s, capacidad_limitada=False, k=None):
-    modelo = seleccionar_modelo(s, capacidad_limitada)
-    if modelo == "M/M/1":
-        return mm1(lam, mu)
-    if modelo == "M/M/s":
-        return mms(lam, mu, s)
-    if modelo == "M/M/1/K":
-        return mm1k(lam, mu, int(k))
-    return mmsk(lam, mu, int(s), int(k))
-
-
-def descomponer_costo(resultado, s, costo_servidor, costo_espera, costo_perdido):
+def costos(resultado, servidores, costo_operador_h, costo_espera_cliente_h):
+    costo_personal = servidores * costo_operador_h
     if not resultado["estable"] or not math.isfinite(resultado["Lq"]):
-        return {"capacidad": float("inf"), "espera": float("inf"), "perdida": float("inf"), "total": float("inf")}
-    costo_capacidad = s * costo_servidor
-    costo_espera_total = resultado["Lq"] * costo_espera
-    if resultado["P_bloqueo"] < 1:
-        lambda_original = resultado["lambda_efectiva"] / max(1e-12, 1 - resultado["P_bloqueo"])
-        perdidos_h = max(0.0, lambda_original - resultado["lambda_efectiva"])
-    else:
-        perdidos_h = float("inf")
-    costo_perdida_total = perdidos_h * costo_perdido
-    total = costo_capacidad + costo_espera_total + costo_perdida_total
-    return {"capacidad": costo_capacidad, "espera": costo_espera_total, "perdida": costo_perdida_total, "total": total}
+        return {
+            "personal": costo_personal,
+            "espera": float("inf"),
+            "total": float("inf"),
+        }
+    costo_espera = resultado["Lq"] * costo_espera_cliente_h
+    return {
+        "personal": costo_personal,
+        "espera": costo_espera,
+        "total": costo_personal + costo_espera,
+    }
 
 
-def diagnostico(resultado, max_rho, max_wq_min):
-    if not resultado["estable"] or not math.isfinite(resultado["Wq"]):
-        return "Crítico", "La demanda supera la capacidad agregada de servicio bajo la configuración actual."
-    rho_pct = resultado["rho"] * 100
-    wq_min = resultado["Wq"] * 60
-    if rho_pct > max_rho or wq_min > max_wq_min:
-        return "Atención", f"La configuración excede al menos un umbral gerencial: utilización {rho_pct:.1f}% y espera {wq_min:.1f} min."
-    return "Adecuado", f"La configuración se mantiene dentro de los umbrales definidos: utilización {rho_pct:.1f}% y espera {wq_min:.1f} min."
+def texto_pdf(valor):
+    return str(valor).encode("latin-1", "ignore").decode("latin-1")
 
 
-def clean_pdf_text(text):
-    return str(text).encode("latin-1", "ignore").decode("latin-1")
-
-
-def generar_pdf(datos, asis, recomendado, comp, diagnostico_texto, criterio, impacto_mensual):
+def generar_pdf(nombre, datos, actual, recomendado, economia):
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
+
     pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, clean_pdf_text("Resumen Ejecutivo - Analisis de Sistema de Colas"), ln=True, align="C")
+    pdf.cell(0, 10, texto_pdf("Resumen Ejecutivo - Dimensionamiento de Operadores"), ln=True, align="C")
     pdf.ln(3)
+
     pdf.set_font("Arial", "", 10)
-    pdf.multi_cell(0, 6, clean_pdf_text(
-        f"Contexto: {datos['contexto']}\nSistema: {datos['nombre']}\nDescripcion: {datos['descripcion']}\n"
-        f"Modelo: {asis['modelo']}\nLlegada promedio: {datos['t_llegada']:.2f} min/cliente\n"
-        f"Atencion promedio: {datos['t_atencion']:.2f} min/cliente\nServidores actuales: {datos['s_actual']}"
+    pdf.multi_cell(0, 6, texto_pdf(
+        f"Proceso: {nombre}\n"
+        f"Llegada promedio: 1 cliente cada {datos['t_llegada']:.2f} min\n"
+        f"Tiempo promedio de atencion: {datos['t_atencion']:.2f} min/cliente\n"
+        f"Operadores actuales: {datos['operadores_actuales']}\n"
+        f"Meta de espera: {datos['meta_wq']:.2f} min"
     ))
+
     pdf.ln(3)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 8, clean_pdf_text("1. Diagnostico AS IS"), ln=True)
+    pdf.cell(0, 8, texto_pdf("Situacion actual"), ln=True)
     pdf.set_font("Arial", "", 10)
-    pdf.multi_cell(0, 6, clean_pdf_text(
-        f"Utilizacion: {asis['rho']*100:.2f}%\nProbabilidad de espera: {asis['P_espera']*100:.2f}%\n"
-        f"Clientes promedio en cola (Lq): {asis['Lq']:.2f}\nEspera promedio (Wq): {asis['Wq']*60:.2f} min\n"
-        f"Probabilidad de bloqueo: {asis['P_bloqueo']*100:.2f}%\nDiagnostico: {diagnostico_texto}"
-    ))
-    pdf.ln(3)
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 8, clean_pdf_text("2. Recomendacion TO BE"), ln=True)
-    pdf.set_font("Arial", "", 10)
-    pdf.multi_cell(0, 6, clean_pdf_text(
-        f"Servidores: {int(recomendado['Servidores'])}\nMejora de tasa de servicio: {recomendado['Mejora servicio']}\n"
-        f"Utilizacion: {recomendado['Utilizacion %']:.2f}%\nProbabilidad de espera: {recomendado['Prob. espera %']:.2f}%\n"
-        f"Wq: {recomendado['Wq (min)']:.2f} min\nCosto total: S/ {recomendado['Costo total (S//h)']:.2f}/h\nCriterio: {criterio}"
-    ))
-    pdf.ln(3)
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 8, clean_pdf_text("3. Impacto ejecutivo"), ln=True)
-    pdf.set_font("Arial", "", 10)
-    for _, row in comp.iterrows():
-        pdf.multi_cell(0, 5, clean_pdf_text(
-            f"{row['Escenario']}: servidores={int(row['Servidores'])}, utilizacion={row['Utilizacion %']:.2f}%, "
-            f"P(espera)={row['Prob. espera %']:.2f}%, Wq={row['Wq (min)']:.2f} min, costo=S/ {row['Costo total (S//h)']:.2f}/h"
+    if actual["estable"]:
+        pdf.multi_cell(0, 6, texto_pdf(
+            f"Utilizacion: {actual['rho']*100:.1f}%\n"
+            f"Probabilidad de esperar: {actual['P_espera']*100:.1f}%\n"
+            f"Clientes promedio en cola: {actual['Lq']:.2f}\n"
+            f"Espera promedio: {actual['Wq']*60:.2f} min"
         ))
-    pdf.multi_cell(0, 6, clean_pdf_text(f"Impacto mensual estimado: S/ {impacto_mensual:+.2f} (positivo = ahorro)."))
+    else:
+        pdf.multi_cell(0, 6, texto_pdf(
+            "La configuracion actual es inestable: la capacidad agregada de atencion es insuficiente para absorber la demanda."
+        ))
+
+    pdf.ln(3)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 8, texto_pdf("Configuracion recomendada"), ln=True)
+    pdf.set_font("Arial", "", 10)
+    pdf.multi_cell(0, 6, texto_pdf(
+        f"Operadores recomendados: {int(recomendado['Operadores'])}\n"
+        f"Utilizacion: {recomendado['Utilizacion %']:.1f}%\n"
+        f"Probabilidad de esperar: {recomendado['Prob. espera %']:.1f}%\n"
+        f"Espera promedio: {recomendado['Espera promedio (min)']:.2f} min\n"
+        f"Costo total estimado: S/ {recomendado['Costo total (S//h)']:.2f}/h"
+    ))
+
+    pdf.ln(3)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 8, texto_pdf("Costo-beneficio"), ln=True)
+    pdf.set_font("Arial", "", 10)
+    pdf.multi_cell(0, 6, texto_pdf(
+        f"Costo adicional de operadores: S/ {economia['costo_adicional_personal']:+.2f}/h\n"
+        f"Ahorro por menor espera: S/ {economia['ahorro_espera']:+.2f}/h\n"
+        f"Beneficio neto estimado: S/ {economia['beneficio_neto']:+.2f}/h"
+    ))
+
     pdf.ln(4)
     pdf.set_font("Arial", "I", 8)
-    pdf.multi_cell(0, 5, clean_pdf_text(
-        "Nota: la recomendacion depende de los supuestos probabilisticos y de la calidad de los parametros ingresados. "
-        "Debe validarse con restricciones operativas reales antes de su implementacion."
+    pdf.multi_cell(0, 5, texto_pdf(
+        "Nota: el analisis supone llegadas Poisson, tiempos de servicio exponenciales, una sola cola y operadores equivalentes. "
+        "Los costos deben parametrizarse con informacion real antes de tomar una decision de implementacion."
     ))
+
     return bytes(pdf.output(dest="S").encode("latin-1"))
 
-
-def construir_lista_mejoras(max_mejora, paso):
-    if max_mejora <= 0:
-        return [1.0]
-    porcentajes = list(range(0, int(max_mejora) + 1, int(paso)))
-    if porcentajes[-1] != int(max_mejora):
-        porcentajes.append(int(max_mejora))
-    return [1 + p / 100 for p in sorted(set(porcentajes))]
 
 # -----------------------------------------------------------------------------
 # Encabezado
 # -----------------------------------------------------------------------------
 st.markdown(
     """
-    <div class="exec-hero">
-        <div class="eyebrow">Decision Support · Investigación de Operaciones</div>
-        <h1>Análisis End-to-End de Sistemas de Colas</h1>
-        <p>Modela un sistema real, diagnostica la capacidad actual, explora cualquier rango de operadores y convierte tiempos de espera y costos en una decisión operativa.</p>
+    <div class="hero">
+        <div class="eyebrow">Modo Analista · Dimensionamiento de Capacidad</div>
+        <h1>¿Cuántos operadores necesita el proceso?</h1>
+        <p>
+            Ingresa los tiempos reales de llegada y atención. La herramienta compara la dotación actual
+            con distintas cantidades de operadores y encuentra una alternativa que equilibre servicio al cliente y costo.
+        </p>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
 # -----------------------------------------------------------------------------
-# Panel lateral de configuración
+# Entradas simples
 # -----------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("## Configuración del análisis")
-    st.caption("Trabaja con tasas o directamente con tiempos promedio observados en el proceso real.")
+    st.markdown("## Datos de la operación")
+    st.caption("Solo se solicitan los datos necesarios para dimensionar la atención.")
 
-    st.markdown("### 1. Sistema")
-    contexto = st.selectbox("Contexto", ["Banco", "Hospital / clínica", "Call center", "Logística", "Producción", "Servicios", "Otro"])
-    nombre = st.text_input("Nombre del sistema", value="Sistema de atención")
-    descripcion = st.text_area("Descripción del problema", value="Evaluar el desempeño actual y determinar una configuración de servicio más conveniente.", height=85)
+    with st.form("analisis_operadores"):
+        nombre = st.text_input("Proceso / servicio", value="Atención al cliente")
 
-    modo_entrada = st.radio("Forma de ingresar los datos", ["Tiempos promedio", "Tasas por hora"], horizontal=True)
-
-    if modo_entrada == "Tiempos promedio":
-        t_llegada = st.number_input("Tiempo promedio entre llegadas (min/cliente)", min_value=0.01, value=5.0, step=0.25)
-        t_atencion = st.number_input("Tiempo promedio de atención (min/cliente)", min_value=0.01, value=7.5, step=0.25)
-        lam = 60 / t_llegada
-        mu = 60 / t_atencion
-        st.caption(f"Equivalencia: λ = {lam:.2f} clientes/h · μ = {mu:.2f} clientes/h por servidor")
-    else:
-        lam = st.number_input("λ · Llegadas por hora", min_value=0.01, value=12.0, step=0.5)
-        mu = st.number_input("μ · Servicio por servidor/hora", min_value=0.01, value=8.0, step=0.5)
-        t_llegada = 60 / lam
-        t_atencion = 60 / mu
-        st.caption(f"Equivalencia: llegada cada {t_llegada:.2f} min · atención {t_atencion:.2f} min/cliente")
-
-    s_actual = st.number_input("Operadores / servidores actuales", min_value=1, max_value=100, value=2, step=1)
-    capacidad_limitada = st.checkbox("Capacidad total limitada")
-    K = None
-    if capacidad_limitada:
-        K = st.number_input("Capacidad total K", min_value=int(s_actual), max_value=10000, value=max(int(s_actual), 10), step=1)
-
-    st.markdown("### 2. Operadores a evaluar")
-    st.caption("Define libremente el rango de dotación que quieres comparar. No se limita a dos alternativas.")
-    s_min_eval = st.number_input("Mínimo de operadores", min_value=1, max_value=100, value=1, step=1)
-    s_max_default = min(100, max(int(s_actual) + 5, 10))
-    s_max_eval = st.number_input("Máximo de operadores", min_value=1, max_value=100, value=s_max_default, step=1)
-
-    max_mejora_mu = st.slider("Mejora máxima de productividad μ (%)", min_value=0, max_value=100, value=30, step=5)
-    paso_mejora_mu = st.selectbox("Paso de mejora de μ (%)", [5, 10, 20], index=1)
-
-    st.markdown("### 3. Objetivos gerenciales")
-    objetivo_wq = st.number_input("Wq máximo deseado (min)", min_value=0.0, value=10.0, step=1.0)
-    max_rho = st.slider("Utilización máxima (%)", min_value=50, max_value=99, value=90)
-
-    st.markdown("### 4. Economía")
-    costo_servidor = st.number_input("Costo operador (S//h)", min_value=0.0, value=20.0, step=1.0)
-    costo_espera = st.number_input("Costo espera (S//cliente-h)", min_value=0.0, value=12.0, step=1.0)
-    costo_perdido = st.number_input("Costo cliente perdido (S/)", min_value=0.0, value=30.0, step=1.0)
-    horas_dia = st.number_input("Horas de operación/día", min_value=1.0, max_value=24.0, value=8.0, step=1.0)
-    dias_mes = st.number_input("Días de operación/mes", min_value=1, max_value=31, value=26, step=1)
-
-    ejecutar = st.button("Ejecutar análisis", type="primary", use_container_width=True)
-
-# -----------------------------------------------------------------------------
-# Alertas previas del ritmo de llegada vs atención
-# -----------------------------------------------------------------------------
-st.markdown("### Validación operativa de los datos")
-ritmo_individual = lam / mu
-rho_previa = lam / (int(s_actual) * mu)
-
-v1, v2, v3, v4 = st.columns(4)
-v1.metric("Llegada promedio", f"cada {t_llegada:.2f} min")
-v2.metric("Atención promedio", f"{t_atencion:.2f} min/cliente")
-v3.metric("Carga por operador λ/μ", f"{ritmo_individual:.2f}")
-v4.metric("Utilización agregada", f"{rho_previa*100:.1f}%")
-
-if t_llegada < t_atencion:
-    if int(s_actual) == 1:
-        st.error(
-            f"🚨 Alerta crítica: llega un cliente cada {t_llegada:.2f} min, pero atenderlo toma {t_atencion:.2f} min. "
-            "Con un solo operador, la tasa de llegada supera la capacidad de servicio (λ ≥ μ); en un sistema de capacidad infinita la cola crecerá sin límite."
+        st.markdown("### Flujo de clientes")
+        t_llegada = st.number_input(
+            "Llega 1 cliente cada... (min)",
+            min_value=0.1,
+            value=4.0,
+            step=0.5,
+            help="Tiempo promedio entre una llegada y la siguiente."
         )
-    elif rho_previa >= 1:
-        st.error(
-            f"🚨 Alerta crítica: el ritmo de llegada es más rápido que el tiempo de atención por operador y, aun con {int(s_actual)} operadores, "
-            f"la capacidad agregada no alcanza (ρ = {rho_previa:.2f}). La cola crecerá en un modelo de capacidad infinita."
+        t_atencion = st.number_input(
+            "Cada atención demora... (min)",
+            min_value=0.1,
+            value=7.0,
+            step=0.5,
+            help="Tiempo promedio que un operador dedica a un cliente."
         )
-    else:
-        st.warning(
-            f"⚠️ Presión de cola: llega un cliente cada {t_llegada:.2f} min y cada atención toma {t_atencion:.2f} min. "
-            f"Un operador individual no absorbe el ritmo de llegada; con {int(s_actual)} operadores el sistema puede ser estable porque ρ = {rho_previa:.2f}, "
-            "pero existe una probabilidad positiva de espera por la variabilidad del proceso."
+
+        st.markdown("### Dotación")
+        operadores_actuales = st.number_input(
+            "Operadores actuales",
+            min_value=1,
+            max_value=100,
+            value=2,
+            step=1,
         )
-else:
-    st.info(
-        "El tiempo medio entre llegadas no es menor que el tiempo medio de atención de un operador. Esto reduce la presión de capacidad, "
-        "pero no garantiza ausencia de cola: en modelos estocásticos M/M/s todavía puede existir espera por variabilidad."
-    )
+        max_operadores = st.number_input(
+            "Evaluar hasta... operadores",
+            min_value=1,
+            max_value=100,
+            value=10,
+            step=1,
+        )
 
-if int(s_min_eval) > int(s_max_eval):
-    st.error("El mínimo de operadores a evaluar no puede ser mayor que el máximo.")
+        st.markdown("### Servicio al cliente")
+        meta_wq = st.number_input(
+            "Meta máxima de espera (min)",
+            min_value=0.0,
+            value=10.0,
+            step=1.0,
+            help="Tiempo promedio máximo que la organización considera aceptable para el cliente."
+        )
 
-if capacidad_limitada and int(s_max_eval) > int(K):
-    st.warning(f"La capacidad total es K={int(K)}. Los escenarios con más de {int(K)} operadores no son físicamente compatibles y serán omitidos.")
+        st.markdown("### Costo-beneficio")
+        costo_operador = st.number_input(
+            "Costo por operador (S/ por hora)",
+            min_value=0.0,
+            value=20.0,
+            step=1.0,
+        )
+        costo_espera = st.number_input(
+            "Costo de espera (S/ por cliente-hora)",
+            min_value=0.0,
+            value=12.0,
+            step=1.0,
+            help="Valor económico estimado de mantener a un cliente esperando durante una hora."
+        )
+
+        ejecutar = st.form_submit_button("Analizar dotación", type="primary", use_container_width=True)
 
 # -----------------------------------------------------------------------------
 # Cálculo y persistencia
 # -----------------------------------------------------------------------------
 if ejecutar:
-    try:
-        if int(s_min_eval) > int(s_max_eval):
-            raise ValueError("El mínimo de operadores debe ser menor o igual al máximo.")
-
-        asis = calcular_modelo(lam, mu, int(s_actual), capacidad_limitada, K)
-        estado, texto_diag = diagnostico(asis, max_rho=max_rho, max_wq_min=objetivo_wq)
-        modelo_sugerido = seleccionar_modelo(int(s_actual), capacidad_limitada)
-
-        factores = construir_lista_mejoras(max_mejora_mu, paso_mejora_mu)
+    if int(max_operadores) < int(operadores_actuales):
+        st.sidebar.error("El máximo de operadores a evaluar debe ser igual o mayor a la dotación actual.")
+    else:
+        actual = calcular_mms(t_llegada, t_atencion, int(operadores_actuales))
         escenarios = []
-        omitidos_capacidad = 0
 
-        for s_eval in range(int(s_min_eval), int(s_max_eval) + 1):
-            if capacidad_limitada and s_eval > int(K):
-                omitidos_capacidad += 1
-                continue
-            for factor in factores:
-                mu_eval = mu * factor
-                resultado = calcular_modelo(lam, mu_eval, s_eval, capacidad_limitada, K)
-                costos = descomponer_costo(resultado, s_eval, costo_servidor, costo_espera, costo_perdido)
-                if resultado["estable"] and math.isfinite(resultado["Wq"]) and math.isfinite(costos["total"]):
-                    escenarios.append({
-                        "Servidores": s_eval,
-                        "Mejora servicio": f"+{int(round((factor-1)*100))}%",
-                        "μ": round(mu_eval, 4),
-                        "Utilización %": round(resultado["rho"] * 100, 2),
-                        "Prob. espera %": round(resultado["P_espera"] * 100, 2),
-                        "L": round(resultado["L"], 3),
-                        "Lq": round(resultado["Lq"], 3),
-                        "W (min)": round(resultado["W"] * 60, 3),
-                        "Wq (min)": round(resultado["Wq"] * 60, 3),
-                        "Bloqueo %": round(resultado["P_bloqueo"] * 100, 3),
-                        "Costo capacidad (S//h)": round(costos["capacidad"], 2),
-                        "Costo espera (S//h)": round(costos["espera"], 2),
-                        "Costo pérdida (S//h)": round(costos["perdida"], 2),
-                        "Costo total (S//h)": round(costos["total"], 2),
-                    })
+        for s in range(1, int(max_operadores) + 1):
+            r = calcular_mms(t_llegada, t_atencion, s)
+            c = costos(r, s, costo_operador, costo_espera)
+            escenarios.append({
+                "Operadores": s,
+                "Estable": r["estable"],
+                "Utilizacion %": round(r["rho"] * 100, 1),
+                "Prob. espera %": round(r["P_espera"] * 100, 1),
+                "Clientes en cola": round(r["Lq"], 2) if math.isfinite(r["Lq"]) else float("inf"),
+                "Espera promedio (min)": round(r["Wq"] * 60, 2) if math.isfinite(r["Wq"]) else float("inf"),
+                "Costo personal (S//h)": round(c["personal"], 2),
+                "Costo espera (S//h)": round(c["espera"], 2) if math.isfinite(c["espera"]) else float("inf"),
+                "Costo total (S//h)": round(c["total"], 2) if math.isfinite(c["total"]) else float("inf"),
+            })
 
-        if not escenarios:
-            st.error("No se generaron escenarios factibles dentro del rango de operadores seleccionado.")
+        df = pd.DataFrame(escenarios)
+        candidatos = df[
+            (df["Estable"] == True)
+            & (df["Espera promedio (min)"] <= meta_wq)
+        ].copy()
+
+        if not candidatos.empty:
+            recomendado = candidatos.sort_values(
+                ["Costo total (S//h)", "Operadores"]
+            ).iloc[0].to_dict()
+            motivo = "cumple la meta de espera y presenta el menor costo total entre las configuraciones que cumplen el nivel de servicio."
+            cumple_meta = True
         else:
-            df = pd.DataFrame(escenarios)
-            factibles = df[(df["Wq (min)"] <= objetivo_wq) & (df["Utilización %"] <= max_rho)].copy()
-
-            if not factibles.empty:
-                recomendado = factibles.sort_values(["Costo total (S//h)", "Wq (min)", "Servidores"]).iloc[0].to_dict()
-                criterio = "cumple los objetivos de espera y utilización con el menor costo total entre los escenarios factibles"
-                cumple_objetivos = True
+            estables = df[df["Estable"] == True].copy()
+            if estables.empty:
+                recomendado = df.iloc[-1].to_dict()
+                motivo = "no se encontró una configuración estable dentro del rango evaluado."
+                cumple_meta = False
             else:
-                aux = df.copy()
-                aux["Brecha gerencial"] = (
-                    (aux["Wq (min)"] - objetivo_wq).clip(lower=0) / max(objetivo_wq, 1.0)
-                    + (aux["Utilización %"] - max_rho).clip(lower=0) / max(float(max_rho), 1.0)
-                )
-                recomendado = aux.sort_values(["Brecha gerencial", "Costo total (S//h)", "Wq (min)"]).iloc[0].to_dict()
-                criterio = "minimiza la brecha frente a los objetivos gerenciales y luego el costo total"
-                cumple_objetivos = False
+                recomendado = estables.sort_values(
+                    ["Espera promedio (min)", "Costo total (S//h)"]
+                ).iloc[0].to_dict()
+                motivo = "ninguna configuración cumple la meta de espera; se muestra la alternativa estable con menor espera dentro del rango evaluado."
+                cumple_meta = False
 
-            costos_asis = descomponer_costo(asis, int(s_actual), costo_servidor, costo_espera, costo_perdido)
+        costo_actual = costos(actual, int(operadores_actuales), costo_operador, costo_espera)
+        costo_rec_personal = float(recomendado["Costo personal (S//h)"])
+        costo_rec_espera = float(recomendado["Costo espera (S//h)"])
 
-            comp = pd.DataFrame([
-                {
-                    "Escenario": "AS IS", "Servidores": int(s_actual),
-                    "Utilización %": round(asis["rho"] * 100, 2) if math.isfinite(asis["rho"]) else float("inf"),
-                    "Prob. espera %": round(asis["P_espera"] * 100, 2),
-                    "Wq (min)": round(asis["Wq"] * 60, 2) if math.isfinite(asis["Wq"]) else float("inf"),
-                    "Lq": round(asis["Lq"], 2) if math.isfinite(asis["Lq"]) else float("inf"),
-                    "Costo total (S//h)": round(costos_asis["total"], 2),
-                },
-                {
-                    "Escenario": "TO BE", "Servidores": int(recomendado["Servidores"]),
-                    "Utilización %": float(recomendado["Utilización %"]),
-                    "Prob. espera %": float(recomendado["Prob. espera %"]),
-                    "Wq (min)": float(recomendado["Wq (min)"]),
-                    "Lq": float(recomendado["Lq"]),
-                    "Costo total (S//h)": float(recomendado["Costo total (S//h)"]),
-                },
-            ])
+        if actual["estable"] and math.isfinite(costo_actual["espera"]):
+            costo_adicional_personal = costo_rec_personal - costo_actual["personal"]
+            ahorro_espera = costo_actual["espera"] - costo_rec_espera
+            beneficio_neto = ahorro_espera - costo_adicional_personal
+        else:
+            costo_adicional_personal = costo_rec_personal - costo_actual["personal"]
+            ahorro_espera = float("nan")
+            beneficio_neto = float("nan")
 
-            if math.isfinite(costos_asis["total"]):
-                ahorro_hora = costos_asis["total"] - float(recomendado["Costo total (S//h)"])
-                impacto_mensual = ahorro_hora * horas_dia * dias_mes
-            else:
-                ahorro_hora = float("nan")
-                impacto_mensual = float("nan")
-
-            st.session_state["e2e_resultado"] = {
-                "contexto": contexto, "nombre": nombre, "descripcion": descripcion,
-                "lam": lam, "mu": mu, "t_llegada": t_llegada, "t_atencion": t_atencion,
-                "s_actual": int(s_actual), "s_min_eval": int(s_min_eval), "s_max_eval": int(s_max_eval),
-                "capacidad_limitada": capacidad_limitada, "K": int(K) if K is not None else None,
-                "modelo_sugerido": modelo_sugerido, "asis": asis, "estado": estado, "texto_diag": texto_diag,
-                "df": df, "recomendado": recomendado, "criterio": criterio,
-                "cumple_objetivos": cumple_objetivos, "comp": comp, "costos_asis": costos_asis,
-                "objetivo_wq": objetivo_wq, "max_rho": max_rho, "horas_dia": horas_dia,
-                "dias_mes": dias_mes, "ahorro_hora": ahorro_hora, "impacto_mensual": impacto_mensual,
-                "omitidos_capacidad": omitidos_capacidad,
-            }
-
-    except Exception as exc:
-        st.error(f"No fue posible completar el análisis: {exc}")
-        st.caption("Verifica tiempos/tasas, rango de operadores y capacidad K.")
+        st.session_state["analisis_dotacion"] = {
+            "nombre": nombre,
+            "t_llegada": t_llegada,
+            "t_atencion": t_atencion,
+            "operadores_actuales": int(operadores_actuales),
+            "max_operadores": int(max_operadores),
+            "meta_wq": meta_wq,
+            "costo_operador": costo_operador,
+            "costo_espera": costo_espera,
+            "actual": actual,
+            "df": df,
+            "recomendado": recomendado,
+            "motivo": motivo,
+            "cumple_meta": cumple_meta,
+            "economia": {
+                "costo_adicional_personal": costo_adicional_personal,
+                "ahorro_espera": ahorro_espera,
+                "beneficio_neto": beneficio_neto,
+            },
+        }
 
 # -----------------------------------------------------------------------------
 # Estado inicial
 # -----------------------------------------------------------------------------
-if "e2e_resultado" not in st.session_state:
-    st.markdown("### Cómo funciona")
-    c1, c2, c3, c4 = st.columns(4)
+if "analisis_dotacion" not in st.session_state:
+    st.markdown("### Qué responde esta herramienta")
+    c1, c2, c3 = st.columns(3)
     with c1:
-        st.markdown('<div class="info-card"><strong>1. Configura</strong><br><span class="muted">Ingresa tiempos o tasas reales del proceso.</span></div>', unsafe_allow_html=True)
+        st.info("**1. Situación actual**\n\n¿La dotación actual puede absorber la demanda y cuánto espera el cliente?")
     with c2:
-        st.markdown('<div class="info-card"><strong>2. Diagnostica</strong><br><span class="muted">Detecta presión de cola, utilización y espera.</span></div>', unsafe_allow_html=True)
+        st.info("**2. Dotación requerida**\n\n¿Cómo cambia la espera cuando agregamos o reducimos operadores?")
     with c3:
-        st.markdown('<div class="info-card"><strong>3. Explora</strong><br><span class="muted">Compara el rango de operadores que tú definas.</span></div>', unsafe_allow_html=True)
-    with c4:
-        st.markdown('<div class="info-card"><strong>4. Decide</strong><br><span class="muted">Obtén un TO BE con impacto operativo y económico.</span></div>', unsafe_allow_html=True)
-    st.info("El modo Analista está diseñado para sistemas reales: no presupone dos operadores ni obliga a trabajar únicamente con tasas. Puedes ingresar tiempos observados y evaluar el rango de dotación que necesites.")
+        st.info("**3. Decisión económica**\n\n¿Cuál alternativa equilibra mejor costo de personal y costo de espera?")
     st.stop()
 
 # -----------------------------------------------------------------------------
-# Dashboard de resultados
+# Dashboard gerencial
 # -----------------------------------------------------------------------------
-r = st.session_state["e2e_resultado"]
-asis = r["asis"]
+r = st.session_state["analisis_dotacion"]
+actual = r["actual"]
 df = r["df"]
 recomendado = r["recomendado"]
-comp = r["comp"]
 
-status_class = {"Adecuado": "status-ok", "Atención": "status-warn", "Crítico": "status-critical"}.get(r["estado"], "status-warn")
+st.markdown(f"### {r['nombre']}")
 
-st.markdown(
-    f"""
-    <div class="decision-card">
-        <span class="{status_class}">AS IS · {r['estado']}</span>
-        <h3>{r['nombre']} · {r['contexto']}</h3>
-        <p><b>Modelo:</b> {r['modelo_sugerido']} &nbsp; | &nbsp; <b>λ:</b> {r['lam']:.2f}/h &nbsp; | &nbsp; <b>μ:</b> {r['mu']:.2f}/h por operador &nbsp; | &nbsp; <b>Operadores:</b> {r['s_actual']}</p>
-        <p><b>Ritmo observado:</b> llegada cada {r['t_llegada']:.2f} min · atención {r['t_atencion']:.2f} min/cliente.</p>
-        <p>{r['texto_diag']}</p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-resumen_tab, escenarios_tab, economia_tab, reporte_tab = st.tabs(["Resumen ejecutivo", "Escenarios", "Economía", "Reporte"])
-
-with resumen_tab:
-    st.markdown("### Indicadores AS IS")
-    a1, a2, a3, a4, a5, a6 = st.columns(6)
-    a1.metric("Utilización", f"{asis['rho']*100:.1f}%")
-    a2.metric("Prob. espera", f"{asis['P_espera']*100:.1f}%")
-    a3.metric("Clientes en cola", f"{asis['Lq']:.2f}" if math.isfinite(asis['Lq']) else "∞")
-    a4.metric("Espera Wq", f"{asis['Wq']*60:.2f} min" if math.isfinite(asis['Wq']) else "∞")
-    a5.metric("Tiempo total W", f"{asis['W']*60:.2f} min" if math.isfinite(asis['W']) else "∞")
-    a6.metric("Bloqueo", f"{asis['P_bloqueo']*100:.2f}%")
-
-    if r["t_llegada"] < r["t_atencion"]:
-        if r["s_actual"] == 1 or (not r["capacidad_limitada"] and asis["rho"] >= 1):
-            st.error("La relación entre tiempos confirma presión crítica de cola: el proceso recibe trabajo más rápido de lo que la configuración actual puede absorber.")
-        else:
-            st.warning(f"El tiempo entre llegadas es menor que el tiempo de atención por operador. Con la dotación actual, la probabilidad estimada de que un cliente deba esperar es {asis['P_espera']*100:.1f}%.")
-
-    st.markdown("### Recomendación TO BE")
-    asis_wq = asis["Wq"] * 60 if math.isfinite(asis["Wq"]) else float("nan")
-    tobe_wq = float(recomendado["Wq (min)"])
-    delta_wq = tobe_wq - asis_wq if math.isfinite(asis_wq) else float("nan")
-    asis_cost = float(r["costos_asis"]["total"])
-    tobe_cost = float(recomendado["Costo total (S//h)"])
-    delta_cost = tobe_cost - asis_cost if math.isfinite(asis_cost) else float("nan")
-
-    t1, t2, t3, t4, t5 = st.columns(5)
-    t1.metric("Operadores TO BE", int(recomendado["Servidores"]), delta=int(recomendado["Servidores"]) - r["s_actual"])
-    t2.metric("Mejora de μ", recomendado["Mejora servicio"])
-    t3.metric("Prob. espera TO BE", f"{recomendado['Prob. espera %']:.1f}%")
-    t4.metric("Wq TO BE", f"{tobe_wq:.2f} min", delta=f"{delta_wq:+.2f} min" if math.isfinite(delta_wq) else None, delta_color="inverse")
-    t5.metric("Costo TO BE", f"S/ {tobe_cost:.2f}/h", delta=f"S/ {delta_cost:+.2f}/h" if math.isfinite(delta_cost) else None, delta_color="inverse")
-
-    estado_rec = "Cumple objetivos" if r["cumple_objetivos"] else "Mejor alternativa disponible"
-    clase_rec = "status-ok" if r["cumple_objetivos"] else "status-warn"
-    impacto_txt = f"S/ {r['impacto_mensual']:+,.2f} por mes" if math.isfinite(r["impacto_mensual"]) else "No calculable con AS IS inestable"
-
+# Alertas operativas
+if r["t_llegada"] < r["t_atencion"]:
+    if actual["rho"] >= 1:
+        st.markdown(
+            f"""
+            <div class="critical-card">
+                <b>ALERTA CRÍTICA DE CAPACIDAD</b><br>
+                Llega un cliente cada <b>{r['t_llegada']:.1f} min</b>, mientras una atención requiere
+                <b>{r['t_atencion']:.1f} min</b>. Además, con {r['operadores_actuales']} operador(es)
+                la capacidad total actual no logra absorber la demanda. La cola tenderá a crecer mientras se mantenga este patrón.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            f"""
+            <div class="alert-card">
+                <b>ALERTA DE PRESIÓN DE COLA</b><br>
+                Los clientes llegan más rápido de lo que un operador individual puede atenderlos:
+                llegada cada <b>{r['t_llegada']:.1f} min</b> vs atención de <b>{r['t_atencion']:.1f} min</b>.
+                La dotación conjunta actual mantiene el sistema estable, pero existe probabilidad de espera.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+else:
     st.markdown(
-        f"""
-        <div class="decision-card">
-            <span class="{clase_rec}">{estado_rec}</span>
-            <h3>Decisión sugerida</h3>
-            <p>Evaluar una configuración con <b>{int(recomendado['Servidores'])} operador(es)</b> y una mejora de tasa de servicio de <b>{recomendado['Mejora servicio']}</b>.</p>
-            <p>La selección {r['criterio']}.</p>
-            <p><b>Impacto económico mensual estimado:</b> {impacto_txt} <span class="muted">(positivo = ahorro frente al AS IS)</span></p>
+        """
+        <div class="ok-card">
+            <b>FLUJO INDIVIDUAL FAVORABLE</b><br>
+            El tiempo promedio de atención de un operador no supera el intervalo promedio entre llegadas.
+            Aun así, la variabilidad aleatoria puede generar espera y debe revisarse la utilización del sistema.
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    st.markdown("### AS IS vs TO BE")
-    st.dataframe(comp, use_container_width=True, hide_index=True)
+# Situación actual
+st.markdown("### 1. Situación actual")
+if actual["estable"]:
+    a1, a2, a3, a4 = st.columns(4)
+    a1.metric("Operadores actuales", r["operadores_actuales"])
+    a2.metric("Utilización", f"{actual['rho']*100:.1f}%")
+    a3.metric("Probabilidad de esperar", f"{actual['P_espera']*100:.1f}%")
+    a4.metric("Espera promedio", f"{actual['Wq']*60:.2f} min")
+else:
+    a1, a2, a3 = st.columns(3)
+    a1.metric("Operadores actuales", r["operadores_actuales"])
+    a2.metric("Utilización requerida", f"{actual['rho']*100:.1f}%")
+    a3.metric("Estado", "Inestable")
+    st.error("La demanda supera la capacidad agregada actual. La espera teórica no tiene un valor finito mientras se mantenga esta configuración.")
 
-    tradeoff = px.scatter(
-        df, x="Wq (min)", y="Costo total (S//h)", size="Servidores", color="Mejora servicio",
-        hover_data=["Servidores", "Utilización %", "Prob. espera %", "Lq", "Bloqueo %"],
-        title="Mapa de decisión: nivel de servicio vs costo", template="plotly_white",
+# Gráfico gerencial principal
+st.markdown("### 2. ¿Qué pasa si cambiamos la cantidad de operadores?")
+st.caption("La línea horizontal representa la meta máxima de espera definida por la organización.")
+
+plot_df = df[df["Estable"] == True].copy()
+if not plot_df.empty:
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=plot_df["Operadores"],
+        y=plot_df["Espera promedio (min)"],
+        name="Espera promedio",
+        text=[f"{v:.1f}" for v in plot_df["Espera promedio (min)"]],
+        textposition="outside",
+    ))
+    fig.add_hline(
+        y=r["meta_wq"],
+        line_dash="dash",
+        annotation_text=f"Meta: {r['meta_wq']:.1f} min",
+        annotation_position="top right",
     )
-    tradeoff.add_vline(x=r["objetivo_wq"], line_dash="dash", annotation_text="Objetivo Wq")
-    st.plotly_chart(tradeoff, use_container_width=True)
+    fig.add_vline(
+        x=float(recomendado["Operadores"]),
+        line_dash="dot",
+        annotation_text=f"Recomendado: {int(recomendado['Operadores'])}",
+        annotation_position="top left",
+    )
+    fig.update_layout(
+        title="Tiempo promedio de espera según cantidad de operadores",
+        xaxis_title="Número de operadores",
+        yaxis_title="Minutos de espera",
+        template="plotly_white",
+        showlegend=False,
+        height=430,
+    )
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.warning("Ninguna configuración estable fue encontrada dentro del rango evaluado.")
 
-with escenarios_tab:
-    st.markdown("### Portafolio de escenarios TO BE")
-    st.caption(f"Se evaluó el rango solicitado de {r['s_min_eval']} a {r['s_max_eval']} operadores, sujeto a las restricciones de capacidad del sistema.")
-    if r["omitidos_capacidad"] > 0:
-        st.warning(f"Se omitieron {r['omitidos_capacidad']} niveles de dotación porque superaban la capacidad total K.")
+# Recomendación
+st.markdown("### 3. Recomendación de dotación")
+r1, r2, r3, r4 = st.columns(4)
+r1.metric("Operadores recomendados", int(recomendado["Operadores"]), delta=int(recomendado["Operadores"]) - r["operadores_actuales"])
+r2.metric("Utilización", f"{recomendado['Utilizacion %']:.1f}%")
+r3.metric("Prob. de esperar", f"{recomendado['Prob. espera %']:.1f}%")
+r4.metric("Espera promedio", f"{recomendado['Espera promedio (min)']:.2f} min")
 
+if r["cumple_meta"]:
+    st.success(f"La configuración recomendada {r['motivo']}")
+else:
+    st.warning(r["motivo"].capitalize())
+
+# Costo-beneficio
+st.markdown("### 4. Costo-beneficio y servicio al cliente")
+e = r["economia"]
+
+if actual["estable"] and math.isfinite(e["beneficio_neto"]):
+    e1, e2, e3 = st.columns(3)
+    e1.metric("Costo adicional de personal", f"S/ {e['costo_adicional_personal']:+.2f}/h", delta_color="inverse")
+    e2.metric("Ahorro por menor espera", f"S/ {e['ahorro_espera']:+.2f}/h")
+    e3.metric("Beneficio neto estimado", f"S/ {e['beneficio_neto']:+.2f}/h")
+
+    comp_costos = pd.DataFrame([
+        {
+            "Escenario": "Actual",
+            "Costo total (S//h)": float(df.loc[df["Operadores"] == r["operadores_actuales"], "Costo total (S//h)"].iloc[0])
+        },
+        {
+            "Escenario": "Recomendado",
+            "Costo total (S//h)": float(recomendado["Costo total (S//h)"])
+        },
+    ])
+    fig_cost = px.bar(
+        comp_costos,
+        x="Escenario",
+        y="Costo total (S//h)",
+        text_auto=".2f",
+        title="Costo operativo total por hora: situación actual vs recomendada",
+        template="plotly_white",
+    )
+    fig_cost.update_layout(yaxis_title="S/ por hora", xaxis_title="")
+    st.plotly_chart(fig_cost, use_container_width=True)
+else:
+    st.warning(
+        "La situación actual es inestable, por lo que el costo de espera teórico no es finito y no puede compararse económicamente de forma directa. "
+        "Sí se muestra el costo de la configuración recomendada una vez que el sistema alcanza estabilidad."
+    )
+
+st.markdown(
+    f"""
+    <div class="decision-card">
+        <h3>Decisión sugerida</h3>
+        <p>Evaluar una dotación de <b>{int(recomendado['Operadores'])} operador(es)</b>.</p>
+        <p>Con esta configuración, la espera promedio estimada es de <b>{recomendado['Espera promedio (min)']:.2f} min</b>
+        y la probabilidad de que un cliente tenga que esperar es de <b>{recomendado['Prob. espera %']:.1f}%</b>.</p>
+        <p>El costo total estimado es de <b>S/ {recomendado['Costo total (S//h)']:.2f} por hora</b>.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# Detalle técnico secundario
+with st.expander("Ver detalle de todas las alternativas"):
     vista = df.copy()
-    vista["Cumple Wq"] = vista["Wq (min)"] <= r["objetivo_wq"]
-    vista["Cumple utilización"] = vista["Utilización %"] <= r["max_rho"]
-    vista["Factible gerencial"] = vista["Cumple Wq"] & vista["Cumple utilización"]
-    vista = vista.sort_values(["Factible gerencial", "Costo total (S//h)", "Wq (min)"], ascending=[False, True, True])
+    vista["Cumple meta"] = (vista["Estable"] == True) & (vista["Espera promedio (min)"] <= r["meta_wq"])
     st.dataframe(vista, use_container_width=True, hide_index=True)
 
-    g1, g2 = st.columns(2)
-    with g1:
-        fig_wq = px.line(df, x="Servidores", y="Wq (min)", color="Mejora servicio", markers=True, title="Espera promedio por dotación", template="plotly_white")
-        fig_wq.add_hline(y=r["objetivo_wq"], line_dash="dash", annotation_text="Objetivo")
-        st.plotly_chart(fig_wq, use_container_width=True)
-    with g2:
-        fig_pe = px.line(df, x="Servidores", y="Prob. espera %", color="Mejora servicio", markers=True, title="Probabilidad de espera por dotación", template="plotly_white")
-        st.plotly_chart(fig_pe, use_container_width=True)
+with st.expander("Supuestos del modelo"):
+    st.markdown(
+        """
+        - Se utiliza un modelo M/M/s: llegadas Poisson, tiempos de atención exponenciales y operadores equivalentes.
+        - Se supone una sola línea de espera y capacidad suficiente para mantener a los clientes en cola.
+        - El tiempo promedio entre llegadas y el tiempo promedio de atención deben provenir de datos observados o estimaciones razonables.
+        - El costo de espera representa un valor económico de la demora y debe ser definido por la organización.
+        - La recomendación es un apoyo a la decisión y debe validarse con restricciones de turnos, descansos, habilidades y variabilidad real del proceso.
+        """
+    )
 
-    fig_rho = px.line(df, x="Servidores", y="Utilización %", color="Mejora servicio", markers=True, title="Utilización por dotación", template="plotly_white")
-    fig_rho.add_hline(y=r["max_rho"], line_dash="dash", annotation_text="Máximo deseado")
-    st.plotly_chart(fig_rho, use_container_width=True)
-
-with economia_tab:
-    st.markdown("### Estructura económica de la decisión")
-    costos_asis = r["costos_asis"]
-    costos_tobe = {
-        "capacidad": float(recomendado["Costo capacidad (S//h)"]),
-        "espera": float(recomendado["Costo espera (S//h)"]),
-        "perdida": float(recomendado["Costo pérdida (S//h)"]),
-        "total": float(recomendado["Costo total (S//h)"]),
+# Reporte
+with st.expander("Descargar resumen ejecutivo"):
+    datos_pdf = {
+        "t_llegada": r["t_llegada"],
+        "t_atencion": r["t_atencion"],
+        "operadores_actuales": r["operadores_actuales"],
+        "meta_wq": r["meta_wq"],
     }
-    eco1, eco2, eco3, eco4 = st.columns(4)
-    eco1.metric("Costo AS IS", f"S/ {costos_asis['total']:.2f}/h" if math.isfinite(costos_asis['total']) else "∞")
-    eco2.metric("Costo TO BE", f"S/ {costos_tobe['total']:.2f}/h")
-    eco3.metric("Impacto por hora", f"S/ {r['ahorro_hora']:+.2f}" if math.isfinite(r["ahorro_hora"]) else "N/D")
-    eco4.metric("Impacto mensual", f"S/ {r['impacto_mensual']:+,.2f}" if math.isfinite(r["impacto_mensual"]) else "N/D")
+    pdf_bytes = generar_pdf(
+        r["nombre"],
+        datos_pdf,
+        actual,
+        recomendado,
+        e,
+    )
+    st.download_button(
+        "Descargar resumen ejecutivo en PDF",
+        data=pdf_bytes,
+        file_name="resumen_dimensionamiento_operadores.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+    )
 
-    costos_plot = pd.DataFrame([
-        {"Escenario": "AS IS", "Componente": "Capacidad", "Costo": costos_asis["capacidad"]},
-        {"Escenario": "AS IS", "Componente": "Espera", "Costo": costos_asis["espera"]},
-        {"Escenario": "AS IS", "Componente": "Pérdida", "Costo": costos_asis["perdida"]},
-        {"Escenario": "TO BE", "Componente": "Capacidad", "Costo": costos_tobe["capacidad"]},
-        {"Escenario": "TO BE", "Componente": "Espera", "Costo": costos_tobe["espera"]},
-        {"Escenario": "TO BE", "Componente": "Pérdida", "Costo": costos_tobe["perdida"]},
-    ]).replace([float("inf"), -float("inf")], pd.NA).dropna()
-
-    fig_costos = px.bar(costos_plot, x="Escenario", y="Costo", color="Componente", barmode="stack", title="Composición del costo operativo por hora", template="plotly_white")
-    st.plotly_chart(fig_costos, use_container_width=True)
-    st.caption(f"Proyección mensual con {r['horas_dia']:.0f} horas/día y {r['dias_mes']} días/mes. El impacto depende de la validez de los costos ingresados.")
-
-with reporte_tab:
-    st.markdown("### Reporte y trazabilidad")
-    datos_reporte = {
-        "contexto": r["contexto"], "nombre": r["nombre"], "descripcion": r["descripcion"],
-        "t_llegada": r["t_llegada"], "t_atencion": r["t_atencion"], "s_actual": r["s_actual"],
-    }
-
-    if asis["estable"] and math.isfinite(asis["Wq"]):
-        pdf_bytes = generar_pdf(datos_reporte, asis, recomendado, comp, r["texto_diag"], r["criterio"], r["impacto_mensual"])
-        st.download_button("Descargar resumen ejecutivo en PDF", data=pdf_bytes, file_name="resumen_ejecutivo_teoria_colas.pdf", mime="application/pdf", use_container_width=True)
-    else:
-        st.warning("El PDF ejecutivo se habilita cuando el escenario AS IS tiene métricas finitas.")
-
-    csv_data = df.to_csv(index=False).encode("utf-8")
-    st.download_button("Descargar matriz de escenarios en CSV", data=csv_data, file_name="escenarios_teoria_colas.csv", mime="text/csv", use_container_width=True)
-
-    with st.expander("Supuestos del análisis", expanded=True):
-        st.markdown(
-            """
-            - El usuario puede ingresar tasas por hora o tiempos promedio; la aplicación convierte automáticamente entre ambas representaciones.
-            - Para M/M/1 y M/M/s se requiere utilización agregada menor que 100% para estabilidad.
-            - Que el tiempo entre llegadas sea menor que el tiempo de atención de un operador indica presión de cola, pero con varios operadores la estabilidad depende de la capacidad agregada `s·μ`.
-            - Incluso cuando el tiempo entre llegadas es mayor que el tiempo de atención, un sistema estocástico puede generar espera por variabilidad; por ello se reporta la probabilidad de espera.
-            - En capacidad finita se considera bloqueo cuando el sistema alcanza K; no se evalúan dotaciones de operadores mayores que K.
-            - La recomendación automática es soporte de decisión y debe validarse con datos reales y restricciones operativas.
-            """
-        )
-
-    st.markdown("### Criterio de selección")
-    st.write(r["criterio"].capitalize() + ".")
+    csv_bytes = df.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        "Descargar alternativas en CSV",
+        data=csv_bytes,
+        file_name="alternativas_operadores.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
