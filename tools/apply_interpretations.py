@@ -35,8 +35,67 @@ def insert_before(path: Path, markers: list[str], block: str, sentinel: str) -> 
     raise RuntimeError(f"No se encontró marcador para insertar {sentinel} en {path}")
 
 
+def append_if_missing(path: Path, block: str, sentinel: str) -> None:
+    text = path.read_text(encoding="utf-8")
+    if sentinel in text:
+        return
+    path.write_text(text.rstrip() + "\n\n\n" + block.rstrip() + "\n", encoding="utf-8")
+
+
 def main() -> None:
     pages = ROOT / "pages"
+
+    # Función comparativa compartida.
+    core = ROOT / "interpretation_core.py"
+    append_if_missing(
+        core,
+        '''# EDU_INTERPRETATION_COMPARISON_CORE
+def interpret_comparison(a: dict, b: dict, meta_wq: float, meta_bloqueo: float):
+    """Interpreta dos alternativas sin ocultar los indicadores técnicos."""
+    def espera_txt(row):
+        value = row.get("Espera (min)")
+        return "inestable/no finita" if value is None or not math.isfinite(float(value)) else f"{float(value):.1f} min"
+
+    nombre_a = str(a.get("Escenario", "Escenario A"))
+    nombre_b = str(b.get("Escenario", "Escenario B"))
+    cumple_a = str(a.get("Cumple meta", "No")) == "Sí"
+    cumple_b = str(b.get("Cumple meta", "No")) == "Sí"
+    bloqueo_a = float(a.get("Bloqueo %", 0.0))
+    bloqueo_b = float(b.get("Bloqueo %", 0.0))
+    servidores_a = int(a.get("Servidores", 0))
+    servidores_b = int(b.get("Servidores", 0))
+
+    que_pasa = (
+        f"{nombre_a}: espera {espera_txt(a)}, bloqueo {bloqueo_a:.1f}% y {servidores_a} servidor(es). "
+        f"{nombre_b}: espera {espera_txt(b)}, bloqueo {bloqueo_b:.1f}% y {servidores_b} servidor(es)."
+    )
+
+    if cumple_a and cumple_b:
+        operacion = (
+            "Ambas alternativas cumplen simultáneamente las metas definidas. La elección final debe incorporar "
+            "capacidad requerida, costo, restricciones físicas y sensibilidad ante aumentos de demanda."
+        )
+    elif cumple_a or cumple_b:
+        nombre = nombre_a if cumple_a else nombre_b
+        operacion = (
+            f"Solo {nombre} cumple simultáneamente la meta de espera ≤ {meta_wq:.1f} min y bloqueo ≤ {meta_bloqueo:.1f}%. "
+            "La diferencia debe atribuirse a su combinación de capacidad de servicio y, cuando corresponda, capacidad física."
+        )
+    else:
+        operacion = (
+            "Ninguna alternativa cumple simultáneamente las metas. Antes de escoger entre ellas conviene rediseñar capacidad, "
+            "velocidad de atención o límite físico y volver a comparar."
+        )
+
+    return _base(
+        que_pasa,
+        "Comparar modelos no consiste solo en buscar el menor Wq. Una alternativa puede reducir espera a costa de más servidores, o reducir bloqueo permitiendo más capacidad física. Por eso deben leerse juntas espera, bloqueo, utilización y recursos.",
+        operacion,
+        "Modifica una variable a la vez y observa qué indicador responde: s cambia capacidad de servicio; K cambia capacidad física; μ cambia velocidad de atención; λ representa presión de demanda.",
+        "Una comparación válida explica qué cambia entre escenarios y por qué cambia el resultado; no se limita a señalar cuál número es menor.",
+    )''',
+        "EDU_INTERPRETATION_COMPARISON_CORE",
+    )
 
     # 02 - M/M/1
     p = pages / "02_Modelo_MM1_Teoria_Ejemplo.py"
@@ -145,6 +204,47 @@ st.markdown(
         "EDU_INTERPRETATION_DD1",
     )
 
+    # 18 - Casos prácticos aplicados
+    p = pages / "18_Casos_Practicos_Aplicados.py"
+    ensure_import(p, "interpret_dd1, interpret_mms, to_markdown")
+    insert_before(
+        p,
+        ['st.markdown("## 2. Qué debe demostrar el estudiante")'],
+        '''# EDU_INTERPRETATION_CASES
+if caso in {"🏥 Emergencias hospitalarias", "🏦 Ventanillas bancarias"}:
+    st.markdown(
+        to_markdown(
+            interpret_mms(r, s),
+            title=f"🧠 Interpretación del caso: {caso}",
+        )
+    )
+else:
+    st.markdown(
+        to_markdown(
+            interpret_dd1(
+                T,
+                S,
+                float(df["Espera (min)"].mean()),
+                float(df.iloc[-1]["Espera (min)"]),
+            ),
+            title="🧠 Interpretación del caso de producción",
+        )
+    )''',
+        "EDU_INTERPRETATION_CASES",
+    )
+
+    # 19 - Colas simples aplicadas
+    p = pages / "19_Modelos_Colas_Simples.py"
+    ensure_import(p, "interpret_mm1, interpret_mms, to_markdown")
+    insert_before(
+        p,
+        ['st.markdown("## 3. ¿Qué cambia si modificas la dotación?")'],
+        '''# EDU_INTERPRETATION_SIMPLE_APPLIED
+lectura_simple = interpret_mm1(r) if servidores == 1 else interpret_mms(r, servidores)
+st.markdown(to_markdown(lectura_simple, title="🧠 Interpretación completa del escenario"))''',
+        "EDU_INTERPRETATION_SIMPLE_APPLIED",
+    )
+
     # 20 - Capacidad finita aplicada
     p = pages / "20_Modelos_Colas_Complejas.py"
     ensure_import(p, "interpret_mmsk, to_markdown")
@@ -154,6 +254,28 @@ st.markdown(
         '''# EDU_INTERPRETATION_COMPLEX
 st.markdown(to_markdown(interpret_mmsk(r), title="🧠 Interpretación operativa de tu escenario"))''',
         "EDU_INTERPRETATION_COMPLEX",
+    )
+
+    # 21 - Comparador de modelos
+    p = pages / "21_Comparador_Modelos.py"
+    ensure_import(p, "interpret_comparison, to_markdown")
+    insert_before(
+        p,
+        ['st.markdown("## 4. Interpreta la decisión")'],
+        '''# EDU_INTERPRETATION_COMPARISON
+if len(df) == 2:
+    st.markdown(
+        to_markdown(
+            interpret_comparison(
+                df.iloc[0].to_dict(),
+                df.iloc[1].to_dict(),
+                meta_wq,
+                meta_bloqueo,
+            ),
+            title="🧠 Cómo comparar correctamente las dos alternativas",
+        )
+    )''',
+        "EDU_INTERPRETATION_COMPARISON",
     )
 
     # 22 - Análisis económico
