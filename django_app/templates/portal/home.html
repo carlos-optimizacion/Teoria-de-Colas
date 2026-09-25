@@ -3,11 +3,15 @@
 {% block header %}Centro de decisión{% endblock %}
 {% block content %}
 <section class="hero">
-  <div><span class="eyebrow">PLATAFORMA ACADÉMICO-PROFESIONAL</span><h1>Modela, simula y decide con teoría de colas.</h1><p>La versión Django reutiliza el mismo motor matemático de Streamlit y añade una experiencia web preparada para simulación, usuarios, reportes y persistencia.</p><div class="hero-actions"><a class="btn primary" href="{% url 'portal:mms' %}">Abrir laboratorio M/M/s</a><a class="btn ghost" href="{% url 'portal:mm1' %}">Comenzar con M/M/1</a></div></div>
-  <div class="hero-panel"><span>ARQUITECTURA</span><strong>1 motor matemático</strong><strong>2 interfaces</strong><strong>Simulación DES</strong><small>Streamlit se mantiene operativo.</small></div>
+  <div><span class="eyebrow">PLATAFORMA ACADÉMICO-PROFESIONAL</span><h1>Aprende, valida, simula y decide.</h1><p>Decision Lab integra modelos analíticos, simulación de eventos discretos, validación de supuestos, costos y dimensionamiento en una sola experiencia web. Django y Streamlit usan el mismo motor matemático.</p><div class="hero-actions"><a class="btn primary" href="{% url 'portal:fundamentals' %}">Comenzar ruta de aprendizaje</a><a class="btn ghost" href="{% url 'portal:endtoend' %}">Abrir análisis End-to-End</a></div></div>
+  <div class="hero-panel"><span>ARQUITECTURA</span><strong>8 familias de modelos</strong><strong>17 módulos migrados</strong><strong>Simulación DES + SLA</strong><small>Streamlit permanece disponible como interfaz paralela.</small></div>
 </section>
-<section class="stats-grid"><div class="stat-card"><span>01</span><b>Analítico</b><p>Erlang C y métricas de estado estacionario.</p></div><div class="stat-card"><span>02</span><b>Simulación</b><p>Eventos discretos, réplicas y evolución de cola.</p></div><div class="stat-card"><span>03</span><b>Interpretación</b><p>Lectura operativa con el motor pedagógico existente.</p></div><div class="stat-card"><span>04</span><b>Decisión</b><p>Base para dimensionamiento, costos y optimización.</p></div></section>
-<h2 class="section-title">Rutas disponibles</h2>
-<section class="route-grid"><a class="route-card" href="{% url 'portal:mm1' %}"><span class="route-icon">λ</span><div><small>MODELO FUNDAMENTAL</small><h3>M/M/1</h3><p>Comprende estabilidad, utilización, espera y congestión con un único servidor.</p></div><b>→</b></a><a class="route-card featured" href="{% url 'portal:mms' %}"><span class="route-icon">s</span><div><small>LABORATORIO DINÁMICO</small><h3>M/M/s + simulación</h3><p>Compara teoría y simulación con gráficos dinámicos y múltiples servidores.</p></div><b>→</b></a></section>
-<section class="roadmap"><div><small>RUTA DEL PRODUCTO</small><h2>Aprender → Modelar → Validar → Simular → Comparar → Optimizar → Decidir</h2></div><span>Fase Django 1</span></section>
+<section class="stats-grid"><div class="stat-card"><span>01</span><b>Comprende</b><p>Teoría, fórmulas, estabilidad y supuestos.</p></div><div class="stat-card"><span>02</span><b>Valida</b><p>CV, dependencia y compatibilidad preliminar.</p></div><div class="stat-card"><span>03</span><b>Simula</b><p>Eventos discretos, réplicas, bloqueo y variabilidad.</p></div><div class="stat-card"><span>04</span><b>Decide</b><p>Capacidad, SLA, costo y recomendación operativa.</p></div></section>
+<h2 class="section-title">Rutas principales</h2>
+<section class="route-grid route-grid-3">
+<a class="route-card" href="{% url 'portal:mms' %}"><span class="route-icon">λ</span><div><small>APRENDER</small><h3>Modelos analíticos</h3><p>M/M/1, M/M/s, finitos, Erlang B, M/G/1 y D/D/1.</p></div><b>→</b></a>
+<a class="route-card featured" href="{% url 'portal:validator' %}"><span class="route-icon">✓</span><div><small>VALIDAR</small><h3>Datos reales</h3><p>Revisa variabilidad y dependencia antes de seleccionar un modelo.</p></div><b>→</b></a>
+<a class="route-card" href="{% url 'portal:endtoend' %}"><span class="route-icon">Δ</span><div><small>DECIDIR</small><h3>End-to-End</h3><p>Integra capacidad, servicio, costo y sensibilidad marginal.</p></div><b>→</b></a>
+</section>
+<section class="roadmap"><div><small>FLUJO DE LA PLATAFORMA</small><h2>Comprende → Valida → Experimenta → Simula → Compara → Dimensiona → Decide</h2></div><span>Migración integral</span></section>
 {% endblock %}

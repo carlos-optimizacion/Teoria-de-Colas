@@ -1,33 +1,16 @@
-const form = document.getElementById('lab-form');
-const $ = id => document.getElementById(id);
-const pct = x => x == null ? '—' : `${(x * 100).toFixed(1)}%`;
-const num = (x, digits=2) => x == null ? '—' : Number(x).toFixed(digits);
-const min = x => x == null ? '∞' : `${Number(x).toFixed(2)} min`;
-
-function csrfToken(){ return document.cookie.split('; ').find(r=>r.startsWith('csrftoken='))?.split('=')[1] || ''; }
-function bindRange(id, out){ const el=$(id); if(!el) return; const o=$(out); const sync=()=>o.textContent=el.value; el.addEventListener('input', sync); sync(); }
-[['t-llegada','arrival-out'],['t-atencion','service-out'],['servers','servers-out'],['horizon','horizon-out'],['replications','replications-out']].forEach(x=>bindRange(...x));
-
-async function runLab(event){
-  if(event) event.preventDefault();
-  const payload={model:form.dataset.model,t_llegada:+$('t-llegada').value,t_atencion:+$('t-atencion').value,servers:+$('servers').value,horizon:+$('horizon').value,replications:+$('replications').value};
-  $('alert').innerHTML='<div class="notice">Calculando modelo analítico y simulación…</div>';
-  try{
-    const res=await fetch('/api/queue/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken()},body:JSON.stringify(payload)});
-    const data=await res.json(); if(!data.ok) throw new Error(data.error||'Error de cálculo'); render(data);
-  }catch(err){ $('alert').innerHTML=`<div class="notice danger">${err.message}</div>`; }
-}
-
-function render(data){
-  const a=data.analytic, s=data.simulation;
-  $('rho').textContent=pct(a.rho); $('wq').textContent=min(a.wq_min); $('lq').textContent=num(a.lq); $('pwait').textContent=pct(a.p_wait);
-  $('alert').innerHTML=a.stable?'<div class="notice success">Sistema estable bajo los supuestos del modelo.</div>':'<div class="notice danger">Sistema inestable: la demanda iguala o supera la capacidad agregada.</div>';
-
-  Plotly.react('comparison-chart',[{x:['Wq analítico','Wq simulado'],y:[a.wq_min||0,s.wq_min],type:'bar',text:[a.wq_min==null?'∞':a.wq_min.toFixed(2),s.wq_min.toFixed(2)],textposition:'auto'}],{title:'Espera promedio (min)',margin:{t:45,l:45,r:15,b:40},paper_bgcolor:'transparent',plot_bgcolor:'transparent',showlegend:false},{responsive:true});
-  Plotly.react('utilization-chart',[{x:['Analítico','Simulado'],y:[a.rho*100,s.utilization*100],type:'bar',text:[`${(a.rho*100).toFixed(1)}%`,`${(s.utilization*100).toFixed(1)}%`],textposition:'auto'}],{title:'Utilización (%)',margin:{t:45,l:45,r:15,b:40},paper_bgcolor:'transparent',plot_bgcolor:'transparent',showlegend:false},{responsive:true});
-  Plotly.react('queue-chart',[{x:s.queue_series.map(p=>p.t),y:s.queue_series.map(p=>p.q),mode:'lines',line:{shape:'hv',width:3},fill:'tozeroy'}],{title:`Evolución de cola · réplica representativa (${s.horizon_min} min)`,xaxis:{title:'Tiempo (min)'},yaxis:{title:'Clientes esperando',rangemode:'tozero'},margin:{t:50,l:55,r:20,b:55},paper_bgcolor:'transparent',plot_bgcolor:'transparent'},{responsive:true});
-
-  const i=data.interpretation; const cards=[['🔎','¿Qué está pasando?',i.que_pasa],['🧩','¿Por qué ocurre?',i.por_que],['🏭','¿Qué significa operativamente?',i.operacion],['🔧','¿Qué podrías cambiar?',i.accion],['🎓','¿Qué debes aprender?',i.aprendizaje]];
-  $('interpretation').innerHTML=cards.map(c=>`<article><span>${c[0]}</span><div><b>${c[1]}</b><p>${c[2]}</p></div></article>`).join('');
-}
-form.addEventListener('submit',runLab); window.addEventListener('DOMContentLoaded',()=>runLab());
+const form=document.getElementById('model-form');
+const $=id=>document.getElementById(id);
+const val=id=>$(id)?$(id).value:undefined;
+const pct=x=>x==null?'—':`${(Number(x)*100).toFixed(1)}%`;
+const num=(x,d=2)=>x==null?'—':Number(x).toFixed(d);
+const mins=x=>x==null?'∞':`${Number(x).toFixed(2)} min`;
+function csrf(){return document.cookie.split('; ').find(r=>r.startsWith('csrftoken='))?.split('=')[1]||'';}
+function interpretationCards(i){if(!i)return '';return [['🔎','¿Qué está pasando?',i.que_pasa],['🧩','¿Por qué ocurre?',i.por_que],['🏭','¿Qué significa operativamente?',i.operacion],['🔧','¿Qué podrías cambiar?',i.accion],['🎓','¿Qué debes aprender?',i.aprendizaje]].map(c=>`<article><span>${c[0]}</span><div><b>${c[1]}</b><p>${c[2]}</p></div></article>`).join('');}
+async function runLab(e){if(e)e.preventDefault();const payload={model:form.dataset.model,t_llegada:+val('t-llegada'),t_atencion:+val('t-atencion')};['servers','capacity','waiting-places','cv','n','horizon','replications'].forEach(id=>{if($(id)){const key=id.replaceAll('-','_');payload[key]=+val(id);}});$('alert').innerHTML='<div class="notice">Calculando modelo y simulación…</div>';try{const r=await fetch('/api/model/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify(payload)});const data=await r.json();if(!data.ok)throw new Error(data.error||'Error');render(data);}catch(err){$('alert').innerHTML=`<div class="notice danger">${err.message}</div>`;}}
+function render(data){const a=data.analytic,s=data.simulation;$('rho').textContent=pct(a.rho);$('wq').textContent=mins(a.wq_min);$('lq').textContent=num(a.lq);$('pwait').textContent=pct(a.p_wait);$('pblock').textContent=pct(a.p_block);$('lambdaeff').textContent=num(a.effective_rate);$('alert').innerHTML=a.stable?'<div class="notice success">El escenario admite lectura estacionaria bajo los supuestos del modelo.</div>':'<div class="notice danger">La capacidad promedio no sostiene la demanda; interpreta primero la inestabilidad.</div>';
+if(data.note){$('model-note').hidden=false;$('model-note').textContent=data.note;}else{$('model-note').hidden=true;}
+if(s){$('simulation-panel').hidden=false;Plotly.react('comparison-chart',[{x:['Wq analítico','Wq simulado'],y:[a.wq_min||0,s.wq_min],type:'bar',text:[a.wq_min==null?'∞':a.wq_min.toFixed(2),s.wq_min.toFixed(2)],textposition:'auto'}],{title:'Espera promedio (min)',margin:{t:45,l:45,r:15,b:40},paper_bgcolor:'transparent',plot_bgcolor:'transparent',showlegend:false},{responsive:true});Plotly.react('utilization-chart',[{x:['Analítico','Simulado'],y:[(a.rho||0)*100,s.utilization*100],type:'bar',text:[pct(a.rho),pct(s.utilization)],textposition:'auto'}],{title:'Utilización (%)',margin:{t:45,l:45,r:15,b:40},paper_bgcolor:'transparent',plot_bgcolor:'transparent',showlegend:false},{responsive:true});Plotly.react('queue-chart',[{x:s.queue_series.map(p=>p.t),y:s.queue_series.map(p=>p.q),mode:'lines',line:{shape:'hv',width:3},fill:'tozeroy'}],{title:`Evolución de la cola · réplica representativa`,xaxis:{title:'Tiempo (min)'},yaxis:{title:'Clientes esperando',rangemode:'tozero'},margin:{t:50,l:55,r:20,b:55},paper_bgcolor:'transparent',plot_bgcolor:'transparent'},{responsive:true});}else{$('simulation-panel').hidden=true;}
+if(a.probs){$('states-panel').hidden=false;Plotly.react('states-chart',[{x:a.probs.map((_,i)=>i),y:a.probs,type:'bar'}],{title:'Probabilidad de encontrar n clientes en el sistema',xaxis:{title:'n'},yaxis:{title:'Probabilidad'},paper_bgcolor:'transparent',plot_bgcolor:'transparent'},{responsive:true});}else{$('states-panel').hidden=true;}
+if(data.sequence){$('sequence-panel').hidden=false;$('sequence-body').innerHTML=data.sequence.map(r=>`<tr><td>${r['Cliente']}</td><td>${num(r['Llegada (min)'])}</td><td>${num(r['Inicio atención (min)'])}</td><td>${num(r['Espera (min)'])}</td><td>${num(r['Salida (min)'])}</td></tr>`).join('');}else{$('sequence-panel').hidden=true;}
+$('interpretation').innerHTML=interpretationCards(data.interpretation);}
+form.addEventListener('submit',runLab);window.addEventListener('DOMContentLoaded',runLab);

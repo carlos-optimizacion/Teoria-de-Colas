@@ -1,24 +1,26 @@
 {% extends 'base.html' %}{% load static %}
-{% block title %}{{ model_name }} | Decision Lab{% endblock %}
-{% block header %}Laboratorio {{ model_name }}{% endblock %}
+{% block title %}{{ config.name }} | Decision Lab{% endblock %}
+{% block header %}{{ config.name }}{% endblock %}
 {% block content %}
-<section class="model-hero"><div><span class="eyebrow">MODELO + SIMULACIÓN</span><h1>{{ model_name }}</h1><p>{{ subtitle }}</p></div><div class="formula-card"><span>Condición de estabilidad</span><b>λ &lt; s·μ</b><small>Para M/M/1, s = 1.</small></div></section>
+<section class="model-hero"><div><span class="eyebrow">TEORÍA → CÁLCULO → SIMULACIÓN → INTERPRETACIÓN</span><h1>{{ config.name }}</h1><p>{{ config.subtitle }}</p></div><div class="formula-card"><span>Relación central</span><b>{{ config.formula }}</b><small>{{ config.assumption }}</small></div></section>
 <div class="lab-grid">
-  <section class="panel controls-panel"><div class="panel-title"><span>01</span><div><b>Configura el escenario</b><small>Todos los tiempos están en minutos.</small></div></div>
-    <form id="lab-form" data-model="{{ model_key }}">
-      {% csrf_token %}
-      <label>Tiempo medio entre llegadas <output id="arrival-out">10</output><span> min</span><input id="t-llegada" type="range" min="1" max="60" step="1" value="10"></label>
-      <label>Tiempo medio de atención <output id="service-out">8</output><span> min</span><input id="t-atencion" type="range" min="1" max="60" step="1" value="8"></label>
-      {% if fixed_servers %}<input id="servers" type="hidden" value="1">{% else %}<label>Número de servidores <output id="servers-out">2</output><input id="servers" type="range" min="1" max="12" step="1" value="2"></label>{% endif %}
-      <label>Horizonte de simulación <output id="horizon-out">480</output><span> min</span><input id="horizon" type="range" min="60" max="1440" step="60" value="480"></label>
-      <label>Réplicas <output id="replications-out">30</output><input id="replications" type="range" min="5" max="100" step="5" value="30"></label>
-      <button class="btn primary full" type="submit">Calcular y simular</button>
-    </form>
-  </section>
-  <section class="panel results-panel"><div class="panel-title"><span>02</span><div><b>Indicadores analíticos</b><small>Calculados con queue_core.py.</small></div></div><div id="alert"></div><div class="metrics"><div><span>ρ</span><b id="rho">—</b><small>Utilización</small></div><div><span>Wq</span><b id="wq">—</b><small>Espera promedio</small></div><div><span>Lq</span><b id="lq">—</b><small>Cola promedio</small></div><div><span>P(W&gt;0)</span><b id="pwait">—</b><small>Prob. esperar</small></div></div></section>
+<section class="panel controls-panel"><div class="panel-title"><span>01</span><div><b>Configura el escenario</b><small>Convención operativa: tiempos en minutos.</small></div></div>
+<form id="model-form" data-model="{{ model_key }}">{% csrf_token %}
+<div class="form-grid one">
+<label>Tiempo medio entre llegadas<input id="t-llegada" type="number" min="0.01" step="0.1" value="{{ initial.t_llegada }}"><small>min/llegada</small></label>
+<label>Tiempo medio de atención<input id="t-atencion" type="number" min="0.01" step="0.1" value="{{ initial.t_atencion }}"><small>min/servicio</small></label>
+{% if model_key == 'mms' or model_key == 'mmsk' or model_key == 'mmstotal' or model_key == 'erlangb' %}<label>Número de servidores s<input id="servers" type="number" min="1" max="60" step="1" value="{{ initial.servers }}"></label>{% endif %}
+{% if model_key == 'mmsk' or model_key == 'mmstotal' %}<label>Capacidad total K<input id="capacity" type="number" min="1" max="500" step="1" value="{{ initial.capacity }}"><small>Incluye servicio + espera</small></label>{% endif %}
+{% if model_key == 'mm1c' %}<label>Plazas de espera c<input id="waiting-places" type="number" min="0" max="499" step="1" value="{{ initial.waiting_places }}"><small>Django calcula K=c+1</small></label>{% endif %}
+{% if model_key == 'mg1' %}<label>Coeficiente de variación CV<input id="cv" type="number" min="0" max="5" step="0.05" value="{{ initial.cv }}"></label>{% endif %}
+{% if model_key == 'dd1' %}<label>Número de clientes<input id="n" type="number" min="1" max="200" step="1" value="{{ initial.n }}"></label>{% endif %}
+{% if model_key != 'dd1' %}<label>Horizonte de simulación<input id="horizon" type="number" min="60" max="1440" step="60" value="480"><small>min</small></label><label>Réplicas<input id="replications" type="number" min="1" max="200" step="1" value="30"></label>{% endif %}
+</div><button class="btn primary full" type="submit">Calcular escenario</button></form></section>
+<section class="panel results-panel"><div class="panel-title"><span>02</span><div><b>Indicadores del modelo</b><small>Motor compartido queue_core.py.</small></div></div><div id="alert"></div><div class="metrics metrics-6"><div><span>ρ</span><b id="rho">—</b><small>Utilización</small></div><div><span>Wq</span><b id="wq">—</b><small>Espera</small></div><div><span>Lq</span><b id="lq">—</b><small>Cola promedio</small></div><div><span>P(espera)</span><b id="pwait">—</b><small>Admitidos</small></div><div><span>P(bloqueo)</span><b id="pblock">—</b><small>Pérdida</small></div><div><span>λ efectiva</span><b id="lambdaeff">—</b><small>Admitidos/h</small></div></div></section>
 </div>
-<section class="panel"><div class="panel-title"><span>03</span><div><b>Analítico vs simulación</b><small>La simulación usa eventos discretos y múltiples réplicas.</small></div></div><div class="chart-grid"><div id="comparison-chart" class="chart"></div><div id="utilization-chart" class="chart"></div></div></section>
-<section class="panel"><div class="panel-title"><span>04</span><div><b>Evolución dinámica de la cola</b><small>Una réplica representativa durante el horizonte configurado.</small></div></div><div id="queue-chart" class="chart wide"></div></section>
-<section class="panel"><div class="panel-title"><span>05</span><div><b>Interpretación operativa</b><small>Traducción pedagógica del resultado matemático.</small></div></div><div id="interpretation" class="interpret-grid"></div></section>
+<section class="panel" id="simulation-panel"><div class="panel-title"><span>03</span><div><b>Analítico vs simulación</b><small>La simulación complementa al modelo; no sustituye sus supuestos.</small></div></div><div class="chart-grid"><div id="comparison-chart" class="chart"></div><div id="utilization-chart" class="chart"></div></div><div id="queue-chart" class="chart wide"></div><div id="model-note" class="notice info" hidden></div></section>
+<section class="panel" id="states-panel" hidden><div class="panel-title"><span>04</span><div><b>Probabilidades de estado</b><small>Distribución estacionaria del sistema finito.</small></div></div><div id="states-chart" class="chart wide"></div></section>
+<section class="panel" id="sequence-panel" hidden><div class="panel-title"><span>04</span><div><b>Secuencia determinista</b><small>Llegada, inicio, espera y salida.</small></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Cliente</th><th>Llegada</th><th>Inicio</th><th>Espera</th><th>Salida</th></tr></thead><tbody id="sequence-body"></tbody></table></div></section>
+<section class="panel"><div class="panel-title"><span>05</span><div><b>Interpretación operativa</b><small>Qué pasa, por qué ocurre y qué variable conviene revisar.</small></div></div><div id="interpretation" class="interpret-grid"></div></section>
 {% endblock %}
 {% block scripts %}<script src="{% static 'js/model-lab.js' %}"></script>{% endblock %}

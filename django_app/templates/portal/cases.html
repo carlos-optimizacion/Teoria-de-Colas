@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}Casos aplicados | Decision Lab{% endblock %}
+{% block header %}Casos prácticos aplicados{% endblock %}
+{% block content %}
+<section class="model-hero"><div><span class="eyebrow">18 · TRANSFERENCIA A CONTEXTOS REALES</span><h1>Casos aplicados</h1><p>Selecciona un escenario y abre el laboratorio con parámetros precargados. El objetivo es interpretar una decisión operativa, no memorizar fórmulas.</p></div><div class="formula-card"><span>Ruta</span><b>Contexto → modelo → decisión</b><small>Hospital, servicios y producción.</small></div></section>
+<div class="case-grid">
+{% for case in cases %}<article class="panel case-card"><span class="tag">{{ case.sector }}</span><h3>{{ case.name }}</h3><p>{{ case.question }}</p><div class="case-metrics"><span>Interarribo <b>{{ case.t_llegada }} min</b></span><span>Servicio <b>{{ case.t_atencion }} min</b></span><span>Servidores <b>{{ case.servers }}</b></span></div>{% if case.model == 'dd1' %}<a class="btn primary" href="{% url 'portal:dd1' %}?t_llegada={{ case.t_llegada }}&t_atencion={{ case.t_atencion }}">Resolver caso</a>{% else %}<a class="btn primary" href="{% url 'portal:mms' %}?t_llegada={{ case.t_llegada }}&t_atencion={{ case.t_atencion }}&servers={{ case.servers }}">Resolver caso</a>{% endif %}</article>{% endfor %}
+</div>
+{% endblock %}
