@@ -1,148 +1,96 @@
-# Archivo: 19_Modelos_Colas_Simples.py
-import streamlit as st
-import math
+import pandas as pd
 import plotly.graph_objects as go
-from fpdf import FPDF
-import tempfile
-import os
-import matplotlib.pyplot as plt
+import streamlit as st
+import streamlit.components.v1 as components
 
-st.set_page_config(page_title="Modelos Colas Simples", layout="centered")
-st.title("💡 19. Simulación – Modelos de Colas Simples")
+from queue_core import mms_from_minutes
+
+st.set_page_config(page_title="19 - Escenarios M/M/s | Laboratorio", page_icon="🧪", layout="wide")
+
 st.markdown("""
-Este módulo permite simular los modelos básicos de teoría de colas:
+<style>
+.stApp{background:#F7F9FC}.block-container{padding-top:1.1rem;max-width:1450px}
+.hero{background:linear-gradient(135deg,#12324D,#1F5A86 60%,#2D7BA8);color:white;border-radius:24px;padding:28px 32px;box-shadow:0 14px 30px rgba(23,50,77,.15)}
+.hero h1{margin:0;font-size:2.1rem}.hero p{margin:.6rem 0 0;opacity:.94;max-width:1000px}
+.card{background:#fff;border:1px solid #E3E9F0;border-radius:16px;padding:18px 20px;box-shadow:0 5px 16px rgba(31,78,120,.05)}
+.callout{background:#EEF6FB;border:1px solid #CFE0EC;border-left:6px solid #1F5A86;border-radius:14px;padding:15px 18px;margin:.5rem 0 1rem}
+div[data-testid="stMetric"]{background:#fff;border:1px solid #E1E7EE;padding:13px 15px;border-radius:14px}
+</style>
+""", unsafe_allow_html=True)
 
-- **M/M/1**: Un solo servidor.
-- **M/M/s**: Varios servidores en paralelo.
 
-Ingresa los parámetros del sistema para obtener resultados, interpretación automática y gráficos.
-""")
+def render_queue(servers, result):
+    srv = "".join([f"<div class='srv'>👤<br>Servidor {i+1}</div>" for i in range(servers)])
+    estado = "Estable" if result["estable"] else "Inestable"
+    color = "#15803D" if result["estable"] else "#B42318"
+    cola = f"Lq = {result['Lq']:.2f}" if result["estable"] else "cola creciente"
+    html=f"""
+    <html><head><style>
+    body{{margin:0;font-family:Arial,sans-serif;background:#F7F9FC}}
+    .wrap{{background:white;border:1px solid #E2E8F0;border-radius:18px;padding:18px}}
+    .row{{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}}
+    .box,.srv{{padding:14px 16px;border-radius:14px;text-align:center;font-weight:700;color:#17324D;min-width:115px}}
+    .box{{background:#F0F5FA;border:1px solid #CEDBE8}}.srv{{background:#EAF7EF;border:1px solid #C8E4D1;min-width:92px}}
+    .servers{{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}}.arrow{{font-size:24px;color:#7B8EA3}}
+    .status{{margin-top:14px;text-align:center;font-weight:700;color:{color}}}
+    </style></head><body><div class='wrap'><div class='row'>
+    <div class='box'>👥 Llegadas<br><small>λ={result['lambda']:.1f}/h</small></div><div class='arrow'>→</div>
+    <div class='box'>🧍🧍 Cola<br><small>{cola}</small></div><div class='arrow'>→</div><div class='servers'>{srv}</div><div class='arrow'>→</div><div class='box'>✅ Salida</div>
+    </div><div class='status'>{estado} · utilización {result['rho']*100:.1f}%</div></div></body></html>"""
+    components.html(html, height=190, scrolling=False)
 
-modelo = st.selectbox("Selecciona el modelo:", ["M/M/1", "M/M/s"])
 
-st.markdown("---")
-st.header("🔢 Ingreso de Parámetros")
+st.markdown("""
+<div class="hero"><div style="font-size:.76rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;opacity:.82">Laboratorio aplicado · Capacidad infinita</div>
+<h1>19. Construye un escenario M/M/1 o M/M/s</h1>
+<p>Trabaja con datos que se observan en campo: cada cuánto llega un cliente, cuánto tarda la atención y cuántos servidores operan. La aplicación calcula las tasas y traduce el resultado a experiencia de servicio.</p></div>
+""", unsafe_allow_html=True)
 
-lambda_ = st.number_input("lambda - Tasa de llegada (clientes por unidad de tiempo)", min_value=0.01, step=0.1)
-mu = st.number_input("mu - Tasa de servicio por servidor", min_value=0.01, step=0.1)
-s = 1
-if modelo == "M/M/s":
-    s = st.number_input("s - Número de servidores", min_value=1, step=1)
+st.markdown("## 1. Define la operación")
+c1,c2,c3=st.columns(3)
+with c1:
+    t_llegada=st.slider("Llega 1 cliente cada... (min)",1.0,30.0,6.0,.5)
+with c2:
+    t_atencion=st.slider("Cada atención tarda... (min)",1.0,30.0,4.0,.5)
+with c3:
+    servidores=st.slider("Servidores",1,10,1)
 
-if lambda_ and mu:
-    rho = lambda_ / (s * mu)
-    st.markdown(f"**rho - Utilización del sistema:** {rho:.2f}")
+r=mms_from_minutes(t_llegada,t_atencion,servidores)
+render_queue(servidores,r)
 
-    if modelo == "M/M/1":
-        if rho >= 1:
-            st.error("⚠️ El sistema no es estable. rho debe ser menor que 1.")
-        else:
-            L = rho / (1 - rho)
-            Lq = rho**2 / (1 - rho)
-            W = 1 / (mu - lambda_)
-            Wq = lambda_ / (mu * (mu - lambda_))
-
-    elif modelo == "M/M/s":
-        def calcular_P0(lam, mu, s):
-            r = lam / mu
-            suma = sum((r**n)/math.factorial(n) for n in range(s))
-            parte2 = (r**s) / (math.factorial(s) * (1 - (r/s)))
-            return 1 / (suma + parte2)
-
-        r = lambda_ / mu
-        P0 = calcular_P0(lambda_, mu, s)
-        Lq = (P0 * (r**s) * rho) / (math.factorial(s) * ((1 - rho)**2))
-        L = Lq + r
-        Wq = Lq / lambda_
-        W = Wq + (1 / mu)
-
-    st.markdown("---")
-    st.header("📈 Resultados")
-    st.markdown(f"**L - Nº promedio en el sistema:** {L:.2f}")
-    st.caption("Cantidad esperada de clientes en el sistema (cola + atención).")
-    st.markdown(f"**Lq - Nº promedio en la cola:** {Lq:.2f}")
-    st.caption("Cantidad esperada de clientes esperando en cola.")
-    st.markdown(f"**W - Tiempo promedio en el sistema:** {W:.2f}")
-    st.caption("Tiempo total promedio que un cliente pasa en el sistema.")
-    st.markdown(f"**Wq - Tiempo promedio en cola:** {Wq:.2f}")
-    st.caption("Tiempo promedio que un cliente espera en cola antes de ser atendido.")
-
-    st.markdown("---")
-    st.header("🧠 Interpretación Automática")
-    interpretacion = f"Con una tasa de llegada de {lambda_:.2f} y una tasa de servicio de {mu:.2f}, el sistema tiene una utilizacion de {rho:.2f}, lo que significa que el servidor{'es' if modelo=='M/M/s' else ''} esta ocupado el {rho*100:.1f}% del tiempo. Se espera que haya en promedio {Lq:.2f} clientes en cola y un total de {L:.2f} en el sistema."
-    st.success(interpretacion)
-
-    st.markdown("---")
-    st.header("📊 Gráficos Interactivos")
-    col1, col2 = st.columns(2)
-    with col1:
-        fig1 = go.Figure()
-        fig1.add_trace(go.Bar(x=["L"], y=[L], name="En sistema"))
-        fig1.add_trace(go.Bar(x=["Lq"], y=[Lq], name="En cola"))
-        fig1.update_layout(title="Número Promedio de Clientes", yaxis_title="Clientes", barmode='group')
-        st.plotly_chart(fig1, use_container_width=True)
-        st.caption("Este gráfico de barras compara el número promedio de clientes en el sistema (L) y en la cola (Lq).")
-    with col2:
-        fig2 = go.Figure(data=[go.Pie(labels=["En Cola", "En Servicio"], values=[Lq, L - Lq], hole=0.4)])
-        fig2.update_layout(title="Distribución de Clientes en el Sistema")
-        st.plotly_chart(fig2, use_container_width=True)
-        st.caption("Este gráfico de pastel muestra la proporción de clientes en cola frente a los que están siendo atendidos.")
-
-    # Guardar PDF con gráficos
-    if st.button("📥 Descargar Informe en PDF"):
-        tmpfile = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(200, 10, txt="Simulacion - Modelo de Colas Simples", ln=True, align="C")
-        pdf.ln(10)
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(200, 10, txt="Parametros Ingresados", ln=True)
-        pdf.set_font("Arial", size=11)
-        pdf.multi_cell(0, 10, f"Modelo: {modelo}\nlambda = {lambda_}\nmu = {mu}\ns = {s if modelo=='M/M/s' else '1'}")
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(200, 10, txt="Resultados", ln=True)
-        pdf.set_font("Arial", size=11)
-        pdf.multi_cell(0, 10, f"rho = {rho:.2f}\nL = {L:.2f}\nLq = {Lq:.2f}\nW = {W:.2f}\nWq = {Wq:.2f}")
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(200, 10, txt="Interpretacion", ln=True)
-        pdf.set_font("Arial", size=11)
-        texto_limpio = interpretacion.encode('latin1', 'ignore').decode('latin1')
-        pdf.multi_cell(0, 10, texto_limpio)
-
-        # Guardar gráficos como imágenes temporales
-        img_path1 = os.path.join(tempfile.gettempdir(), "grafico_barras.png")
-        img_path2 = os.path.join(tempfile.gettempdir(), "grafico_pie.png")
-
-        # Gráfico de barras
-        plt.figure()
-        plt.bar(["L", "Lq"], [L, Lq], color=['skyblue', 'salmon'])
-        plt.title("Número Promedio de Clientes")
-        plt.ylabel("Clientes")
-        plt.tight_layout()
-        plt.savefig(img_path1)
-        plt.close()
-
-        # Gráfico de pastel
-        plt.figure()
-        plt.pie([Lq, L - Lq], labels=["En Cola", "En Servicio"], autopct='%1.1f%%', colors=['gold', 'lightgreen'])
-        plt.title("Distribución de Clientes en el Sistema")
-        plt.tight_layout()
-        plt.savefig(img_path2)
-        plt.close()
-
-        pdf.image(img_path1, x=10, w=180)
-        pdf.ln(5)
-        pdf.image(img_path2, x=30, w=150)
-
-        pdf.output(tmpfile.name)
-        with open(tmpfile.name, "rb") as f:
-            st.download_button("Descargar PDF", f, file_name="simulacion_colas_simples.pdf")
-        try:
-            os.remove(tmpfile.name)
-            os.remove(img_path1)
-            os.remove(img_path2)
-        except PermissionError:
-            pass
+st.markdown("## 2. Lee el sistema")
+if not r["estable"]:
+    st.error("La capacidad agregada no alcanza para absorber la demanda. En un modelo de capacidad infinita la cola tenderá a crecer sin límite.")
 else:
-    st.info("Ingresa los valores de lambda y mu para realizar el cálculo.")
+    m1,m2,m3,m4,m5=st.columns(5)
+    m1.metric("Utilización",f"{r['rho']*100:.1f}%")
+    m2.metric("Prob. de esperar",f"{r['P_espera']*100:.1f}%")
+    m3.metric("Clientes en cola",f"{r['Lq']:.2f}")
+    m4.metric("Espera Wq",f"{r['Wq']*60:.1f} min")
+    m5.metric("Tiempo total W",f"{r['W']*60:.1f} min")
+    st.markdown(f'<div class="callout"><b>Interpretación:</b> con {servidores} servidor(es), el cliente espera en promedio <b>{r["Wq"]*60:.1f} minutos</b> antes de iniciar su atención. La probabilidad de encontrar todos los servidores ocupados es aproximadamente <b>{r["P_espera"]*100:.1f}%</b>.</div>',unsafe_allow_html=True)
+
+st.markdown("## 3. ¿Qué cambia si modificas la dotación?")
+filas=[]
+for s in range(1,11):
+    rr=mms_from_minutes(t_llegada,t_atencion,s)
+    filas.append({"Servidores":s,"Utilización %":rr["rho"]*100,"Espera (min)":rr["Wq"]*60 if rr["estable"] else None,"Prob. espera %":rr["P_espera"]*100 if rr["estable"] else 100,"Estado":"Estable" if rr["estable"] else "Inestable"})
+df=pd.DataFrame(filas)
+fig=go.Figure()
+fig.add_trace(go.Scatter(x=df["Servidores"],y=df["Espera (min)"],mode="lines+markers",name="Espera promedio"))
+fig.update_layout(title="Tiempo de espera según número de servidores",xaxis_title="Servidores",yaxis_title="Espera promedio (min)",template="plotly_white",height=420)
+st.plotly_chart(fig,use_container_width=True)
+
+with st.expander("Ver tabla de escenarios"):
+    st.dataframe(df.style.format({"Utilización %":"{:.1f}","Espera (min)":"{:.1f}","Prob. espera %":"{:.1f}"}),use_container_width=True)
+
+st.markdown("## 4. Reto de destreza")
+meta=st.slider("Meta máxima de espera (min)",1.0,20.0,5.0,.5)
+candidatos=df[(df["Estado"]=="Estable") & (df["Espera (min)"]<=meta)]
+if candidatos.empty:
+    st.warning("Ninguna dotación entre 1 y 10 servidores cumple la meta. Revisa la velocidad de atención o amplía el rango de capacidad.")
+else:
+    minimo=int(candidatos.iloc[0]["Servidores"])
+    st.success(f"Para este escenario, la menor dotación que cumple una espera promedio ≤ {meta:.1f} min es {minimo} servidor(es). Cambia los datos y comprueba cómo cambia la decisión.")
+
+st.info("Este laboratorio utiliza M/M/1 cuando hay un servidor y M/M/s cuando hay varios. Ambos suponen una sola cola, capacidad de espera no limitada y servidores equivalentes.")
