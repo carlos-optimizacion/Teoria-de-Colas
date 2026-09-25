@@ -81,6 +81,34 @@ class PortalTests(TestCase):
         self.assertGreater(len(body["visual"]["recommended"]["frames"]), 1)
         self.assertTrue(body["visual"]["same_base_randomness"])
 
+    def test_unstable_end_to_end_returns_strict_json(self):
+        response = self.post_json(
+            "portal:end_to_end_api",
+            {
+                "t_llegada": 8,
+                "t_atencion": 12,
+                "current_servers": 1,
+                "max_servers": 6,
+                "cost_staff": 25,
+                "cost_wait": 15,
+                "meta_wq": 10,
+                "meta_p_wait": 0.9,
+                "visual_horizon": 60,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(b"Infinity", response.content)
+        self.assertNotIn(b"NaN", response.content)
+        body = json.loads(
+            response.content,
+            parse_constant=lambda value: self.fail(f"Constante JSON no válida: {value}"),
+        )
+        self.assertTrue(body["ok"])
+        self.assertFalse(body["actual"]["stable"])
+        self.assertIsNone(body["actual"]["wq_min"])
+        self.assertIsNone(body["rows"][0]["Wq_min"])
+        self.assertIsNone(body["rows"][0]["cost_total"])
+
     def test_validator_csv(self):
         csv_data = "interarrival_min,service_min\n5,4\n7,6\n4,5\n6,8\n8,7\n"
         upload = SimpleUploadedFile("sample.csv", csv_data.encode("utf-8"), content_type="text/csv")
