@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import interpret_dd1, interpret_mms, to_markdown
 import streamlit.components.v1 as components
 
 from queue_core import dd1_sequence, mms_from_minutes
@@ -123,6 +124,27 @@ else:
         st.success("Como el proceso termina antes o justo cuando llega la siguiente pieza, la espera no se acumula en este esquema sincronizado.")
     else:
         st.warning("El tiempo de proceso supera el intervalo entre llegadas: la espera se acumula cliente a cliente.")
+
+# EDU_INTERPRETATION_CASES
+if caso in {"🏥 Emergencias hospitalarias", "🏦 Ventanillas bancarias"}:
+    st.markdown(
+        to_markdown(
+            interpret_mms(r, s),
+            title=f"🧠 Interpretación del caso: {caso}",
+        )
+    )
+else:
+    st.markdown(
+        to_markdown(
+            interpret_dd1(
+                T,
+                S,
+                float(df["Espera (min)"].mean()),
+                float(df.iloc[-1]["Espera (min)"]),
+            ),
+            title="🧠 Interpretación del caso de producción",
+        )
+    )
 
 st.markdown("## 2. Qué debe demostrar el estudiante")
 st.markdown("""

@@ -2,6 +2,7 @@ import math
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import interpret_comparison, to_markdown
 
 from queue_core import mms_from_minutes, mmsk_from_minutes
 
@@ -76,6 +77,20 @@ fig.add_trace(go.Bar(x=df["Escenario"],y=df["Espera (min)"],name="Espera promedi
 fig.add_hline(y=meta_wq,line_dash="dash",annotation_text="Meta de espera")
 fig.update_layout(title="La comparación principal: tiempo de espera",yaxis_title="Minutos",template="plotly_white",height=410,showlegend=False)
 st.plotly_chart(fig,use_container_width=True)
+
+# EDU_INTERPRETATION_COMPARISON
+if len(df) == 2:
+    st.markdown(
+        to_markdown(
+            interpret_comparison(
+                df.iloc[0].to_dict(),
+                df.iloc[1].to_dict(),
+                meta_wq,
+                meta_bloqueo,
+            ),
+            title="🧠 Cómo comparar correctamente las dos alternativas",
+        )
+    )
 
 st.markdown("## 4. Interpreta la decisión")
 for _,row in df.iterrows():

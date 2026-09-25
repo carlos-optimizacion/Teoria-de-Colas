@@ -187,3 +187,50 @@ def to_markdown(lectura: dict, title: str = "🧠 Interpretación en lenguaje se
 **5. ¿Qué debes aprender de este escenario?**  
 {lectura['aprendizaje']}
 """
+
+
+# EDU_INTERPRETATION_COMPARISON_CORE
+def interpret_comparison(a: dict, b: dict, meta_wq: float, meta_bloqueo: float):
+    """Interpreta dos alternativas sin ocultar los indicadores técnicos."""
+    def espera_txt(row):
+        value = row.get("Espera (min)")
+        return "inestable/no finita" if value is None or not math.isfinite(float(value)) else f"{float(value):.1f} min"
+
+    nombre_a = str(a.get("Escenario", "Escenario A"))
+    nombre_b = str(b.get("Escenario", "Escenario B"))
+    cumple_a = str(a.get("Cumple meta", "No")) == "Sí"
+    cumple_b = str(b.get("Cumple meta", "No")) == "Sí"
+    bloqueo_a = float(a.get("Bloqueo %", 0.0))
+    bloqueo_b = float(b.get("Bloqueo %", 0.0))
+    servidores_a = int(a.get("Servidores", 0))
+    servidores_b = int(b.get("Servidores", 0))
+
+    que_pasa = (
+        f"{nombre_a}: espera {espera_txt(a)}, bloqueo {bloqueo_a:.1f}% y {servidores_a} servidor(es). "
+        f"{nombre_b}: espera {espera_txt(b)}, bloqueo {bloqueo_b:.1f}% y {servidores_b} servidor(es)."
+    )
+
+    if cumple_a and cumple_b:
+        operacion = (
+            "Ambas alternativas cumplen simultáneamente las metas definidas. La elección final debe incorporar "
+            "capacidad requerida, costo, restricciones físicas y sensibilidad ante aumentos de demanda."
+        )
+    elif cumple_a or cumple_b:
+        nombre = nombre_a if cumple_a else nombre_b
+        operacion = (
+            f"Solo {nombre} cumple simultáneamente la meta de espera ≤ {meta_wq:.1f} min y bloqueo ≤ {meta_bloqueo:.1f}%. "
+            "La diferencia debe atribuirse a su combinación de capacidad de servicio y, cuando corresponda, capacidad física."
+        )
+    else:
+        operacion = (
+            "Ninguna alternativa cumple simultáneamente las metas. Antes de escoger entre ellas conviene rediseñar capacidad, "
+            "velocidad de atención o límite físico y volver a comparar."
+        )
+
+    return _base(
+        que_pasa,
+        "Comparar modelos no consiste solo en buscar el menor Wq. Una alternativa puede reducir espera a costa de más servidores, o reducir bloqueo permitiendo más capacidad física. Por eso deben leerse juntas espera, bloqueo, utilización y recursos.",
+        operacion,
+        "Modifica una variable a la vez y observa qué indicador responde: s cambia capacidad de servicio; K cambia capacidad física; μ cambia velocidad de atención; λ representa presión de demanda.",
+        "Una comparación válida explica qué cambia entre escenarios y por qué cambia el resultado; no se limita a señalar cuál número es menor.",
+    )
