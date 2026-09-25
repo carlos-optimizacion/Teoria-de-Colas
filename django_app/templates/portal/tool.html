@@ -2,8 +2,7 @@
 {% block title %}{{ title }} | Decision Lab{% endblock %}
 {% block header %}{{ title }}{% endblock %}
 {% block content %}
-{% if tool_key == 'endtoend' %}<link rel="stylesheet" href="{% static 'css/simulation-player.css' %}">{% endif %}
-<section class="model-hero"><div><span class="eyebrow">DECISIÓN CUANTITATIVA</span><h1>{{ title }}</h1><p>{% if tool_key == 'comparator' %}Contrasta dos configuraciones con una lectura homogénea de servicio y congestión.{% elif tool_key == 'economics' %}Equilibra costo de capacidad y costo de espera para identificar alternativas económicamente viables.{% elif tool_key == 'sizing' %}Encuentra la menor dotación que cumple metas de espera, probabilidad y SLA.{% else %}Convierte datos operativos en diagnóstico, capacidad recomendada, costo y una simulación visual sincronizada del flujo de clientes.{% endif %}</p></div><div class="formula-card"><span>Flujo</span><b>{% if tool_key == 'endtoend' %}Datos → modelo → simulación → decisión{% else %}Datos → escenarios → decisión{% endif %}</b><small>Resultados trazables al motor compartido.</small></div></section>
+<section class="model-hero"><div><span class="eyebrow">DECISIÓN CUANTITATIVA</span><h1>{{ title }}</h1><p>{% if tool_key == 'comparator' %}Contrasta dos configuraciones con una lectura homogénea de servicio y congestión.{% elif tool_key == 'economics' %}Equilibra costo de capacidad y costo de espera para identificar alternativas económicamente viables.{% elif tool_key == 'sizing' %}Encuentra la menor dotación que cumple metas de espera, probabilidad y SLA.{% else %}Integra datos operativos, capacidad, servicio, costo y sensibilidad para construir una lectura completa del sistema.{% endif %}</p></div><div class="formula-card"><span>Flujo</span><b>Datos → escenarios → decisión</b><small>Resultados trazables al motor compartido.</small></div></section>
 <section class="panel controls-panel"><div class="panel-title"><span>01</span><div><b>Parámetros</b><small>Modifica y vuelve a calcular sin recargar la página.</small></div></div>
 <form id="tool-form" data-tool="{{ tool_key }}">{% csrf_token %}
 {% if tool_key == 'comparator' %}
@@ -13,34 +12,10 @@
 {% elif tool_key == 'sizing' %}
 <div class="form-grid"><label>Interarribo (min)<input id="t-llegada" type="number" value="8" step="0.1"></label><label>Servicio (min)<input id="t-atencion" type="number" value="12" step="0.1"></label><label>Máx. servidores<input id="max-servers" type="number" value="20" min="1"></label><label>Meta Wq (min)<input id="meta-wq" type="number" value="10" min="0"></label><label>Máx. P(espera)<input id="meta-p-wait" type="number" value="0.80" min="0" max="1" step="0.01"></label><label>SLA: umbral (min)<input id="sla-threshold" type="number" value="10" min="0"></label><label>SLA: objetivo<input id="sla-target" type="number" value="0.90" min="0" max="1" step="0.01"></label></div>
 {% else %}
-<div class="form-grid"><label>Interarribo (min)<input id="t-llegada" type="number" value="8" step="0.1"></label><label>Servicio (min)<input id="t-atencion" type="number" value="12" step="0.1"></label><label>Servidores actuales<input id="current-servers" type="number" value="2" min="1"></label><label>Máx. servidores<input id="max-servers" type="number" value="12" min="1"></label><label>Costo servidor S//h<input id="cost-staff" type="number" value="25" min="0"></label><label>Costo espera S//cliente-h<input id="cost-wait" type="number" value="15" min="0"></label><label>Meta Wq (min)<input id="meta-wq" type="number" value="10" min="0"></label><label>Máx. P(espera)<input id="meta-p-wait" type="number" value="0.80" min="0" max="1" step="0.01"></label><label>Horizonte simulación visual (min)<input id="visual-horizon" type="number" value="60" min="15" max="240" step="15"></label></div>
+<div class="form-grid"><label>Interarribo (min)<input id="t-llegada" type="number" value="8" step="0.1"></label><label>Servicio (min)<input id="t-atencion" type="number" value="12" step="0.1"></label><label>Servidores actuales<input id="current-servers" type="number" value="2" min="1"></label><label>Máx. servidores<input id="max-servers" type="number" value="12" min="1"></label><label>Costo servidor S//h<input id="cost-staff" type="number" value="25" min="0"></label><label>Costo espera S//cliente-h<input id="cost-wait" type="number" value="15" min="0"></label><label>Meta Wq (min)<input id="meta-wq" type="number" value="10" min="0"></label><label>Máx. P(espera)<input id="meta-p-wait" type="number" value="0.80" min="0" max="1" step="0.01"></label></div>
 {% endif %}
 <button class="btn primary" type="submit">Analizar</button></form></section>
 <section class="panel"><div class="panel-title"><span>02</span><div><b>Resultado principal</b><small id="result-subtitle">Ejecuta el análisis para construir los escenarios.</small></div></div><div id="tool-alert"></div><div id="recommendation" class="recommendation"></div><div id="tool-chart" class="chart wide"></div><div id="tool-table" class="table-wrap"></div></section>
 <section class="panel" id="tool-interpret-panel" hidden><div class="panel-title"><span>03</span><div><b>Interpretación</b><small>Lectura operativa del escenario seleccionado.</small></div></div><div id="tool-interpretation" class="interpret-grid"></div></section>
-{% if tool_key == 'endtoend' %}
-<section class="panel visual-simulation-panel" id="visual-simulation-panel" hidden>
-  <div class="panel-title"><span>04</span><div><b>Simulación visual del sistema</b><small>Reproduce el escenario actual y la alternativa recomendada sobre la misma secuencia base de llegadas y servicios.</small></div></div>
-  <div class="sim-toolbar">
-    <div class="sim-view-switch" role="group" aria-label="Escenario visible">
-      <button type="button" class="sim-chip" data-view="current">Actual</button>
-      <button type="button" class="sim-chip" data-view="recommended">Recomendado</button>
-      <button type="button" class="sim-chip active" data-view="compare">Comparar ambos</button>
-    </div>
-    <div class="sim-player-controls">
-      <button type="button" class="sim-control" id="sim-restart">↺ Reiniciar</button>
-      <button type="button" class="sim-control primary" id="sim-play">▶ Iniciar</button>
-      <label class="speed-label">Velocidad<select id="sim-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="5">5×</option><option value="10">10×</option></select></label>
-    </div>
-  </div>
-  <div class="sim-time-row"><strong id="sim-clock">00:00 / 60:00</strong><div class="sim-progress"><span id="sim-progress-bar"></span></div><small>1× = 1 minuto simulado por segundo real</small></div>
-  <div class="sim-comparison" id="sim-comparison">
-    <article class="sim-board" id="sim-board-current" data-scenario="current"></article>
-    <article class="sim-board" id="sim-board-recommended" data-scenario="recommended"></article>
-  </div>
-  <div class="sim-summary-grid" id="sim-summary-grid"></div>
-  <div class="notice" id="sim-note"></div>
-</section>
-{% endif %}
 {% endblock %}
-{% block scripts %}<script src="{% static 'js/tools.js' %}"></script>{% if tool_key == 'endtoend' %}<script src="{% static 'js/endtoend-player.js' %}"></script>{% endif %}{% endblock %}
+{% block scripts %}<script src="{% static 'js/tools.js' %}"></script>{% endblock %}
