@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import marginal_mms_markdown
 from interpretation_core import interpret_economic, interpret_mms, to_markdown
 from fpdf import FPDF
 
@@ -275,6 +276,16 @@ st.markdown(
     to_markdown(
         interpret_mms(actual, r["operadores_actuales"]),
         title="🧠 Cómo leer la situación actual",
+    )
+)
+
+# EDU_MARGINAL_MMS_25
+st.markdown(
+    marginal_mms_markdown(
+        r["t_llegada"],
+        r["t_atencion"],
+        int(r["operadores_actuales"]),
+        title="🔬 Sensibilidad inmediata de la capacidad actual",
     )
 )
 

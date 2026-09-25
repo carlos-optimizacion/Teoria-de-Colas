@@ -39,7 +39,7 @@ def patch_core() -> None:
     start = text.index("def to_markdown(")
     end = text.index("# EDU_INTERPRETATION_COMPARISON_CORE")
 
-    visual_function = '''def to_markdown(lectura: dict, title: str = "🧠 Interpretación en lenguaje sencillo") -> str:
+    visual_function = r'''def to_markdown(lectura: dict, title: str = "🧠 Interpretación en lenguaje sencillo") -> str:
     """Convierte una interpretación en bloques Markdown visuales y homogéneos."""
     return f"""
 ### {title}

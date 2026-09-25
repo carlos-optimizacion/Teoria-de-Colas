@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import marginal_mms_markdown
 from interpretation_core import interpret_mms, to_markdown
 
 from queue_core import mms_from_minutes
@@ -63,6 +64,9 @@ else:
 
 # EDU_INTERPRETATION_DIMENSIONING
 st.markdown(to_markdown(interpret_mms(r_actual, int(actual)), title="🧠 Interpretación de la dotación actual"))
+
+# EDU_MARGINAL_MMS_23
+st.markdown(marginal_mms_markdown(t_llegada, t_atencion, int(actual), title="🔬 Sensibilidad de la dotación actual"))
 
 st.markdown("## 3. Curva de servicio")
 fig=go.Figure()

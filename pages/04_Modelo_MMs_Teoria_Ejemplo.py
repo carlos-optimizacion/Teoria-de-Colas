@@ -2,6 +2,7 @@ import math
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import marginal_mms_markdown
 from interpretation_core import interpret_mms, to_markdown
 import streamlit.components.v1 as components
 
@@ -419,6 +420,9 @@ st.caption("El gráfico muestra el efecto marginal de agregar servidores. Despu�
 
 # EDU_INTERPRETATION_MMS
 st.markdown(to_markdown(interpret_mms(r_lab, servidores)))
+
+# EDU_MARGINAL_MMS_04
+st.markdown(marginal_mms_markdown(t_llegada, t_atencion, servidores))
 
 st.markdown("## 6. Reto de destreza: encuentra la dotación")
 st.markdown(

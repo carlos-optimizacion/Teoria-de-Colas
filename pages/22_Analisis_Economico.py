@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import marginal_mms_markdown
 from interpretation_core import interpret_economic, to_markdown
 
 from queue_core import economic_cost, mms_from_minutes
@@ -87,6 +88,17 @@ if not cumple.empty:
                 float(recomendado["Espera (min)"]),
             ),
             title="🧠 ¿Por qué esta alternativa resulta conveniente?",
+        )
+    )
+
+# EDU_MARGINAL_MMS_22
+if not cumple.empty:
+    st.markdown(
+        marginal_mms_markdown(
+            t_llegada,
+            t_atencion,
+            int(recomendado["Operadores"]),
+            title="🔬 Sensibilidad alrededor de la alternativa económica",
         )
     )
 

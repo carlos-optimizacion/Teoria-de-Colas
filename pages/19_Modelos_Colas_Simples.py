@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import marginal_mms_markdown
 from interpretation_core import interpret_mm1, interpret_mms, to_markdown
 import streamlit.components.v1 as components
 
@@ -74,6 +75,9 @@ else:
 # EDU_INTERPRETATION_SIMPLE_APPLIED
 lectura_simple = interpret_mm1(r) if servidores == 1 else interpret_mms(r, servidores)
 st.markdown(to_markdown(lectura_simple, title="🧠 Interpretación completa del escenario"))
+
+# EDU_MARGINAL_MMS_19
+st.markdown(marginal_mms_markdown(t_llegada, t_atencion, servidores, title="🔬 Efecto marginal de cambiar la dotación"))
 
 st.markdown("## 3. ¿Qué cambia si modificas la dotación?")
 filas=[]
