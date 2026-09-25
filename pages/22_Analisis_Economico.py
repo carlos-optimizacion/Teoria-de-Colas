@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import interpret_economic, to_markdown
 
 from queue_core import economic_cost, mms_from_minutes
 
@@ -73,6 +74,21 @@ else:
     m3.metric("Utilización",f"{recomendado['Utilización %']:.1f}%")
     m4.metric("Costo total",f"S/ {recomendado['Costo total']:.2f}/h")
     st.markdown(f'<div class="ok"><b>Criterio usado:</b> entre las alternativas que cumplen una espera ≤ {meta_wq:.1f} min, se selecciona la de menor costo total estimado por hora. Con tus supuestos, corresponde a <b>{int(recomendado["Operadores"])} operadores</b>.</div>',unsafe_allow_html=True)
+
+# EDU_INTERPRETATION_ECONOMIC
+if not cumple.empty:
+    st.markdown(
+        to_markdown(
+            interpret_economic(
+                float(recomendado["Costo personal"]),
+                float(recomendado["Costo espera"]),
+                float(recomendado["Costo total"]),
+                int(recomendado["Operadores"]),
+                float(recomendado["Espera (min)"]),
+            ),
+            title="🧠 ¿Por qué esta alternativa resulta conveniente?",
+        )
+    )
 
 with st.expander("Ver tabla económica completa"):
     st.dataframe(df.style.format({"Utilización %":"{:.1f}","Espera (min)":"{:.1f}","Costo personal":"S/ {:.2f}","Costo espera":"S/ {:.2f}","Costo total":"S/ {:.2f}"},na_rep="—"),use_container_width=True)

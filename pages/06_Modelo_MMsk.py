@@ -2,6 +2,7 @@ import math
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import interpret_mmsk, to_markdown
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="06 - M/M/s/K | Laboratorio", page_icon="🎓", layout="wide")
@@ -160,6 +161,11 @@ m4.metric("Wq",f"{r['Wq']*60:.1f} min")
 m5.metric("Aceptados",f"{r['lambda_eff']:.2f}/h")
 st.plotly_chart(grafico_capacidad(tl,ta,s,s,min(20,max(s+6,K+3))),use_container_width=True)
 st.caption("Aumentar K suele reducir el rechazo, pero permite que más clientes permanezcan esperando. El mejor tamaño depende del nivel de servicio y del costo de perder clientes.")
+
+# EDU_INTERPRETATION_MMSK
+r_interpretacion = dict(r)
+r_interpretacion.setdefault("lambda_efectiva", r.get("lambda_eff", r.get("lambda", 0.0)))
+st.markdown(to_markdown(interpret_mmsk(r_interpretacion)))
 
 st.markdown("## 6. Reto de destreza")
 st.markdown('<div class="skill"><b>Reto:</b> con llegadas cada 6 min, atención de 8 min y 2 servidores, ajusta K hasta conseguir una probabilidad de bloqueo menor o igual al 5 %.</div>',unsafe_allow_html=True)

@@ -2,6 +2,7 @@ import math
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import interpret_mms, to_markdown
 import streamlit.components.v1 as components
 
 st.set_page_config(
@@ -415,6 +416,9 @@ else:
 
 st.plotly_chart(grafico_operadores(t_llegada, t_atencion, max_s=10, actual=servidores), use_container_width=True)
 st.caption("El gráfico muestra el efecto marginal de agregar servidores. Después de cierto punto, cada servidor adicional genera una reducción cada vez menor de la espera.")
+
+# EDU_INTERPRETATION_MMS
+st.markdown(to_markdown(interpret_mms(r_lab, servidores)))
 
 st.markdown("## 6. Reto de destreza: encuentra la dotación")
 st.markdown(

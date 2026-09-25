@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import interpret_erlang_b, to_markdown
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="12 - M/M/c/c | Laboratorio", page_icon="🎓", layout="wide")
@@ -90,6 +91,9 @@ r=calcular(tl,ta,cs);render(r,'Tu escenario interactivo')
 m1,m2,m3,m4=st.columns(4);m1.metric('Carga A',f"{r['A']:.2f}");m2.metric('Bloqueo',f"{r['B']*100:.2f}%");m3.metric('Aceptados',f"{r['lambda_eff']:.2f}/h");m4.metric('Ocupación',f"{r['ocupacion']*100:.1f}%")
 st.plotly_chart(chart(tl,ta,15),use_container_width=True)
 st.caption('Cada servidor adicional reduce el bloqueo, pero el beneficio marginal disminuye. El objetivo es encontrar la capacidad necesaria para el nivel de pérdida permitido.')
+
+# EDU_INTERPRETATION_ERLANG_B
+st.markdown(to_markdown(interpret_erlang_b(r, cs), title="🧠 Interpretación de tu sistema sin cola"))
 
 st.markdown('## 6. Reto de destreza')
 st.markdown('<div class="skill"><b>Reto:</b> llegan solicitudes cada 5 min y cada servicio dura 15 min. Encuentra el menor número de servidores que logra un bloqueo de 5 % o menos.</div>',unsafe_allow_html=True)

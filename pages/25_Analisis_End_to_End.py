@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import interpret_economic, interpret_mms, to_markdown
 from fpdf import FPDF
 
 from queue_core import economic_cost, mms_from_minutes, recommend_mms_capacity
@@ -269,6 +270,14 @@ else:
     a2.metric("Utilización requerida", f"{actual['rho']*100:.1f}%")
     a3.metric("Estado", "Inestable")
 
+# EDU_INTERPRETATION_END_TO_END_CURRENT
+st.markdown(
+    to_markdown(
+        interpret_mms(actual, r["operadores_actuales"]),
+        title="🧠 Cómo leer la situación actual",
+    )
+)
+
 st.markdown("### 2. Curva de espera según capacidad")
 plot_df = df[df["Estado"] == "Estable"].copy()
 if not plot_df.empty:
@@ -326,6 +335,28 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+# EDU_INTERPRETATION_END_TO_END_RECOMMENDED
+r_recomendado = mms_from_minutes(r["t_llegada"], r["t_atencion"], int(rec["servers"]))
+st.markdown(
+    to_markdown(
+        interpret_mms(r_recomendado, int(rec["servers"])),
+        title="🧠 Qué cambia con la configuración seleccionada",
+    )
+)
+if math.isfinite(rec["cost_total"]):
+    st.markdown(
+        to_markdown(
+            interpret_economic(
+                rec["cost_staff"],
+                rec["cost_wait"],
+                rec["cost_total"],
+                int(rec["servers"]),
+                rec["Wq_min"],
+            ),
+            title="💰 Cómo interpretar el resultado económico",
+        )
+    )
 
 with st.expander("Ver todas las alternativas"):
     st.dataframe(
