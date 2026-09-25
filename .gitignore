@@ -11,6 +11,10 @@ htmlcov/
 venv/
 env/
 
+# Django local artifacts
+django_app/db.sqlite3
+django_app/staticfiles/
+
 # Editors / OS
 .vscode/
 .idea/
