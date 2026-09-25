@@ -22,6 +22,7 @@ urlpatterns = [
     path("aplicar/dimensionamiento/", views.sizing, name="sizing"),
     path("analizar/validador/", views.validator, name="validator"),
     path("analizar/end-to-end/", views.end_to_end, name="endtoend"),
+    path("simular/colas/", views.simulator, name="simulator"),
     path("api/model/", views.model_api, name="model_api"),
     path("api/queue/", views.queue_api, name="queue_api"),
     path("api/compare/", views.compare_api, name="compare_api"),
@@ -29,4 +30,5 @@ urlpatterns = [
     path("api/sizing/", views.sizing_api, name="sizing_api"),
     path("api/validator/", views.validator_api, name="validator_api"),
     path("api/end-to-end/", views.end_to_end_api, name="end_to_end_api"),
+    path("api/simulator/", views.simulator_api, name="simulator_api"),
 ]
