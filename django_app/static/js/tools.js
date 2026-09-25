@@ -1,11 +1,139 @@
-const form=document.getElementById('tool-form');const tool=form.dataset.tool;const $=id=>document.getElementById(id);const n=id=>+$(id).value;const pct=x=>x==null?'—':`${(x*100).toFixed(1)}%`;const num=(x,d=2)=>x==null||!Number.isFinite(Number(x))?'—':Number(x).toFixed(d);function csrf(){return document.cookie.split('; ').find(r=>r.startsWith('csrftoken='))?.split('=')[1]||'';}function cards(i){if(!i)return '';return [['🔎','Qué está pasando',i.que_pasa],['🧩','Por qué ocurre',i.por_que],['🏭','Implicación operativa',i.operacion],['🔧','Qué cambiar',i.accion],['🎓','Aprendizaje',i.aprendizaje]].map(c=>`<article><span>${c[0]}</span><div><b>${c[1]}</b><p>${c[2]}</p></div></article>`).join('');}
-function scenario(prefix){return {model:$(`${prefix}-model`).value,t_llegada:n(`${prefix}-arrival`),t_atencion:n(`${prefix}-service`),servers:n(`${prefix}-servers`),capacity:n(`${prefix}-capacity`),cv:1};}
-function payload(){if(tool==='comparator')return {a:scenario('a'),b:scenario('b'),meta_wq:n('meta-wq'),meta_block:n('meta-block')};if(tool==='economics')return {t_llegada:n('t-llegada'),t_atencion:n('t-atencion'),max_servers:n('max-servers'),cost_staff:n('cost-staff'),cost_wait:n('cost-wait'),meta_wq:n('meta-wq')};if(tool==='sizing')return {t_llegada:n('t-llegada'),t_atencion:n('t-atencion'),max_servers:n('max-servers'),meta_wq:n('meta-wq'),meta_p_wait:n('meta-p-wait'),sla_threshold:n('sla-threshold'),sla_target:n('sla-target')};return {t_llegada:n('t-llegada'),t_atencion:n('t-atencion'),current_servers:n('current-servers'),max_servers:n('max-servers'),cost_staff:n('cost-staff'),cost_wait:n('cost-wait'),meta_wq:n('meta-wq'),meta_p_wait:n('meta-p-wait')};}
-function endpoint(){return {comparator:'/api/compare/',economics:'/api/economic/',sizing:'/api/sizing/',endtoend:'/api/end-to-end/'}[tool];}
-function table(rows,extraSla=false){if(!rows)return '';return `<table class="data-table"><thead><tr><th>s</th><th>Estado</th><th>ρ</th><th>Wq min</th><th>P(espera)</th>${extraSla?'<th>SLA</th>':''}<th>Costo total</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.meets_all||r.meets_service?'row-ok':''}"><td>${r.servers}</td><td>${r.stable?'Estable':'Inestable'}</td><td>${pct(r.rho)}</td><td>${num(r.Wq_min)}</td><td>${pct(r.p_wait)}</td>${extraSla?`<td>${pct(r.service_level)}</td>`:''}<td>${Number.isFinite(r.cost_total)?`S/ ${num(r.cost_total)}`:'—'}</td></tr>`).join('')}</tbody></table>`;}
-async function run(e){if(e)e.preventDefault();$('tool-alert').innerHTML='<div class="notice">Procesando escenarios…</div>';try{const r=await fetch(endpoint(),{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify(payload())});const d=await r.json();if(!d.ok)throw new Error(d.error||'Error');render(d);}catch(err){$('tool-alert').innerHTML=`<div class="notice danger">${err.message}</div>`;}}
-function render(d){$('tool-alert').innerHTML='<div class="notice success">Análisis actualizado.</div>';if(tool==='comparator'){const A=d.a.analytic,B=d.b.analytic;$('recommendation').innerHTML=`<div class="recommend-card"><b>Lectura comparativa</b><span>A: Wq ${num(A.wq_min)} min · bloqueo ${pct(A.p_block)}</span><span>B: Wq ${num(B.wq_min)} min · bloqueo ${pct(B.p_block)}</span></div>`;Plotly.react('tool-chart',[{x:['A','B'],y:[A.wq_min||0,B.wq_min||0],name:'Wq',type:'bar'},{x:['A','B'],y:[(A.p_block||0)*100,(B.p_block||0)*100],name:'Bloqueo %',type:'bar'}],{barmode:'group',title:'Servicio y bloqueo por alternativa',paper_bgcolor:'transparent',plot_bgcolor:'transparent'},{responsive:true});$('tool-table').innerHTML=`<table class="data-table"><thead><tr><th>Escenario</th><th>Modelo</th><th>ρ</th><th>Wq</th><th>P espera</th><th>Bloqueo</th><th>λ efectiva</th></tr></thead><tbody><tr><td>A</td><td>${d.a.meta.name}</td><td>${pct(A.rho)}</td><td>${num(A.wq_min)}</td><td>${pct(A.p_wait)}</td><td>${pct(A.p_block)}</td><td>${num(A.effective_rate)}</td></tr><tr><td>B</td><td>${d.b.meta.name}</td><td>${pct(B.rho)}</td><td>${num(B.wq_min)}</td><td>${pct(B.p_wait)}</td><td>${pct(B.p_block)}</td><td>${num(B.effective_rate)}</td></tr></tbody></table>`;$('tool-interpret-panel').hidden=true;return;}
-if(tool==='economics'){const r=d.recommended;$('recommendation').innerHTML=`<div class="recommend-card"><b>Alternativa económica seleccionada</b><span>${r.servers} servidor(es) · Wq ${num(r.Wq_min)} min · costo S/ ${num(r.cost_total)}/h</span></div>`;$('tool-table').innerHTML=table(d.rows);Plotly.react('tool-chart',[{x:d.rows.map(r=>r.servers),y:d.rows.map(r=>Number.isFinite(r.cost_total)?r.cost_total:null),name:'Costo total',mode:'lines+markers'},{x:d.rows.map(r=>r.servers),y:d.rows.map(r=>Number.isFinite(r.cost_wait)?r.cost_wait:null),name:'Costo espera',mode:'lines+markers'}],{title:'Curva económica por dotación',xaxis:{title:'Servidores'},yaxis:{title:'S/ por hora'},paper_bgcolor:'transparent',plot_bgcolor:'transparent'},{responsive:true});$('tool-interpret-panel').hidden=false;$('tool-interpretation').innerHTML=cards(d.interpretation);return;}
-if(tool==='sizing'){const r=d.recommended;$('recommendation').innerHTML=r?`<div class="recommend-card"><b>Dotación mínima que cumple todas las metas</b><span>${r.servers} servidor(es) · Wq ${num(r.Wq_min)} min · SLA ${pct(r.service_level)}</span></div>`:'<div class="notice danger">Ninguna dotación evaluada cumple simultáneamente todas las metas.</div>';$('tool-table').innerHTML=table(d.rows,true);Plotly.react('tool-chart',[{x:d.rows.map(r=>r.servers),y:d.rows.map(r=>r.Wq_min),name:'Wq (min)',mode:'lines+markers'},{x:d.rows.map(r=>r.servers),y:d.rows.map(r=>r.service_level*100),name:'SLA %',mode:'lines+markers',yaxis:'y2'}],{title:'Capacidad vs servicio',xaxis:{title:'Servidores'},yaxis:{title:'Wq min'},yaxis2:{title:'SLA %',overlaying:'y',side:'right'},paper_bgcolor:'transparent',plot_bgcolor:'transparent'},{responsive:true});$('tool-interpret-panel').hidden=true;return;}
-const r=d.recommended,a=d.actual;$('recommendation').innerHTML=`<div class="recommend-card"><b>Situación actual → alternativa recomendada</b><span>${a.servers} servidor(es), Wq ${num(a.wq_min)} min → ${r.servers} servidor(es), Wq ${num(r.Wq_min)} min</span><span>Costo recomendado: S/ ${num(r.cost_total)}/h</span></div>`;$('tool-table').innerHTML=table(d.rows);Plotly.react('tool-chart',[{x:d.rows.map(r=>r.servers),y:d.rows.map(r=>r.Wq_min),name:'Wq',mode:'lines+markers'},{x:d.rows.map(r=>r.servers),y:d.rows.map(r=>Number.isFinite(r.cost_total)?r.cost_total:null),name:'Costo total',mode:'lines+markers',yaxis:'y2'}],{title:'Servicio y costo por capacidad',xaxis:{title:'Servidores'},yaxis:{title:'Wq min'},yaxis2:{title:'S/ por hora',overlaying:'y',side:'right'},paper_bgcolor:'transparent',plot_bgcolor:'transparent'},{responsive:true});$('tool-interpret-panel').hidden=false;$('tool-interpretation').innerHTML=cards(d.recommended_interpretation)+cards(d.economic_interpretation);}
-form.addEventListener('submit',run);window.addEventListener('DOMContentLoaded',run);
+const form = document.getElementById('tool-form');
+const tool = form.dataset.tool;
+const $ = id => document.getElementById(id);
+const n = id => +$(id).value;
+const pct = x => x == null ? '—' : `${(x * 100).toFixed(1)}%`;
+const num = (x, d = 2) => x == null || !Number.isFinite(Number(x)) ? '—' : Number(x).toFixed(d);
+
+function csrf() {
+  return document.cookie.split('; ').find(r => r.startsWith('csrftoken='))?.split('=')[1] || '';
+}
+
+function cards(i) {
+  if (!i) return '';
+  return [
+    ['🔎', 'Qué está pasando', i.que_pasa],
+    ['🧩', 'Por qué ocurre', i.por_que],
+    ['🏭', 'Implicación operativa', i.operacion],
+    ['🔧', 'Qué cambiar', i.accion],
+    ['🎓', 'Aprendizaje', i.aprendizaje],
+  ].map(c => `<article><span>${c[0]}</span><div><b>${c[1]}</b><p>${c[2]}</p></div></article>`).join('');
+}
+
+function scenario(prefix) {
+  return {
+    model: $(`${prefix}-model`).value,
+    t_llegada: n(`${prefix}-arrival`),
+    t_atencion: n(`${prefix}-service`),
+    servers: n(`${prefix}-servers`),
+    capacity: n(`${prefix}-capacity`),
+    cv: 1,
+  };
+}
+
+function payload() {
+  if (tool === 'comparator') {
+    return {a: scenario('a'), b: scenario('b'), meta_wq: n('meta-wq'), meta_block: n('meta-block')};
+  }
+  if (tool === 'economics') {
+    return {t_llegada: n('t-llegada'), t_atencion: n('t-atencion'), max_servers: n('max-servers'), cost_staff: n('cost-staff'), cost_wait: n('cost-wait'), meta_wq: n('meta-wq')};
+  }
+  if (tool === 'sizing') {
+    return {t_llegada: n('t-llegada'), t_atencion: n('t-atencion'), max_servers: n('max-servers'), meta_wq: n('meta-wq'), meta_p_wait: n('meta-p-wait'), sla_threshold: n('sla-threshold'), sla_target: n('sla-target')};
+  }
+  return {
+    t_llegada: n('t-llegada'),
+    t_atencion: n('t-atencion'),
+    current_servers: n('current-servers'),
+    max_servers: n('max-servers'),
+    cost_staff: n('cost-staff'),
+    cost_wait: n('cost-wait'),
+    meta_wq: n('meta-wq'),
+    meta_p_wait: n('meta-p-wait'),
+    visual_horizon: n('visual-horizon'),
+  };
+}
+
+function endpoint() {
+  return {comparator: '/api/compare/', economics: '/api/economic/', sizing: '/api/sizing/', endtoend: '/api/end-to-end/'}[tool];
+}
+
+function table(rows, extraSla = false) {
+  if (!rows) return '';
+  return `<table class="data-table"><thead><tr><th>s</th><th>Estado</th><th>ρ</th><th>Wq min</th><th>P(espera)</th>${extraSla ? '<th>SLA</th>' : ''}<th>Costo total</th></tr></thead><tbody>${rows.map(r => `<tr class="${r.meets_all || r.meets_service ? 'row-ok' : ''}"><td>${r.servers}</td><td>${r.stable ? 'Estable' : 'Inestable'}</td><td>${pct(r.rho)}</td><td>${num(r.Wq_min)}</td><td>${pct(r.p_wait)}</td>${extraSla ? `<td>${pct(r.service_level)}</td>` : ''}<td>${Number.isFinite(r.cost_total) ? `S/ ${num(r.cost_total)}` : '—'}</td></tr>`).join('')}</tbody></table>`;
+}
+
+async function run(e) {
+  if (e) e.preventDefault();
+  $('tool-alert').innerHTML = '<div class="notice">Procesando escenarios…</div>';
+  try {
+    const r = await fetch(endpoint(), {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf()},
+      body: JSON.stringify(payload()),
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Error');
+    render(d);
+  } catch (err) {
+    $('tool-alert').innerHTML = `<div class="notice danger">${err.message}</div>`;
+  }
+}
+
+function render(d) {
+  $('tool-alert').innerHTML = '<div class="notice success">Análisis actualizado.</div>';
+
+  if (tool === 'comparator') {
+    const A = d.a.analytic, B = d.b.analytic;
+    $('recommendation').innerHTML = `<div class="recommend-card"><b>Lectura comparativa</b><span>A: Wq ${num(A.wq_min)} min · bloqueo ${pct(A.p_block)}</span><span>B: Wq ${num(B.wq_min)} min · bloqueo ${pct(B.p_block)}</span></div>`;
+    Plotly.react('tool-chart', [
+      {x: ['A', 'B'], y: [A.wq_min || 0, B.wq_min || 0], name: 'Wq', type: 'bar'},
+      {x: ['A', 'B'], y: [(A.p_block || 0) * 100, (B.p_block || 0) * 100], name: 'Bloqueo %', type: 'bar'},
+    ], {barmode: 'group', title: 'Servicio y bloqueo por alternativa', paper_bgcolor: 'transparent', plot_bgcolor: 'transparent'}, {responsive: true});
+    $('tool-table').innerHTML = `<table class="data-table"><thead><tr><th>Escenario</th><th>Modelo</th><th>ρ</th><th>Wq</th><th>P espera</th><th>Bloqueo</th><th>λ efectiva</th></tr></thead><tbody><tr><td>A</td><td>${d.a.meta.name}</td><td>${pct(A.rho)}</td><td>${num(A.wq_min)}</td><td>${pct(A.p_wait)}</td><td>${pct(A.p_block)}</td><td>${num(A.effective_rate)}</td></tr><tr><td>B</td><td>${d.b.meta.name}</td><td>${pct(B.rho)}</td><td>${num(B.wq_min)}</td><td>${pct(B.p_wait)}</td><td>${pct(B.p_block)}</td><td>${num(B.effective_rate)}</td></tr></tbody></table>`;
+    $('tool-interpret-panel').hidden = true;
+    return;
+  }
+
+  if (tool === 'economics') {
+    const r = d.recommended;
+    $('recommendation').innerHTML = `<div class="recommend-card"><b>Alternativa económica seleccionada</b><span>${r.servers} servidor(es) · Wq ${num(r.Wq_min)} min · costo S/ ${num(r.cost_total)}/h</span></div>`;
+    $('tool-table').innerHTML = table(d.rows);
+    Plotly.react('tool-chart', [
+      {x: d.rows.map(r => r.servers), y: d.rows.map(r => Number.isFinite(r.cost_total) ? r.cost_total : null), name: 'Costo total', mode: 'lines+markers'},
+      {x: d.rows.map(r => r.servers), y: d.rows.map(r => Number.isFinite(r.cost_wait) ? r.cost_wait : null), name: 'Costo espera', mode: 'lines+markers'},
+    ], {title: 'Curva económica por dotación', xaxis: {title: 'Servidores'}, yaxis: {title: 'S/ por hora'}, paper_bgcolor: 'transparent', plot_bgcolor: 'transparent'}, {responsive: true});
+    $('tool-interpret-panel').hidden = false;
+    $('tool-interpretation').innerHTML = cards(d.interpretation);
+    return;
+  }
+
+  if (tool === 'sizing') {
+    const r = d.recommended;
+    $('recommendation').innerHTML = r ? `<div class="recommend-card"><b>Dotación mínima que cumple todas las metas</b><span>${r.servers} servidor(es) · Wq ${num(r.Wq_min)} min · SLA ${pct(r.service_level)}</span></div>` : '<div class="notice danger">Ninguna dotación evaluada cumple simultáneamente todas las metas.</div>';
+    $('tool-table').innerHTML = table(d.rows, true);
+    Plotly.react('tool-chart', [
+      {x: d.rows.map(r => r.servers), y: d.rows.map(r => r.Wq_min), name: 'Wq (min)', mode: 'lines+markers'},
+      {x: d.rows.map(r => r.servers), y: d.rows.map(r => r.service_level * 100), name: 'SLA %', mode: 'lines+markers', yaxis: 'y2'},
+    ], {title: 'Capacidad vs servicio', xaxis: {title: 'Servidores'}, yaxis: {title: 'Wq min'}, yaxis2: {title: 'SLA %', overlaying: 'y', side: 'right'}, paper_bgcolor: 'transparent', plot_bgcolor: 'transparent'}, {responsive: true});
+    $('tool-interpret-panel').hidden = true;
+    return;
+  }
+
+  const r = d.recommended, a = d.actual;
+  $('recommendation').innerHTML = `<div class="recommend-card"><b>Situación actual → alternativa recomendada</b><span>${a.servers} servidor(es), Wq ${num(a.wq_min)} min → ${r.servers} servidor(es), Wq ${num(r.Wq_min)} min</span><span>Costo recomendado: S/ ${num(r.cost_total)}/h</span></div>`;
+  $('tool-table').innerHTML = table(d.rows);
+  Plotly.react('tool-chart', [
+    {x: d.rows.map(r => r.servers), y: d.rows.map(r => r.Wq_min), name: 'Wq', mode: 'lines+markers'},
+    {x: d.rows.map(r => r.servers), y: d.rows.map(r => Number.isFinite(r.cost_total) ? r.cost_total : null), name: 'Costo total', mode: 'lines+markers', yaxis: 'y2'},
+  ], {title: 'Servicio y costo por capacidad', xaxis: {title: 'Servidores'}, yaxis: {title: 'Wq min'}, yaxis2: {title: 'S/ por hora', overlaying: 'y', side: 'right'}, paper_bgcolor: 'transparent', plot_bgcolor: 'transparent'}, {responsive: true});
+  $('tool-interpret-panel').hidden = false;
+  $('tool-interpretation').innerHTML = cards(d.recommended_interpretation) + cards(d.economic_interpretation);
+
+  if (window.DecisionLabVisual && d.visual) {
+    window.DecisionLabVisual.load(d.visual);
+  }
+}
+
+form.addEventListener('submit', run);
+window.addEventListener('DOMContentLoaded', run);
