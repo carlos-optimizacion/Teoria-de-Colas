@@ -40,6 +40,9 @@
       <div class="nav-section">ANALIZAR · DATOS</div>
       <a class="nav-link {% if active == 'validator' %}active{% endif %}" href="{% url 'portal:validator' %}"><span class="num">24</span><span>Validador de supuestos</span></a>
       <a class="nav-link {% if active == 'endtoend' %}active{% endif %}" href="{% url 'portal:endtoend' %}"><span class="num">25</span><span>Análisis End-to-End</span></a>
+
+      <div class="nav-section">SIMULAR · EXPERIMENTAR</div>
+      <a class="nav-link {% if active == 'simulator' %}active{% endif %}" href="{% url 'portal:simulator' %}"><span class="num">26</span><span>Simulador de colas</span></a>
     </nav>
     <div class="sidebar-card"><b>Django 6.1.1</b><span>Motor matemático compartido con Streamlit · simulación DES integrada.</span></div>
   </aside>
