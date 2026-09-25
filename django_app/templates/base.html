@@ -1,0 +1,53 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Decision Lab{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="https://cdn.plot.ly/plotly-3.1.0.min.js"></script>
+  <script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]}};</script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">DL</div><div><b>Decision Lab</b><span>Teoría de Colas</span></div></div>
+    <nav class="side-nav">
+      <div class="nav-section">PLATAFORMA</div>
+      <a class="nav-link {% if active == 'home' %}active{% endif %}" href="{% url 'portal:home' %}">⌂ <span>Inicio</span></a>
+      <a class="nav-link {% if active == 'fundamentals' %}active{% endif %}" href="{% url 'portal:fundamentals' %}"><span class="num">01</span><span>Fundamentos</span></a>
+
+      <div class="nav-section">APRENDER · MODELOS</div>
+      <a class="nav-link {% if active == 'mm1' %}active{% endif %}" href="{% url 'portal:mm1' %}"><span class="num">02</span><span>M/M/1</span></a>
+      <a class="nav-link {% if active == 'mms' %}active{% endif %}" href="{% url 'portal:mms' %}"><span class="num">04</span><span>M/M/s</span></a>
+      <a class="nav-link {% if active == 'mmsk' %}active{% endif %}" href="{% url 'portal:mmsk' %}"><span class="num">06</span><span>M/M/s/K</span></a>
+      <a class="nav-link {% if active == 'mm1c' %}active{% endif %}" href="{% url 'portal:mm1c' %}"><span class="num">08</span><span>M/M/1 limitada</span></a>
+      <a class="nav-link {% if active == 'mmstotal' %}active{% endif %}" href="{% url 'portal:mmstotal' %}"><span class="num">10</span><span>M/M/s capacidad</span></a>
+      <a class="nav-link {% if active == 'erlangb' %}active{% endif %}" href="{% url 'portal:erlangb' %}"><span class="num">12</span><span>Erlang B</span></a>
+      <a class="nav-link {% if active == 'mg1' %}active{% endif %}" href="{% url 'portal:mg1' %}"><span class="num">14</span><span>M/G/1</span></a>
+      <a class="nav-link {% if active == 'dd1' %}active{% endif %}" href="{% url 'portal:dd1' %}"><span class="num">16</span><span>D/D/1</span></a>
+
+      <div class="nav-section">APLICAR · DECISIONES</div>
+      <a class="nav-link {% if active == 'cases' %}active{% endif %}" href="{% url 'portal:cases' %}"><span class="num">18</span><span>Casos aplicados</span></a>
+      <a class="nav-link {% if active == 'simple' %}active{% endif %}" href="{% url 'portal:simple' %}"><span class="num">19</span><span>Colas simples</span></a>
+      <a class="nav-link {% if active == 'complex' %}active{% endif %}" href="{% url 'portal:complex' %}"><span class="num">20</span><span>Colas complejas</span></a>
+      <a class="nav-link {% if active == 'comparator' %}active{% endif %}" href="{% url 'portal:comparator' %}"><span class="num">21</span><span>Comparador</span></a>
+      <a class="nav-link {% if active == 'economics' %}active{% endif %}" href="{% url 'portal:economics' %}"><span class="num">22</span><span>Análisis económico</span></a>
+      <a class="nav-link {% if active == 'sizing' %}active{% endif %}" href="{% url 'portal:sizing' %}"><span class="num">23</span><span>Dimensionamiento</span></a>
+
+      <div class="nav-section">ANALIZAR · DATOS</div>
+      <a class="nav-link {% if active == 'validator' %}active{% endif %}" href="{% url 'portal:validator' %}"><span class="num">24</span><span>Validador</span></a>
+      <a class="nav-link {% if active == 'endtoend' %}active{% endif %}" href="{% url 'portal:endtoend' %}"><span class="num">25</span><span>End-to-End</span></a>
+    </nav>
+    <div class="sidebar-card"><b>Django 6.1.1</b><span>Motor matemático compartido con Streamlit · simulación DES integrada.</span></div>
+  </aside>
+  <main class="main-content">
+    <header class="topbar"><div><span class="top-kicker">INVESTIGACIÓN DE OPERACIONES</span><strong>{% block header %}Decision Lab{% endblock %}</strong></div><div class="top-status"><span class="status-dot">● Motor compartido activo</span><span class="version-pill">Django 6.1</span></div></header>
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

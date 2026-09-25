@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Fundamentos | Decision Lab{% endblock %}
+{% block header %}Fundamentos de teoría de colas{% endblock %}
+{% block content %}
+<section class="model-hero"><div><span class="eyebrow">01 · COMPRENDER ANTES DE CALCULAR</span><h1>Fundamentos</h1><p>Una cola aparece cuando demanda y capacidad interactúan bajo variabilidad. El objetivo no es solo calcular: es reconocer qué supuesto representa al proceso.</p></div><div class="formula-card"><span>Lectura básica</span><b>λ → cola → s·μ</b><small>Demanda, espera y capacidad.</small></div></section>
+<div class="concept-grid">
+<article class="panel"><span class="concept-code">λ</span><h3>Tasa de llegada</h3><p>Clientes o unidades que llegan por unidad de tiempo. En modelos M, las llegadas se aproximan mediante un proceso Poisson.</p></article>
+<article class="panel"><span class="concept-code">μ</span><h3>Tasa de servicio</h3><p>Capacidad de atención de cada servidor. El tiempo promedio de servicio es el inverso de μ.</p></article>
+<article class="panel"><span class="concept-code">ρ</span><h3>Utilización</h3><p>Relaciona demanda y capacidad. En M/M/s: \(ρ=λ/(sμ)\). Primero debe verificarse estabilidad.</p></article>
+<article class="panel"><span class="concept-code">Wq</span><h3>Espera en cola</h3><p>Tiempo promedio antes de iniciar servicio. No debe confundirse con W, que incluye el servicio.</p></article>
+<article class="panel"><span class="concept-code">Lq</span><h3>Longitud de cola</h3><p>Número promedio de clientes esperando. La Ley de Little vincula \(L_q=λW_q\) cuando corresponde.</p></article>
+<article class="panel"><span class="concept-code">K</span><h3>Capacidad total</h3><p>Máximo de clientes dentro del sistema. En esta versión Django usamos K de forma consistente para evitar ambigüedades.</p></article>
+</div>
+<section class="panel theory-panel"><div class="panel-title"><span>→</span><div><b>¿Cómo elegir una familia?</b><small>Ruta conceptual rápida.</small></div></div><div class="decision-flow"><div><b>¿Hay variabilidad?</b><span>No → D/D/1</span><span>Sí → continúa</span></div><div><b>¿Servicio exponencial?</b><span>Sí → M/M/...</span><span>No → M/G/1 o simulación</span></div><div><b>¿Capacidad finita?</b><span>Sí → M/M/s/K</span><span>No → M/M/s</span></div><div><b>¿Sin espera?</b><span>Sí → Erlang B</span><span>No → cola permitida</span></div></div></section>
+<div class="hero-actions dark-actions"><a class="btn primary" href="{% url 'portal:mm1' %}">Continuar con M/M/1</a><a class="btn secondary" href="{% url 'portal:validator' %}">Validar datos reales</a></div>
+{% endblock %}
