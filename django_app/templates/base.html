@@ -17,29 +17,29 @@
     <nav class="side-nav">
       <div class="nav-section">PLATAFORMA</div>
       <a class="nav-link {% if active == 'home' %}active{% endif %}" href="{% url 'portal:home' %}">⌂ <span>Inicio</span></a>
-      <a class="nav-link {% if active == 'fundamentals' %}active{% endif %}" href="{% url 'portal:fundamentals' %}"><span class="num">01</span><span>Fundamentos</span></a>
+      <a class="nav-link {% if active == 'fundamentals' %}active{% endif %}" href="{% url 'portal:fundamentals' %}"><span class="num">01</span><span>Fundamentos de colas</span></a>
 
       <div class="nav-section">APRENDER · MODELOS</div>
-      <a class="nav-link {% if active == 'mm1' %}active{% endif %}" href="{% url 'portal:mm1' %}"><span class="num">02</span><span>M/M/1</span></a>
-      <a class="nav-link {% if active == 'mms' %}active{% endif %}" href="{% url 'portal:mms' %}"><span class="num">04</span><span>M/M/s</span></a>
-      <a class="nav-link {% if active == 'mmsk' %}active{% endif %}" href="{% url 'portal:mmsk' %}"><span class="num">06</span><span>M/M/s/K</span></a>
-      <a class="nav-link {% if active == 'mm1c' %}active{% endif %}" href="{% url 'portal:mm1c' %}"><span class="num">08</span><span>M/M/1 limitada</span></a>
-      <a class="nav-link {% if active == 'mmstotal' %}active{% endif %}" href="{% url 'portal:mmstotal' %}"><span class="num">10</span><span>M/M/s capacidad</span></a>
-      <a class="nav-link {% if active == 'erlangb' %}active{% endif %}" href="{% url 'portal:erlangb' %}"><span class="num">12</span><span>Erlang B</span></a>
-      <a class="nav-link {% if active == 'mg1' %}active{% endif %}" href="{% url 'portal:mg1' %}"><span class="num">14</span><span>M/G/1</span></a>
-      <a class="nav-link {% if active == 'dd1' %}active{% endif %}" href="{% url 'portal:dd1' %}"><span class="num">16</span><span>D/D/1</span></a>
+      <a class="nav-link {% if active == 'mm1' %}active{% endif %}" href="{% url 'portal:mm1' %}"><span class="num">02</span><span>Modelo M/M/1</span></a>
+      <a class="nav-link {% if active == 'mms' %}active{% endif %}" href="{% url 'portal:mms' %}"><span class="num">04</span><span>Modelo M/M/s</span></a>
+      <a class="nav-link {% if active == 'mmsk' %}active{% endif %}" href="{% url 'portal:mmsk' %}"><span class="num">06</span><span>Modelo M/M/s/K</span></a>
+      <a class="nav-link {% if active == 'mm1c' %}active{% endif %}" href="{% url 'portal:mm1c' %}"><span class="num">08</span><span>Modelo M/M/1/c</span></a>
+      <a class="nav-link {% if active == 'mmstotal' %}active{% endif %}" href="{% url 'portal:mmstotal' %}"><span class="num">10</span><span>Modelo M/M/s/c</span></a>
+      <a class="nav-link {% if active == 'erlangb' %}active{% endif %}" href="{% url 'portal:erlangb' %}"><span class="num">12</span><span>M/M/c/c · Erlang B</span></a>
+      <a class="nav-link {% if active == 'mg1' %}active{% endif %}" href="{% url 'portal:mg1' %}"><span class="num">14</span><span>Modelo M/G/1</span></a>
+      <a class="nav-link {% if active == 'dd1' %}active{% endif %}" href="{% url 'portal:dd1' %}"><span class="num">16</span><span>Modelo D/D/1</span></a>
 
       <div class="nav-section">APLICAR · DECISIONES</div>
-      <a class="nav-link {% if active == 'cases' %}active{% endif %}" href="{% url 'portal:cases' %}"><span class="num">18</span><span>Casos aplicados</span></a>
-      <a class="nav-link {% if active == 'simple' %}active{% endif %}" href="{% url 'portal:simple' %}"><span class="num">19</span><span>Colas simples</span></a>
-      <a class="nav-link {% if active == 'complex' %}active{% endif %}" href="{% url 'portal:complex' %}"><span class="num">20</span><span>Colas complejas</span></a>
-      <a class="nav-link {% if active == 'comparator' %}active{% endif %}" href="{% url 'portal:comparator' %}"><span class="num">21</span><span>Comparador</span></a>
+      <a class="nav-link {% if active == 'cases' %}active{% endif %}" href="{% url 'portal:cases' %}"><span class="num">18</span><span>Casos prácticos aplicados</span></a>
+      <a class="nav-link {% if active == 'simple' %}active{% endif %}" href="{% url 'portal:simple' %}"><span class="num">19</span><span>Modelos de colas simples</span></a>
+      <a class="nav-link {% if active == 'complex' %}active{% endif %}" href="{% url 'portal:complex' %}"><span class="num">20</span><span>Modelos de colas complejas</span></a>
+      <a class="nav-link {% if active == 'comparator' %}active{% endif %}" href="{% url 'portal:comparator' %}"><span class="num">21</span><span>Comparador de modelos</span></a>
       <a class="nav-link {% if active == 'economics' %}active{% endif %}" href="{% url 'portal:economics' %}"><span class="num">22</span><span>Análisis económico</span></a>
-      <a class="nav-link {% if active == 'sizing' %}active{% endif %}" href="{% url 'portal:sizing' %}"><span class="num">23</span><span>Dimensionamiento</span></a>
+      <a class="nav-link {% if active == 'sizing' %}active{% endif %}" href="{% url 'portal:sizing' %}"><span class="num">23</span><span>Dimensionamiento de servidores</span></a>
 
       <div class="nav-section">ANALIZAR · DATOS</div>
-      <a class="nav-link {% if active == 'validator' %}active{% endif %}" href="{% url 'portal:validator' %}"><span class="num">24</span><span>Validador</span></a>
-      <a class="nav-link {% if active == 'endtoend' %}active{% endif %}" href="{% url 'portal:endtoend' %}"><span class="num">25</span><span>End-to-End</span></a>
+      <a class="nav-link {% if active == 'validator' %}active{% endif %}" href="{% url 'portal:validator' %}"><span class="num">24</span><span>Validador de supuestos</span></a>
+      <a class="nav-link {% if active == 'endtoend' %}active{% endif %}" href="{% url 'portal:endtoend' %}"><span class="num">25</span><span>Análisis End-to-End</span></a>
     </nav>
     <div class="sidebar-card"><b>Django 6.1.1</b><span>Motor matemático compartido con Streamlit · simulación DES integrada.</span></div>
   </aside>
