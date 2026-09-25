@@ -1,6 +1,6 @@
 # Teoría de Colas | Decision Lab
 
-Aplicación educativa y de apoyo a decisiones para cursos de **Investigación de Operaciones e Ingeniería Industrial**. La plataforma combina teoría, experimentación interactiva, comparación de escenarios, análisis económico y dimensionamiento de capacidad mediante Streamlit.
+Aplicación educativa y de apoyo a decisiones para cursos de **Investigación de Operaciones e Ingeniería Industrial**. La plataforma combina teoría, experimentación interactiva, validación preliminar de supuestos, comparación de escenarios, análisis económico y dimensionamiento de capacidad mediante Streamlit.
 
 ## Objetivo
 
@@ -9,9 +9,10 @@ Transformar los modelos de teoría de colas en una herramienta que permita:
 1. comprender los supuestos de cada modelo;
 2. experimentar con tasas de llegada, servicio, capacidad y variabilidad;
 3. medir utilización, espera, longitud de cola y probabilidad de espera;
-4. comparar alternativas de capacidad;
-5. incorporar costo de servidores, espera y clientes perdidos;
-6. sustentar una recomendación operativa con métricas cuantitativas.
+4. contrastar preliminarmente los supuestos con datos observados;
+5. comparar alternativas de capacidad;
+6. incorporar costo de servidores, espera y clientes perdidos;
+7. sustentar una recomendación operativa con métricas cuantitativas.
 
 ## Modos de trabajo
 
@@ -24,7 +25,7 @@ Casos y comparaciones orientados a decisiones de capacidad y servicio.
 ### Modo analista
 Análisis End-to-End para convertir datos operativos en una recomendación de dotación y costo-beneficio.
 
-## Modelos incluidos
+## Modelos y módulos incluidos
 
 - M/M/1
 - M/M/s (Erlang C)
@@ -35,6 +36,8 @@ Análisis End-to-End para convertir datos operativos en una recomendación de do
 - comparación de alternativas
 - análisis económico
 - dimensionamiento de servidores
+- validador preliminar de supuestos con CSV
+- análisis End-to-End
 
 ## Arquitectura
 
@@ -42,13 +45,14 @@ Análisis End-to-End para convertir datos operativos en una recomendación de do
 home.py
 │
 ├── pages/                  # Interfaz, teoría, laboratorios y análisis
+│   └── 24_Validador_Supuestos.py
 │
 ├── queue_core.py           # Motor matemático compartido
 │   ├── M/M/1 y M/M/s
 │   ├── M/M/s/K
 │   ├── M/G/1
 │   ├── D/D/1
-│   ├── probabilidad de exceder un umbral de espera
+│   ├── P(Wq > t)
 │   └── costos y dimensionamiento
 │
 ├── tests/                  # Validación matemática automatizada
@@ -65,6 +69,18 @@ La interfaz no debe duplicar fórmulas. Los cálculos reutilizables deben vivir 
 - `L` y `Lq`: clientes/unidades promedio.
 - funciones `*_from_minutes`: reciben datos operativos en minutos.
 - `rho`: utilización del sistema.
+
+## Validador preliminar de supuestos
+
+El módulo 24 permite cargar un CSV con tiempos entre llegadas y tiempos de servicio. Calcula, entre otros indicadores:
+
+- media y desviación estándar;
+- coeficiente de variación (CV);
+- autocorrelación lag 1;
+- histogramas descriptivos;
+- orientación preliminar sobre el uso de M/M/s, M/G/1 o simulación.
+
+**Importante:** CV≈1 y baja autocorrelación son señales descriptivas, no una prueba formal de proceso Poisson ni de distribución exponencial.
 
 ## Supuestos principales
 
@@ -145,15 +161,16 @@ La herramienta es un apoyo analítico. Una recomendación real debe contrastarse
 
 ## Próxima evolución propuesta
 
-La arquitectura está preparada para evolucionar hacia un laboratorio más completo:
-
-1. **Validador de supuestos con datos reales**: CV, autocorrelación, dispersión y ajuste preliminar.
-2. **Simulación de eventos discretos**: distribuciones empíricas, lognormal, gamma, Weibull, horarios variables, abandonos y prioridades.
-3. **Optimización de capacidad**: minimizar costo total sujeto a metas de servicio.
-4. **Análisis de sensibilidad**: demanda, tiempo de servicio, costo de espera y disponibilidad.
-5. **Importación de CSV/Excel**: cálculo automático de interarribos, tiempos de servicio y segmentación por franja horaria.
-6. **Comparación analítico vs simulación**: validación cruzada de resultados.
-7. **Reportes ejecutivos reproducibles**: supuestos, escenarios, riesgos y recomendación.
+1. **Simulación de eventos discretos** con distribuciones empíricas, lognormal, gamma, Weibull, horarios variables, abandonos y prioridades.
+2. **Optimización de capacidad** para minimizar costo total sujeto a metas de servicio y restricciones operativas.
+3. **Análisis de sensibilidad** sobre demanda, servicio, costo de espera y disponibilidad.
+4. **Importación avanzada de CSV/Excel** con cálculo automático de interarribos, segmentación por franja y depuración de datos.
+5. **Pruebas estadísticas formales** y gráficos Q-Q para reforzar la selección del modelo.
+6. **Comparación analítico vs. simulación** para validación cruzada.
+7. **Redes de colas** para procesos con varias etapas y rutas.
+8. **Abandono y paciencia del cliente** mediante modelos Erlang A / M/M/s+M.
+9. **SLA probabilístico**: dimensionar por P(Wq≤t), no solo por espera promedio.
+10. **Reportes ejecutivos reproducibles** con supuestos, escenarios, riesgos y recomendación.
 
 ## Autor
 
