@@ -113,7 +113,7 @@ def interpret_erlang_b(r: dict, servers: int):
     )
 
 
-def interpret_mg1(r: dict, cv: float):
+def interpret_mg1(r: dict, cv: float, time_unit: str = "hours"):
     rho = r["rho"]
     if not r.get("estable", False):
         return _base(
@@ -124,9 +124,9 @@ def interpret_mg1(r: dict, cv: float):
             "La variabilidad importa después de asegurar que la capacidad promedio sea suficiente.",
         )
 
-    wq = r["Wq"] * 60 if r["Wq"] < 10 else r["Wq"]
-    if "ES" in r:  # motor central devuelve horas
-        wq = r["Wq"] * 60
+    if time_unit not in {"hours", "minutes"}:
+        raise ValueError("time_unit debe ser 'hours' o 'minutes'.")
+    wq = r["Wq"] * 60 if time_unit == "hours" else r["Wq"]
     variabilidad = "baja" if cv < 0.8 else "similar a la exponencial" if cv <= 1.2 else "alta"
     return _base(
         f"La utilización es {_pct(rho)} y el servicio presenta variabilidad {variabilidad} (CV={cv:.2f}). La espera promedio estimada es {wq:.1f} min.",
