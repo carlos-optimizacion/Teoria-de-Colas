@@ -44,6 +44,15 @@ jobs:
       - name: Aplicar mejora pedagógica
         run: python tools/apply_marginal_education.py
 
+      - name: Limpiar espacios finales
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('interpretation_core.py')
+          lines = p.read_text(encoding='utf-8').splitlines()
+          p.write_text('\n'.join(line.rstrip() for line in lines) + '\n', encoding='utf-8')
+          PY
+
       - name: Validar sintaxis y pruebas
         run: |
           python -m compileall -q home.py queue_core.py interpretation_core.py pages tests
