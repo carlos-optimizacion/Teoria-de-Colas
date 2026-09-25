@@ -53,8 +53,8 @@ st.markdown(
         <div class="eyebrow">Investigación de Operaciones · Ingeniería Industrial</div>
         <h1>Teoría de Colas | Decision Lab</h1>
         <p>
-            Plataforma académica para aprender teoría de colas y herramienta analítica para dimensionar
-            operadores, estimar tiempos de espera y evaluar el costo-beneficio del nivel de servicio.
+            Plataforma académica para aprender teoría de colas mediante visualización y experimentación,
+            y herramienta analítica para dimensionar operadores, estimar tiempos de espera y evaluar el costo-beneficio del nivel de servicio.
         </p>
     </div>
     """,
@@ -62,9 +62,9 @@ st.markdown(
 )
 
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Ruta académica", "24 módulos")
+k1.metric("Ruta académica", "Laboratorios guiados")
 k2.metric("Modelos principales", "8+")
-k3.metric("Modo analista", "Dotación óptima")
+k3.metric("Modo analista", "Dimensionamiento")
 k4.metric("Salida ejecutiva", "PDF + alternativas")
 
 st.markdown("### Elige tu ruta")
@@ -75,15 +75,15 @@ with col1:
         """
         <div class="mode-card">
             <span class="pill">MODO APRENDIZAJE</span>
-            <h3>Aprender y practicar teoría de colas</h3>
-            <p>Ruta secuencial para desarrollar conceptos, resolver ejemplos, practicar modelos y verificar el aprendizaje.</p>
+            <h3>Comprender haciendo</h3>
+            <p>Ruta progresiva para aprender cada modelo mediante explicación visual, ejemplo guiado y experimentación interactiva.</p>
             <b>Incluye</b>
             <ul>
-                <li>Fundamentos y notación de Kendall</li>
-                <li>M/M/1, M/M/s y modelos con capacidad limitada</li>
-                <li>M/G/1 y modelo determinista</li>
-                <li>Casos prácticos y autoevaluaciones</li>
-                <li>Evaluación final</li>
+                <li>Diagramas visuales de cada sistema de colas</li>
+                <li>Explicaciones intuitivas antes de las fórmulas</li>
+                <li>Ejemplos resueltos paso a paso</li>
+                <li>Laboratorios para modificar parámetros y observar resultados</li>
+                <li>Retos de destreza basados en decisiones, no en memoria</li>
             </ul>
         </div>
         """,
@@ -110,24 +110,24 @@ with col2:
         unsafe_allow_html=True,
     )
 
-st.markdown("### Ruta gerencial del Modo Analista")
+st.markdown("### Cómo se aprende en la plataforma")
 f1, f2, f3, f4 = st.columns(4)
 with f1:
-    st.markdown('<div class="flow"><strong>1. Llegadas y atención</strong><br><span class="small-note">Datos reales del proceso</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="flow"><strong>1. Visualiza</strong><br><span class="small-note">Comprende el sistema antes de calcular</span></div>', unsafe_allow_html=True)
 with f2:
-    st.markdown('<div class="flow"><strong>2. Dotación</strong><br><span class="small-note">Operadores actuales y rango</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="flow"><strong>2. Resuelve</strong><br><span class="small-note">Sigue un ejemplo guiado</span></div>', unsafe_allow_html=True)
 with f3:
-    st.markdown('<div class="flow"><strong>3. Servicio</strong><br><span class="small-note">Espera y probabilidad de cola</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="flow"><strong>3. Experimenta</strong><br><span class="small-note">Modifica el sistema y observa</span></div>', unsafe_allow_html=True)
 with f4:
-    st.markdown('<div class="flow"><strong>4. Decisión</strong><br><span class="small-note">Costo-beneficio y recomendación</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="flow"><strong>4. Decide</strong><br><span class="small-note">Explica qué harías operativamente</span></div>', unsafe_allow_html=True)
 
 st.info(
-    "Para dimensionar un sistema real, abre el módulo **25. Análisis End-to-End de Sistemas de Colas** desde el menú lateral. "
-    "Si estás aprendiendo el tema, inicia en el módulo 01 y sigue la secuencia."
+    "Para aprender, inicia en el módulo 01 y avanza hacia los laboratorios de cada modelo. "
+    "Para dimensionar un sistema real, abre el módulo **25. Análisis End-to-End de Sistemas de Colas**."
 )
 
 st.markdown("---")
 st.caption(
     "Mag. Carlos Alberto Nieto Astahuamán · Aplicación educativa desarrollada con fines académicos. "
-    "La recomendación automática funciona como apoyo a la decisión y debe validarse con el contexto operativo real."
+    "La comprensión se valida mediante experimentación, interpretación y toma de decisiones sobre el comportamiento del sistema."
 )
