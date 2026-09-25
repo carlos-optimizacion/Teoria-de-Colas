@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Inicio | Decision Lab{% endblock %}
+{% block header %}Centro de decisión{% endblock %}
+{% block content %}
+<section class="hero">
+  <div><span class="eyebrow">PLATAFORMA ACADÉMICO-PROFESIONAL</span><h1>Modela, simula y decide con teoría de colas.</h1><p>La versión Django reutiliza el mismo motor matemático de Streamlit y añade una experiencia web preparada para simulación, usuarios, reportes y persistencia.</p><div class="hero-actions"><a class="btn primary" href="{% url 'portal:mms' %}">Abrir laboratorio M/M/s</a><a class="btn ghost" href="{% url 'portal:mm1' %}">Comenzar con M/M/1</a></div></div>
+  <div class="hero-panel"><span>ARQUITECTURA</span><strong>1 motor matemático</strong><strong>2 interfaces</strong><strong>Simulación DES</strong><small>Streamlit se mantiene operativo.</small></div>
+</section>
+<section class="stats-grid"><div class="stat-card"><span>01</span><b>Analítico</b><p>Erlang C y métricas de estado estacionario.</p></div><div class="stat-card"><span>02</span><b>Simulación</b><p>Eventos discretos, réplicas y evolución de cola.</p></div><div class="stat-card"><span>03</span><b>Interpretación</b><p>Lectura operativa con el motor pedagógico existente.</p></div><div class="stat-card"><span>04</span><b>Decisión</b><p>Base para dimensionamiento, costos y optimización.</p></div></section>
+<h2 class="section-title">Rutas disponibles</h2>
+<section class="route-grid"><a class="route-card" href="{% url 'portal:mm1' %}"><span class="route-icon">λ</span><div><small>MODELO FUNDAMENTAL</small><h3>M/M/1</h3><p>Comprende estabilidad, utilización, espera y congestión con un único servidor.</p></div><b>→</b></a><a class="route-card featured" href="{% url 'portal:mms' %}"><span class="route-icon">s</span><div><small>LABORATORIO DINÁMICO</small><h3>M/M/s + simulación</h3><p>Compara teoría y simulación con gráficos dinámicos y múltiples servidores.</p></div><b>→</b></a></section>
+<section class="roadmap"><div><small>RUTA DEL PRODUCTO</small><h2>Aprender → Modelar → Validar → Simular → Comparar → Optimizar → Decidir</h2></div><span>Fase Django 1</span></section>
+{% endblock %}

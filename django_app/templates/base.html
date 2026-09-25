@@ -1,0 +1,35 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Decision Lab{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">DL</div><div><b>Decision Lab</b><span>Teoría de Colas</span></div></div>
+    <nav>
+      <div class="nav-section">PLATAFORMA</div>
+      <a class="nav-link {% if active == 'home' %}active{% endif %}" href="{% url 'portal:home' %}">⌂ <span>Inicio</span></a>
+      <div class="nav-section">APRENDER · MODELOS</div>
+      <a class="nav-link {% if active == 'mm1' %}active{% endif %}" href="{% url 'portal:mm1' %}"><span class="num">01</span><span>M/M/1</span></a>
+      <a class="nav-link {% if active == 'mms' %}active{% endif %}" href="{% url 'portal:mms' %}"><span class="num">02</span><span>M/M/s</span></a>
+      <div class="nav-section">PRÓXIMAMENTE</div>
+      <div class="nav-muted">◌ Capacidad finita</div>
+      <div class="nav-muted">◌ Validador de supuestos</div>
+      <div class="nav-muted">◌ Optimización</div>
+    </nav>
+    <div class="sidebar-card"><b>Django 6.1.1</b><span>Interfaz profesional en paralelo con Streamlit.</span></div>
+  </aside>
+  <main class="main-content">
+    <header class="topbar"><div><span class="top-kicker">INVESTIGACIÓN DE OPERACIONES</span><strong>{% block header %}Decision Lab{% endblock %}</strong></div><span class="status-dot">● Motor compartido activo</span></header>
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

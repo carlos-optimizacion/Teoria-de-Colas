@@ -1,0 +1,24 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}{{ model_name }} | Decision Lab{% endblock %}
+{% block header %}Laboratorio {{ model_name }}{% endblock %}
+{% block content %}
+<section class="model-hero"><div><span class="eyebrow">MODELO + SIMULACIÓN</span><h1>{{ model_name }}</h1><p>{{ subtitle }}</p></div><div class="formula-card"><span>Condición de estabilidad</span><b>λ &lt; s·μ</b><small>Para M/M/1, s = 1.</small></div></section>
+<div class="lab-grid">
+  <section class="panel controls-panel"><div class="panel-title"><span>01</span><div><b>Configura el escenario</b><small>Todos los tiempos están en minutos.</small></div></div>
+    <form id="lab-form" data-model="{{ model_key }}">
+      {% csrf_token %}
+      <label>Tiempo medio entre llegadas <output id="arrival-out">10</output><span> min</span><input id="t-llegada" type="range" min="1" max="60" step="1" value="10"></label>
+      <label>Tiempo medio de atención <output id="service-out">8</output><span> min</span><input id="t-atencion" type="range" min="1" max="60" step="1" value="8"></label>
+      {% if fixed_servers %}<input id="servers" type="hidden" value="1">{% else %}<label>Número de servidores <output id="servers-out">2</output><input id="servers" type="range" min="1" max="12" step="1" value="2"></label>{% endif %}
+      <label>Horizonte de simulación <output id="horizon-out">480</output><span> min</span><input id="horizon" type="range" min="60" max="1440" step="60" value="480"></label>
+      <label>Réplicas <output id="replications-out">30</output><input id="replications" type="range" min="5" max="100" step="5" value="30"></label>
+      <button class="btn primary full" type="submit">Calcular y simular</button>
+    </form>
+  </section>
+  <section class="panel results-panel"><div class="panel-title"><span>02</span><div><b>Indicadores analíticos</b><small>Calculados con queue_core.py.</small></div></div><div id="alert"></div><div class="metrics"><div><span>ρ</span><b id="rho">—</b><small>Utilización</small></div><div><span>Wq</span><b id="wq">—</b><small>Espera promedio</small></div><div><span>Lq</span><b id="lq">—</b><small>Cola promedio</small></div><div><span>P(W&gt;0)</span><b id="pwait">—</b><small>Prob. esperar</small></div></div></section>
+</div>
+<section class="panel"><div class="panel-title"><span>03</span><div><b>Analítico vs simulación</b><small>La simulación usa eventos discretos y múltiples réplicas.</small></div></div><div class="chart-grid"><div id="comparison-chart" class="chart"></div><div id="utilization-chart" class="chart"></div></div></section>
+<section class="panel"><div class="panel-title"><span>04</span><div><b>Evolución dinámica de la cola</b><small>Una réplica representativa durante el horizonte configurado.</small></div></div><div id="queue-chart" class="chart wide"></div></section>
+<section class="panel"><div class="panel-title"><span>05</span><div><b>Interpretación operativa</b><small>Traducción pedagógica del resultado matemático.</small></div></div><div id="interpretation" class="interpret-grid"></div></section>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/model-lab.js' %}"></script>{% endblock %}
