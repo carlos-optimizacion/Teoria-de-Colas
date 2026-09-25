@@ -5,7 +5,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from simulation_core import simulate_queue, simulate_mms
+from simulation_core import simulate_queue, simulate_mms, simulate_visual_mms
 
 
 class PortalTests(TestCase):
@@ -69,12 +69,17 @@ class PortalTests(TestCase):
         self.assertIn("rows", sizing.json())
 
     def test_end_to_end_api(self):
-        response = self.post_json("portal:end_to_end_api", {"t_llegada":8,"t_atencion":12,"current_servers":2,"max_servers":10,"cost_staff":25,"cost_wait":15,"meta_wq":10,"meta_p_wait":0.9})
+        response = self.post_json("portal:end_to_end_api", {"t_llegada":8,"t_atencion":12,"current_servers":2,"max_servers":10,"cost_staff":25,"cost_wait":15,"meta_wq":10,"meta_p_wait":0.9,"visual_horizon":60})
         self.assertEqual(response.status_code, 200)
         body = response.json()
         self.assertIn("actual", body)
         self.assertIn("recommended", body)
         self.assertIn("marginal", body)
+        self.assertIn("visual", body)
+        self.assertEqual(body["visual"]["horizon_min"], 60)
+        self.assertGreater(len(body["visual"]["current"]["frames"]), 1)
+        self.assertGreater(len(body["visual"]["recommended"]["frames"]), 1)
+        self.assertTrue(body["visual"]["same_base_randomness"])
 
     def test_validator_csv(self):
         csv_data = "interarrival_min,service_min\n5,4\n7,6\n4,5\n6,8\n8,7\n"
@@ -92,6 +97,15 @@ class PortalTests(TestCase):
         self.assertEqual(a["wq_min"], b["wq_min"])
         finite = simulate_queue(3, 10, 2, horizon_min=120, replications=3, seed=10, capacity=3)
         self.assertGreaterEqual(finite["p_block"], 0)
+
+    def test_visual_simulation_is_reproducible_and_tracks_customers(self):
+        a = simulate_visual_mms(8, 12, 2, horizon_min=60, seed=77)
+        b = simulate_visual_mms(8, 12, 2, horizon_min=60, seed=77)
+        self.assertEqual(a["frames"], b["frames"])
+        self.assertEqual(a["frames"][0]["kind"], "start")
+        self.assertEqual(a["frames"][-1]["kind"], "end")
+        self.assertGreaterEqual(a["max_queue"], 0)
+        self.assertEqual(a["servers_count"], 2)
 
     def test_gamma_service_simulation(self):
         result = simulate_queue(12, 8, 1, horizon_min=120, replications=2, seed=11, service_distribution="gamma", service_cv=1.5)
