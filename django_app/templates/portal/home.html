@@ -3,14 +3,14 @@
 {% block header %}Centro de decisión{% endblock %}
 {% block content %}
 <section class="hero">
-  <div><span class="eyebrow">PLATAFORMA ACADÉMICO-PROFESIONAL</span><h1>Aprende, valida, simula y decide.</h1><p>Decision Lab integra modelos analíticos, simulación de eventos discretos, validación de supuestos, costos y dimensionamiento en una sola experiencia web. Django y Streamlit usan el mismo motor matemático.</p><div class="hero-actions"><a class="btn primary" href="{% url 'portal:fundamentals' %}">Comenzar ruta de aprendizaje</a><a class="btn ghost" href="{% url 'portal:endtoend' %}">Abrir análisis End-to-End</a></div></div>
-  <div class="hero-panel"><span>ARQUITECTURA</span><strong>8 familias de modelos</strong><strong>17 módulos migrados</strong><strong>Simulación DES + SLA</strong><small>Streamlit permanece disponible como interfaz paralela.</small></div>
+  <div><span class="eyebrow">PLATAFORMA ACADÉMICO-PROFESIONAL</span><h1>Aprende, valida, simula y decide.</h1><p>Decision Lab integra modelos analíticos, simulación de eventos discretos, validación de supuestos, costos y dimensionamiento en una sola experiencia web. Django y Streamlit usan el mismo motor matemático.</p><div class="hero-actions"><a class="btn primary" href="{% url 'portal:fundamentals' %}">Comenzar ruta de aprendizaje</a><a class="btn ghost" href="{% url 'portal:simulator' %}">Abrir simulador</a><a class="btn ghost" href="{% url 'portal:endtoend' %}">Abrir análisis End-to-End</a></div></div>
+  <div class="hero-panel"><span>ARQUITECTURA</span><strong>8 familias de modelos</strong><strong>18 módulos migrados</strong><strong>Simulación DES + SLA</strong><small>Streamlit permanece disponible como interfaz paralela.</small></div>
 </section>
 <section class="stats-grid"><div class="stat-card"><span>01</span><b>Comprende</b><p>Teoría, fórmulas, estabilidad y supuestos.</p></div><div class="stat-card"><span>02</span><b>Valida</b><p>CV, dependencia y compatibilidad preliminar.</p></div><div class="stat-card"><span>03</span><b>Simula</b><p>Eventos discretos, réplicas, bloqueo y variabilidad.</p></div><div class="stat-card"><span>04</span><b>Decide</b><p>Capacidad, SLA, costo y recomendación operativa.</p></div></section>
 <h2 class="section-title">Rutas principales</h2>
 <section class="route-grid route-grid-3">
 <a class="route-card" href="{% url 'portal:mms' %}"><span class="route-icon">λ</span><div><small>APRENDER</small><h3>Modelos analíticos</h3><p>M/M/1, M/M/s, finitos, Erlang B, M/G/1 y D/D/1.</p></div><b>→</b></a>
-<a class="route-card featured" href="{% url 'portal:validator' %}"><span class="route-icon">✓</span><div><small>VALIDAR</small><h3>Datos reales</h3><p>Revisa variabilidad y dependencia antes de seleccionar un modelo.</p></div><b>→</b></a>
+<a class="route-card featured" href="{% url 'portal:simulator' %}"><span class="route-icon">▶</span><div><small>SIMULAR</small><h3>Simulador de colas</h3><p>Define tu escenario, observa la cola en movimiento y valida tus propios indicadores.</p></div><b>→</b></a>
 <a class="route-card" href="{% url 'portal:endtoend' %}"><span class="route-icon">Δ</span><div><small>DECIDIR</small><h3>End-to-End</h3><p>Integra capacidad, servicio, costo y sensibilidad marginal.</p></div><b>→</b></a>
 </section>
 <section class="roadmap"><div><small>FLUJO DE LA PLATAFORMA</small><h2>Comprende → Valida → Experimenta → Simula → Compara → Dimensiona → Decide</h2></div><span>Migración integral</span></section>

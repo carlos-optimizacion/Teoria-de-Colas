@@ -1,0 +1,71 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}Simulador de colas | Decision Lab{% endblock %}
+{% block header %}26 · Simulador de colas{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/simulation-player.css' %}">
+<link rel="stylesheet" href="{% static 'css/simulator.css' %}">
+
+<section class="model-hero simulator-hero">
+  <div>
+    <span class="eyebrow">SIMULACIÓN · M/M/s</span>
+    <h1>Simula, observa y valida.</h1>
+    <p>Define tú mismo la cantidad de servidores y las condiciones del sistema. El simulador no recomienda una dotación: muestra los indicadores, reproduce la cola y te permite modificar el escenario hasta sustentar tu propia decisión.</p>
+  </div>
+  <div class="formula-card">
+    <span>Nivel de servicio</span>
+    <b>P(Wq ≤ t*)</b>
+    <small>Probabilidad de ser atendido antes del umbral de espera que definas.</small>
+  </div>
+</section>
+
+<section class="panel controls-panel simulator-controls">
+  <div class="panel-title"><span>01</span><div><b>Configura el escenario</b><small>Cambia los datos y vuelve a simular para comprobar el efecto de cada decisión.</small></div></div>
+  <form id="simulator-form">{% csrf_token %}
+    <div class="form-grid simulator-form-grid">
+      <label>Interarribo promedio (min)<input id="sim-arrival" type="number" value="8" min="0.1" step="0.1"><small>Tiempo promedio entre llegadas.</small></label>
+      <label>Servicio promedio (min)<input id="sim-service" type="number" value="12" min="0.1" step="0.1"><small>Tiempo promedio de atención por servidor.</small></label>
+      <label>Servidores s<input id="sim-servers" type="number" value="2" min="1" max="100" step="1"><small>Capacidad que el alumno desea evaluar.</small></label>
+      <label>Horizonte simulado (min)<input id="sim-horizon" type="number" value="60" min="15" max="240" step="15"><small>Duración de la réplica visual.</small></label>
+      <label>Umbral de servicio t* (min)<input id="sim-sla-threshold" type="number" value="10" min="0" step="0.5"><small>Espera máxima usada para calcular el nivel de servicio.</small></label>
+      <label>Meta de nivel de servicio<input id="sim-sla-target" type="number" value="0.90" min="0" max="1" step="0.01"><small>Ejemplo: 0.90 equivale a 90%.</small></label>
+    </div>
+    <button class="btn primary" type="submit">Simular escenario</button>
+  </form>
+</section>
+
+<section class="panel" id="simulator-results" hidden>
+  <div class="panel-title"><span>02</span><div><b>Indicadores del escenario</b><small>Los indicadores describen el comportamiento de la configuración ingresada; no seleccionan una alternativa por ti.</small></div></div>
+  <div id="simulator-alert"></div>
+  <div id="simulator-status"></div>
+  <div class="simulator-kpi-grid" id="simulator-kpis"></div>
+</section>
+
+<section class="panel" id="simulator-charts-panel" hidden>
+  <div class="panel-title"><span>03</span><div><b>Gráficos</b><small>Dos vistas simples: cómo evoluciona la cola y cómo se comportan los indicadores porcentuales.</small></div></div>
+  <div class="simulator-chart-grid">
+    <article class="simulator-chart-card"><div class="chart-heading"><b>Cola a través del tiempo</b><span>Número de clientes esperando durante la réplica.</span></div><div id="sim-queue-chart" class="simulator-chart"></div></article>
+    <article class="simulator-chart-card"><div class="chart-heading"><b>Capacidad y servicio</b><span>Utilización, probabilidad de esperar y nivel de servicio.</span></div><div id="sim-service-chart" class="simulator-chart"></div></article>
+  </div>
+</section>
+
+<section class="panel visual-simulation-panel" id="simulator-player-panel" hidden>
+  <div class="panel-title"><span>04</span><div><b>Simulador</b><small>Observa cada llegada, la cola FIFO, la ocupación de servidores y las salidas.</small></div></div>
+  <div class="sim-toolbar simulator-toolbar">
+    <div class="sim-player-controls">
+      <button type="button" class="sim-control" id="sim-restart">↺ Reiniciar</button>
+      <button type="button" class="sim-control primary" id="sim-play">▶ Iniciar</button>
+      <label class="speed-label">Velocidad<select id="sim-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="5">5×</option><option value="10">10×</option></select></label>
+    </div>
+  </div>
+  <div class="sim-time-row"><strong id="sim-clock">00:00 / 60:00</strong><div class="sim-progress"><span id="sim-progress-bar"></span></div><small>1× = 1 minuto simulado por segundo real</small></div>
+  <article class="sim-board simulator-single-board" id="sim-board"></article>
+  <div class="sim-summary-grid simulator-summary" id="sim-summary-grid"></div>
+</section>
+
+<section class="panel" id="simulator-help-panel" hidden>
+  <div class="panel-title"><span>05</span><div><b>¿Qué significa cada indicador?</b><small>Usa estas definiciones para interpretar el resultado antes de modificar el escenario.</small></div></div>
+  <div class="indicator-help-grid" id="indicator-help"></div>
+</section>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/simulator.js' %}"></script>{% endblock %}

@@ -50,7 +50,6 @@ function payload() {
     cost_wait: n('cost-wait'),
     meta_wq: n('meta-wq'),
     meta_p_wait: n('meta-p-wait'),
-    visual_horizon: n('visual-horizon'),
   };
 }
 
@@ -129,10 +128,6 @@ function render(d) {
   ], {title: 'Servicio y costo por capacidad', xaxis: {title: 'Servidores'}, yaxis: {title: 'Wq min'}, yaxis2: {title: 'S/ por hora', overlaying: 'y', side: 'right'}, paper_bgcolor: 'transparent', plot_bgcolor: 'transparent'}, {responsive: true});
   $('tool-interpret-panel').hidden = false;
   $('tool-interpretation').innerHTML = cards(d.recommended_interpretation) + cards(d.economic_interpretation);
-
-  if (window.DecisionLabVisual && d.visual) {
-    window.DecisionLabVisual.load(d.visual);
-  }
 }
 
 form.addEventListener('submit', run);
