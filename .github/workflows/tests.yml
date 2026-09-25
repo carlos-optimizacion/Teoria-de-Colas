@@ -25,7 +25,10 @@ jobs:
       - name: Instalar dependencias
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          python -m pip install -r requirements-dev.txt
+
+      - name: Validar sintaxis
+        run: python -m compileall -q home.py queue_core.py pages tests
 
       - name: Ejecutar pruebas
-        run: pytest -q
+        run: python -m pytest -q
