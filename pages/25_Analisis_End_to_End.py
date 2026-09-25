@@ -273,7 +273,14 @@ st.markdown("### 2. Curva de espera según capacidad")
 plot_df = df[df["Estado"] == "Estable"].copy()
 if not plot_df.empty:
     fig = go.Figure()
-    fig.add_trace(go.Bar(x=plot_df["Operadores"], y=plot_df["Espera promedio (min)"], text=[f"{v:.1f}" for v in plot_df["Espera promedio (min)"], textposition="outside"))
+    fig.add_trace(
+        go.Bar(
+            x=plot_df["Operadores"],
+            y=plot_df["Espera promedio (min)"],
+            text=[f"{v:.1f}" for v in plot_df["Espera promedio (min)"]],
+            textposition="outside",
+        )
+    )
     fig.add_hline(y=r["meta_wq"], line_dash="dash", annotation_text=f"Meta: {r['meta_wq']:.1f} min")
     fig.add_vline(x=rec["servers"], line_dash="dot", annotation_text=f"Seleccionado: {rec['servers']}")
     fig.update_layout(title="Tiempo de espera promedio por cantidad de operadores", xaxis_title="Operadores", yaxis_title="Minutos", template="plotly_white", showlegend=False, height=430)
