@@ -31,6 +31,16 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
 
+      - name: Corregir literal del generador
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('tools/apply_marginal_education.py')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace("visual_function = '''", "visual_function = r'''", 1)
+          p.write_text(text, encoding='utf-8')
+          PY
+
       - name: Aplicar mejora pedagógica
         run: python tools/apply_marginal_education.py
 
@@ -48,6 +58,6 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add interpretation_core.py pages
+          git add interpretation_core.py pages tools/apply_marginal_education.py
           git commit -m "Mejora interpretación visual y añade análisis marginal"
           git push origin HEAD:mejora-arquitectura-validacion
