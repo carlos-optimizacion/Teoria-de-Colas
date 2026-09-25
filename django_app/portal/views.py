@@ -1,4 +1,5 @@
 import json
+import math
 
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -22,8 +23,32 @@ def _json_body(request):
     return json.loads(request.body or "{}")
 
 
+def _json_safe(value):
+    """Convierte resultados Python a JSON estricto compatible con navegadores.
+
+    Los modelos de colas usan infinito para representar métricas sin estado
+    estacionario en escenarios inestables. JSON no admite Infinity ni NaN, por
+    lo que esos valores se exponen como null sin alterar el cálculo interno.
+    """
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    return value
+
+
+def _json_response(payload, status=200):
+    return JsonResponse(
+        _json_safe(payload),
+        status=status,
+        json_dumps_params={"allow_nan": False},
+    )
+
+
 def _error(exc):
-    return JsonResponse({"ok": False, "error": str(exc)}, status=400)
+    return _json_response({"ok": False, "error": str(exc)}, status=400)
 
 
 @ensure_csrf_cookie
@@ -115,7 +140,7 @@ def end_to_end(request):
 @require_POST
 def model_api(request):
     try:
-        return JsonResponse({"ok": True, **calculate_model(_json_body(request))})
+        return _json_response({"ok": True, **calculate_model(_json_body(request))})
     except (TypeError, ValueError, json.JSONDecodeError) as exc:
         return _error(exc)
 
@@ -123,7 +148,7 @@ def model_api(request):
 @require_POST
 def compare_api(request):
     try:
-        return JsonResponse({"ok": True, **compare_scenarios(_json_body(request))})
+        return _json_response({"ok": True, **compare_scenarios(_json_body(request))})
     except (TypeError, ValueError, json.JSONDecodeError) as exc:
         return _error(exc)
 
@@ -131,7 +156,7 @@ def compare_api(request):
 @require_POST
 def economic_api(request):
     try:
-        return JsonResponse({"ok": True, **economic_analysis(_json_body(request))})
+        return _json_response({"ok": True, **economic_analysis(_json_body(request))})
     except (TypeError, ValueError, json.JSONDecodeError) as exc:
         return _error(exc)
 
@@ -139,7 +164,7 @@ def economic_api(request):
 @require_POST
 def sizing_api(request):
     try:
-        return JsonResponse({"ok": True, **sizing_analysis(_json_body(request))})
+        return _json_response({"ok": True, **sizing_analysis(_json_body(request))})
     except (TypeError, ValueError, json.JSONDecodeError) as exc:
         return _error(exc)
 
@@ -151,7 +176,7 @@ def validator_api(request):
         if not uploaded:
             raise ValueError("Selecciona un archivo CSV.")
         result = validate_csv(uploaded, request.POST.get("arrival_column", ""), request.POST.get("service_column", ""))
-        return JsonResponse({"ok": True, **result})
+        return _json_response({"ok": True, **result})
     except (TypeError, ValueError, UnicodeDecodeError) as exc:
         return _error(exc)
 
@@ -162,7 +187,7 @@ def end_to_end_api(request):
         data = _json_body(request)
         analysis = end_to_end_analysis(data)
         analysis["visual"] = visual_end_to_end_payload(data, analysis)
-        return JsonResponse({"ok": True, **analysis})
+        return _json_response({"ok": True, **analysis})
     except (TypeError, ValueError, json.JSONDecodeError) as exc:
         return _error(exc)
 
