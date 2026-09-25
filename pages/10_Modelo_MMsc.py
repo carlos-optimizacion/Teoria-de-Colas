@@ -2,6 +2,7 @@ import math
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import interpret_mmsk, to_markdown
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="10 - M/M/s/c | Laboratorio", page_icon="🎓", layout="wide")
@@ -90,6 +91,13 @@ with x4: cap=st.slider('Capacidad total c',s,max(s,20),max(s,5))
 r=calc(tl,ta,s,cap); render(r,'Tu escenario interactivo')
 m1,m2,m3,m4,m5=st.columns(5);m1.metric('Utilización',f"{r['rho']*100:.1f}%");m2.metric('Bloqueo',f"{r['P_bloqueo']*100:.2f}%");m3.metric('Aceptados',f"{r['lambda_eff']:.2f}/h");m4.metric('Lq',f"{r['Lq']:.2f}");m5.metric('Wq',f"{r['Wq']*60:.1f} min")
 st.plotly_chart(chart(tl,ta,s,min(20,max(cap+5,s+8))),use_container_width=True)
+
+# EDU_INTERPRETATION_MMSC
+r_interpretacion = dict(r)
+r_interpretacion.setdefault("s", s)
+r_interpretacion.setdefault("K", cap)
+r_interpretacion.setdefault("lambda_efectiva", r.get("lambda_eff", r.get("lambda", 0.0)))
+st.markdown(to_markdown(interpret_mmsk(r_interpretacion), title="🧠 Interpretación de tu sistema con capacidad total limitada"))
 
 st.markdown('## 5. Reto de destreza')
 st.markdown('<div class="skill"><b>Reto:</b> con llegadas cada 4 min, atención de 8 min y 3 servidores, encuentra una capacidad total que mantenga el bloqueo en 3 % o menos.</div>',unsafe_allow_html=True)

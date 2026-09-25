@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import interpret_mmsk, to_markdown
 import streamlit.components.v1 as components
 
 from queue_core import mmsk_from_minutes
@@ -68,6 +69,9 @@ m4.metric("Espera Wq",f"{r['Wq']*60:.1f} min")
 m5.metric("Cola promedio",f"{r['Lq']:.2f}")
 
 st.markdown(f'<div class="callout"><b>Interpretación:</b> de cada 100 llegadas, aproximadamente <b>{r["P_bloqueo"]*100:.1f}</b> encontrarían el sistema lleno. Quienes sí ingresan esperan en promedio <b>{r["Wq"]*60:.1f} minutos</b> antes de ser atendidos.</div>',unsafe_allow_html=True)
+
+# EDU_INTERPRETATION_COMPLEX
+st.markdown(to_markdown(interpret_mmsk(r), title="🧠 Interpretación operativa de tu escenario"))
 
 st.markdown("## 3. ¿Dónde pasa el tiempo el sistema?")
 df_estados=pd.DataFrame({"Clientes en el sistema":list(range(k+1)),"Probabilidad":r["probs"]})

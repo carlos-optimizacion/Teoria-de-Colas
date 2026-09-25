@@ -2,6 +2,7 @@ import math
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import interpret_mg1, to_markdown
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="14 - M/G/1 | Laboratorio", page_icon="🎓", layout="wide")
@@ -99,6 +100,9 @@ else:
     m1,m2,m3,m4,m5=st.columns(5);m1.metric('Utilización',f"{r['rho']*100:.1f}%");m2.metric('CV',f"{cv:.2f}");m3.metric('Lq',f"{r['Lq']:.2f}");m4.metric('Wq',f"{r['Wq']:.1f} min");m5.metric('W',f"{r['W']:.1f} min")
 st.plotly_chart(chart_cv(tl,ms,cv),use_container_width=True)
 st.caption('CV = 0 representa un servicio perfectamente constante; CV = 1 tiene la misma variabilidad relativa de un servicio exponencial. Valores mayores implican mayor dispersión.')
+
+# EDU_INTERPRETATION_MG1
+st.markdown(to_markdown(interpret_mg1(r, cv, time_unit="minutes"), title="🧠 Interpretación: capacidad + variabilidad"))
 
 st.markdown('## 6. Reto de destreza')
 st.markdown('<div class="skill"><b>Reto:</b> llegan clientes cada 6 min y el servicio medio es 4 min. Reduce únicamente el CV hasta conseguir Wq ≤ 6 min.</div>',unsafe_allow_html=True)

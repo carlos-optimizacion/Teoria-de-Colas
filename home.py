@@ -18,7 +18,7 @@ st.markdown("""
 st.markdown("""
 <div class="hero"><div class="eyebrow">Investigación de Operaciones · Ingeniería Industrial</div>
 <h1>Teoría de Colas | Decision Lab</h1>
-<p>Plataforma para aprender visualmente, experimentar con escenarios y convertir datos de espera en decisiones de capacidad, servicio y costo.</p></div>
+<p>Plataforma para aprender visualmente, validar supuestos, experimentar con escenarios y convertir datos de espera en decisiones de capacidad, servicio y costo.</p></div>
 """,unsafe_allow_html=True)
 
 st.markdown("### Elige cómo quieres trabajar")
@@ -34,8 +34,8 @@ with c1:
 with c2:
     st.markdown("""
     <div class="mode-card"><span class="pill">LABORATORIO APLICADO</span><h3>Probar decisiones operativas</h3>
-    <p>Ruta 18–23 para trabajar casos, capacidad, comparación y economía.</p><b>Permite</b><ul>
-    <li>Resolver casos de hospital, banca y producción</li><li>Construir escenarios M/M/1 y M/M/s</li><li>Analizar capacidad finita y bloqueo</li><li>Comparar dos alternativas</li><li>Evaluar costo de capacidad vs. espera</li>
+    <p>Ruta 18–24 para trabajar casos, capacidad, economía y diagnóstico de supuestos.</p><b>Permite</b><ul>
+    <li>Resolver casos de hospital, banca y producción</li><li>Construir escenarios M/M/1 y M/M/s</li><li>Analizar capacidad finita y bloqueo</li><li>Comparar alternativas y costos</li><li>Revisar datos antes de elegir el modelo</li>
     </ul></div>
     """,unsafe_allow_html=True)
 with c3:
@@ -48,12 +48,12 @@ with c3:
 
 st.markdown("### Flujo de la plataforma")
 f1,f2,f3,f4,f5=st.columns(5)
-with f1: st.markdown('<div class="flow"><strong>1. Visualiza</strong><br><span class="small-note">Comprende el sistema</span></div>',unsafe_allow_html=True)
-with f2: st.markdown('<div class="flow"><strong>2. Experimenta</strong><br><span class="small-note">Modifica parámetros</span></div>',unsafe_allow_html=True)
-with f3: st.markdown('<div class="flow"><strong>3. Compara</strong><br><span class="small-note">Evalúa alternativas</span></div>',unsafe_allow_html=True)
-with f4: st.markdown('<div class="flow"><strong>4. Valora</strong><br><span class="small-note">Servicio y costo</span></div>',unsafe_allow_html=True)
+with f1: st.markdown('<div class="flow"><strong>1. Comprende</strong><br><span class="small-note">Conoce el modelo</span></div>',unsafe_allow_html=True)
+with f2: st.markdown('<div class="flow"><strong>2. Valida</strong><br><span class="small-note">Revisa supuestos</span></div>',unsafe_allow_html=True)
+with f3: st.markdown('<div class="flow"><strong>3. Experimenta</strong><br><span class="small-note">Modifica parámetros</span></div>',unsafe_allow_html=True)
+with f4: st.markdown('<div class="flow"><strong>4. Compara</strong><br><span class="small-note">Servicio y costo</span></div>',unsafe_allow_html=True)
 with f5: st.markdown('<div class="flow"><strong>5. Decide</strong><br><span class="small-note">Sustenta la recomendación</span></div>',unsafe_allow_html=True)
 
-st.info("Para aprender desde cero inicia en **01. Fundamentos**. Para experimentar con aplicaciones usa los módulos **18–23**. Para un análisis real completo abre **25. Análisis End-to-End**.")
+st.info("Para aprender desde cero inicia en **01. Fundamentos**. Para trabajar aplicaciones usa **18–23**. Antes de aplicar un modelo a datos reales revisa **24. Validador de Supuestos** y luego continúa con **25. Análisis End-to-End**.")
 st.markdown("---")
 st.caption("Mag. Carlos Alberto Nieto Astahuamán · Aplicación educativa desarrollada con fines académicos. Los resultados dependen de los supuestos del modelo y deben contrastarse con el comportamiento real del proceso.")

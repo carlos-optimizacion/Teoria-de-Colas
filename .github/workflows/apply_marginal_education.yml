@@ -1,0 +1,72 @@
+name: Aplicar mejora visual y análisis marginal
+
+on:
+  push:
+    branches: [mejora-arquitectura-validacion]
+    paths:
+      - tools/apply_marginal_education.py
+      - .github/workflows/apply_marginal_education.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: mejora-arquitectura-validacion
+          fetch-depth: 0
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Corregir literal del generador
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('tools/apply_marginal_education.py')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace("visual_function = '''", "visual_function = r'''", 1)
+          p.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Aplicar mejora pedagógica
+        run: python tools/apply_marginal_education.py
+
+      - name: Limpiar espacios finales
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('interpretation_core.py')
+          lines = p.read_text(encoding='utf-8').splitlines()
+          p.write_text('\n'.join(line.rstrip() for line in lines) + '\n', encoding='utf-8')
+          PY
+
+      - name: Validar sintaxis y pruebas
+        run: |
+          python -m compileall -q home.py queue_core.py interpretation_core.py pages tests
+          python -m pytest -q
+          git diff --check
+
+      - name: Guardar cambios
+        run: |
+          if git diff --quiet; then
+            echo "No hay cambios pendientes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add interpretation_core.py pages tools/apply_marginal_education.py
+          git commit -m "Mejora interpretación visual y añade análisis marginal"
+          git push origin HEAD:mejora-arquitectura-validacion

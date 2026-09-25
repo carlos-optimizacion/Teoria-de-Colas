@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import interpret_dd1, to_markdown
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="16 - D/D/1 | Laboratorio", page_icon="🎓", layout="wide")
@@ -86,6 +87,19 @@ m1,m2,m3,m4=st.columns(4);m1.metric('Utilización',f'{rho*100:.1f}%');m2.metric(
 st.plotly_chart(grafico(df),use_container_width=True)
 with st.expander('Ver cronograma de los primeros clientes'):
     st.dataframe(df,use_container_width=True,hide_index=True)
+
+# EDU_INTERPRETATION_DD1
+st.markdown(
+    to_markdown(
+        interpret_dd1(
+            T,
+            S,
+            float(df["Espera"].mean()),
+            float(df.iloc[-1]["Espera"]),
+        ),
+        title="🧠 Interpretación del flujo determinista",
+    )
+)
 
 st.markdown('## 6. Reto de destreza')
 st.markdown('<div class="skill"><b>Reto:</b> las piezas llegan exactamente cada 5 min. Ajusta el tiempo de proceso para que los primeros 15 clientes tengan espera cero.</div>',unsafe_allow_html=True)

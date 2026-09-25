@@ -2,6 +2,7 @@ import math
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import interpret_mmsk, to_markdown
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="08 - M/M/1/c | Laboratorio", page_icon="🎓", layout="wide")
@@ -123,6 +124,12 @@ m1,m2,m3,m4,m5=st.columns(5)
 m1.metric('K total',r['K']);m2.metric('Bloqueo',f"{r['P_bloqueo']*100:.2f}%");m3.metric('Prob. de esperar',f"{r['P_espera']*100:.1f}%");m4.metric('Wq',f"{r['Wq']*60:.1f} min");m5.metric('Aceptados',f"{r['lambda_eff']:.2f}/h")
 st.plotly_chart(grafico_c(tl,ta,15),use_container_width=True)
 st.caption('Más espacio para esperar reduce el rechazo, pero no acelera al servidor. La congestión puede desplazarse desde “clientes perdidos” hacia “clientes esperando”.')
+
+# EDU_INTERPRETATION_MM1C
+r_interpretacion = dict(r)
+r_interpretacion.setdefault("s", 1)
+r_interpretacion.setdefault("lambda_efectiva", r.get("lambda_eff", r.get("lambda", 0.0)))
+st.markdown(to_markdown(interpret_mmsk(r_interpretacion), title="🧠 Interpretación de tu M/M/1 con espera limitada"))
 
 st.markdown('## 6. Reto de destreza')
 st.markdown('<div class="skill"><b>Reto:</b> llega un cliente cada 5 min y el servicio toma 4 min. Ajusta c hasta conseguir un bloqueo de 2 % o menos.</div>',unsafe_allow_html=True)

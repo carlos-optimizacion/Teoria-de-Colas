@@ -1,6 +1,8 @@
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import marginal_mms_markdown
+from interpretation_core import interpret_mm1, interpret_mms, to_markdown
 import streamlit.components.v1 as components
 
 from queue_core import mms_from_minutes
@@ -69,6 +71,13 @@ else:
     m4.metric("Espera Wq",f"{r['Wq']*60:.1f} min")
     m5.metric("Tiempo total W",f"{r['W']*60:.1f} min")
     st.markdown(f'<div class="callout"><b>Interpretación:</b> con {servidores} servidor(es), el cliente espera en promedio <b>{r["Wq"]*60:.1f} minutos</b> antes de iniciar su atención. La probabilidad de encontrar todos los servidores ocupados es aproximadamente <b>{r["P_espera"]*100:.1f}%</b>.</div>',unsafe_allow_html=True)
+
+# EDU_INTERPRETATION_SIMPLE_APPLIED
+lectura_simple = interpret_mm1(r) if servidores == 1 else interpret_mms(r, servidores)
+st.markdown(to_markdown(lectura_simple, title="🧠 Interpretación completa del escenario"))
+
+# EDU_MARGINAL_MMS_19
+st.markdown(marginal_mms_markdown(t_llegada, t_atencion, servidores, title="🔬 Efecto marginal de cambiar la dotación"))
 
 st.markdown("## 3. ¿Qué cambia si modificas la dotación?")
 filas=[]

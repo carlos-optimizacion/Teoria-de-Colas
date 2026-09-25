@@ -2,6 +2,7 @@ import math
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+from interpretation_core import interpret_mm1, to_markdown
 import streamlit.components.v1 as components
 
 st.set_page_config(
@@ -340,6 +341,9 @@ else:
 
 st.plotly_chart(grafico_sensibilidad(r_lab["mu"], r_lab["rho"] if r_lab["estable"] else None), use_container_width=True)
 st.caption("La espera aumenta de forma no lineal cuando la utilización se acerca al 100 %.")
+
+# EDU_INTERPRETATION_MM1
+st.markdown(to_markdown(interpret_mm1(r_lab)))
 
 st.markdown("## 8. Reto de destreza")
 st.markdown("""<div class="skill-box"><b>Reto:</b> los clientes llegan cada <b>6 minutos</b>. Ajusta el tiempo promedio de atención hasta conseguir una <b>espera de 5 minutos o menos</b> sin volver inestable el sistema.</div>""", unsafe_allow_html=True)
