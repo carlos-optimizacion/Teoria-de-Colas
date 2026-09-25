@@ -16,7 +16,7 @@ from .services import (
     sizing_analysis,
     validate_csv,
 )
-from .visual_service import visual_end_to_end_payload
+from .simulator_service import simulator_analysis
 
 
 def _json_body(request):
@@ -137,6 +137,11 @@ def end_to_end(request):
     return render(request, "portal/tool.html", {"active": "endtoend", "tool_key": "endtoend", "title": "Análisis End-to-End"})
 
 
+@ensure_csrf_cookie
+def simulator(request):
+    return render(request, "portal/simulator.html", {"active": "simulator"})
+
+
 @require_POST
 def model_api(request):
     try:
@@ -184,10 +189,15 @@ def validator_api(request):
 @require_POST
 def end_to_end_api(request):
     try:
-        data = _json_body(request)
-        analysis = end_to_end_analysis(data)
-        analysis["visual"] = visual_end_to_end_payload(data, analysis)
-        return _json_response({"ok": True, **analysis})
+        return _json_response({"ok": True, **end_to_end_analysis(_json_body(request))})
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        return _error(exc)
+
+
+@require_POST
+def simulator_api(request):
+    try:
+        return _json_response({"ok": True, **simulator_analysis(_json_body(request))})
     except (TypeError, ValueError, json.JSONDecodeError) as exc:
         return _error(exc)
 
