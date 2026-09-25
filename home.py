@@ -1,70 +1,73 @@
-# Archivo: Home.py
 import streamlit as st
 
-st.set_page_config(page_title="Inicio", layout="centered")
-st.title("📚 Bienvenido a la App de Teoría de Colas")
+st.set_page_config(page_title="Inicio", page_icon="📚", layout="wide")
+
+st.title("📚 Teoría de Colas | Aprendizaje + Análisis")
 st.markdown("#### Mag. Carlos Alberto Nieto Astahuamán")
 
 st.markdown("""
-Esta aplicación está diseñada para ayudarte a explorar, simular y aprender sobre modelos de teoría de colas de forma práctica e interactiva.
+Esta aplicación integra dos rutas de trabajo:
 
-Usa el menú lateral izquierdo para acceder a cada sección.
-Se recomienda seguir el orden numérico para un aprendizaje progresivo.
+- **Modo Aprendizaje:** teoría, ejemplos, ejercicios y evaluaciones progresivas.
+- **Modo Analista:** resolución End-to-End de un sistema real, desde el diagnóstico AS IS
+  hasta escenarios TO BE, evaluación económica y recomendación.
 """)
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("🎓 Modo Aprendizaje")
+    st.markdown("""
+    **Fundamentos**
+    - 01. Fundamentos de Colas
+
+    **Modelos simples y evaluaciones**
+    - 02–13. M/M/1, M/M/s y modelos con capacidad limitada
+
+    **Modelos complejos**
+    - 14–17. M/G/1 y modelo determinista
+
+    **Aplicación y simulación**
+    - 18. Casos Prácticos Aplicados
+    - 19. Modelos de Colas Simples
+    - 20. Modelos de Colas Complejas
+    - 21. Comparador de Modelos
+
+    **Evaluación y análisis**
+    - 22. Evaluación Económica
+    - 23. Eficiencia del Servidor
+    - 24. Evaluación Final
+    """)
+
+with col2:
+    st.subheader("🧭 Modo Analista End-to-End")
+    st.success("Nuevo: **25. Análisis End-to-End de Sistemas de Colas**")
+    st.markdown("""
+    Utiliza este módulo cuando quieras analizar un caso completo:
+
+    **1. Definir el problema real**  
+    **2. Seleccionar automáticamente el modelo**  
+    **3. Diagnosticar el escenario AS IS**  
+    **4. Generar escenarios TO BE**  
+    **5. Evaluar tiempos, utilización y costos**  
+    **6. Obtener una recomendación operativa**  
+    **7. Comparar AS IS vs TO BE y descargar el informe**
+
+    El objetivo es pasar de la fórmula a la **toma de decisiones en Ingeniería Industrial**.
+    """)
 
 st.markdown("---")
-
-st.subheader("📘 Contenido del Curso")
-
-st.markdown("### 🔹 Fundamentos")
+st.subheader("🧩 Ruta recomendada")
 st.markdown("""
-📖 01. Fundamentos de Colas
+Si estás aprendiendo el tema por primera vez, sigue el orden numérico desde el módulo 01.
+Si ya conoces la teoría y deseas resolver un problema aplicado, ve directamente al módulo **25**.
 """)
 
-st.markdown("### 🔹 Modelos Simples")
-st.markdown("""
-🧮 02. Modelo MM1 – Teoría y Ejemplo  
-📝 03. Evaluación MM1  
-🧮 04. Modelo MMs – Teoría y Ejemplo  
-📝 05. Evaluación MMs  
-🧮 06. Modelo MMsk  
-📝 07. Evaluación MMsk  
-🧮 08. Modelo MM1c  
-📝 09. Evaluación MM1c  
-🧮 10. Modelo MMsc  
-📝 11. Evaluación MMsc  
-🧮 12. Modelo MMcc  
-📝 13. Evaluación MMcc
-""")
-
-st.markdown("### 🔹 Modelos Complejos")
-st.markdown("""
-🧮 14. Modelo MG1  
-📝 15. Evaluación MG1  
-🧮 16. Modelo Determinista  
-📝 17. Evaluación Determinista
-""")
-
-st.markdown("### 🔹 Aplicación y Simulación")
-st.markdown("""
-🔍 18. Casos Prácticos Aplicados  
-💡 19. Modelos Colas Simples  
-💡 20. Modelos Colas Complejas  
-📊 21. Comparador de Modelos
-""")
-
-st.markdown("### 🔹 Evaluación y Análisis Final")
-st.markdown("""
-💰 22. Evaluación Económica  
-⚙️ 23. Evaluación Eficiencia Servidor  
-🎓 24. Evaluación Final Teoría de Colas
-""")
-
-st.markdown("---")
-st.info("Usa el menú lateral izquierdo para acceder a cada sección. Se recomienda seguir el orden secuencial para un mejor aprendizaje.")
+st.info("Usa el menú lateral para acceder a los módulos. El módulo 25 integra el flujo completo de análisis.")
 
 st.markdown("---")
 st.markdown("""
 📩 Contacto: **carlosnias@gmail.com**  
-© 2025 - Todos los derechos reservados. Esta aplicación ha sido desarrollada con fines educativos. No se permite su copia, reproducción o redistribución sin autorización expresa del autor.
+© 2025 - Todos los derechos reservados. Aplicación desarrollada con fines educativos.
+No se permite su copia, reproducción o redistribución sin autorización expresa del autor.
 """)
