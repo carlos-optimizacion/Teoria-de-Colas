@@ -1,4 +1,3 @@
-import io
 import json
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -15,6 +14,7 @@ class PortalTests(TestCase):
             "portal:mm1c", "portal:mmstotal", "portal:erlangb", "portal:mg1", "portal:dd1",
             "portal:cases", "portal:simple", "portal:complex", "portal:comparator",
             "portal:economics", "portal:sizing", "portal:validator", "portal:endtoend",
+            "portal:simulator",
         ]
         for name in names:
             with self.subTest(name=name):
@@ -69,17 +69,32 @@ class PortalTests(TestCase):
         self.assertIn("rows", sizing.json())
 
     def test_end_to_end_api(self):
-        response = self.post_json("portal:end_to_end_api", {"t_llegada":8,"t_atencion":12,"current_servers":2,"max_servers":10,"cost_staff":25,"cost_wait":15,"meta_wq":10,"meta_p_wait":0.9,"visual_horizon":60})
+        response = self.post_json("portal:end_to_end_api", {"t_llegada":8,"t_atencion":12,"current_servers":2,"max_servers":10,"cost_staff":25,"cost_wait":15,"meta_wq":10,"meta_p_wait":0.9})
         self.assertEqual(response.status_code, 200)
         body = response.json()
         self.assertIn("actual", body)
         self.assertIn("recommended", body)
         self.assertIn("marginal", body)
+        self.assertNotIn("visual", body)
+
+    def test_simulator_api_is_student_driven_and_has_service_level(self):
+        response = self.post_json(
+            "portal:simulator_api",
+            {"t_llegada":8,"t_atencion":12,"servers":3,"horizon":60,"sla_threshold":10,"sla_target":0.90},
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertTrue(body["ok"])
+        self.assertIn("analytic", body)
         self.assertIn("visual", body)
-        self.assertEqual(body["visual"]["horizon_min"], 60)
-        self.assertGreater(len(body["visual"]["current"]["frames"]), 1)
-        self.assertGreater(len(body["visual"]["recommended"]["frames"]), 1)
-        self.assertTrue(body["visual"]["same_base_randomness"])
+        self.assertIn("indicator_help", body)
+        self.assertNotIn("recommended", body)
+        self.assertIn("service_level", body["analytic"])
+        self.assertEqual(body["analytic"]["servers"], 3)
+        self.assertGreaterEqual(body["analytic"]["service_level"], 0)
+        self.assertLessEqual(body["analytic"]["service_level"], 1)
+        self.assertGreater(len(body["visual"]["frames"]), 1)
+        self.assertGreaterEqual(len(body["indicator_help"]), 7)
 
     def test_unstable_end_to_end_returns_strict_json(self):
         response = self.post_json(
@@ -93,7 +108,6 @@ class PortalTests(TestCase):
                 "cost_wait": 15,
                 "meta_wq": 10,
                 "meta_p_wait": 0.9,
-                "visual_horizon": 60,
             },
         )
         self.assertEqual(response.status_code, 200)
@@ -108,6 +122,20 @@ class PortalTests(TestCase):
         self.assertIsNone(body["actual"]["wq_min"])
         self.assertIsNone(body["rows"][0]["Wq_min"])
         self.assertIsNone(body["rows"][0]["cost_total"])
+
+    def test_unstable_simulator_returns_strict_json_without_recommendation(self):
+        response = self.post_json(
+            "portal:simulator_api",
+            {"t_llegada":8,"t_atencion":12,"servers":1,"horizon":60,"sla_threshold":10,"sla_target":0.90},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(b"Infinity", response.content)
+        self.assertNotIn(b"NaN", response.content)
+        body = response.json()
+        self.assertFalse(body["analytic"]["stable"])
+        self.assertIsNone(body["analytic"]["wq_min"])
+        self.assertEqual(body["analytic"]["service_level"], 0)
+        self.assertNotIn("recommended", body)
 
     def test_validator_csv(self):
         csv_data = "interarrival_min,service_min\n5,4\n7,6\n4,5\n6,8\n8,7\n"
