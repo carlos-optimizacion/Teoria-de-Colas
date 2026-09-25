@@ -61,11 +61,11 @@ def model_mms(request): return _model_page(request, "mms")
 @ensure_csrf_cookie
 def model_mmsk(request): return _model_page(request, "mmsk")
 @ensure_csrf_cookie
-def model_mm1c(request): return _model_page(request, "mm1c")
+def model_mm1c(request): return _model_page(request, "mm1c", title="M/M/1/c")
 @ensure_csrf_cookie
-def model_mmstotal(request): return _model_page(request, "mmstotal")
+def model_mmstotal(request): return _model_page(request, "mmstotal", title="M/M/s/c")
 @ensure_csrf_cookie
-def model_erlangb(request): return _model_page(request, "erlangb")
+def model_erlangb(request): return _model_page(request, "erlangb", title="M/M/c/c · Erlang B")
 @ensure_csrf_cookie
 def model_mg1(request): return _model_page(request, "mg1")
 @ensure_csrf_cookie
