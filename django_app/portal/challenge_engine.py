@@ -4,7 +4,6 @@ Finite-horizon FCFS queueing, common random numbers by customer ID, hourly
 staffing, time-specific player interventions, capacity limits and scenario shocks.
 All economic figures are illustrative parameters supplied by the exercise.
 """
-from collections import deque
 from heapq import heappop, heappush
 from math import isfinite, sqrt
 from random import Random
@@ -26,6 +25,15 @@ def _integer(value, name, lo, hi):
     if isinstance(value, bool) or not isfinite(n) or not n.is_integer() or not lo <= n <= hi:
         raise ValueError(f"{name} debe ser un entero entre {lo} y {hi}")
     return int(n)
+
+def _number(value,name,lo,hi):
+    try:
+        n=float(value)
+    except (TypeError,ValueError,OverflowError) as exc:
+        raise ValueError(f"{name} debe ser numérico") from exc
+    if not isfinite(n) or n < lo or n > hi:
+        raise ValueError(f"{name} debe estar entre {lo} y {hi}")
+    return n
 
 def _actions(raw, config):
     if not isinstance(raw, list) or len(raw) > 24:
@@ -58,10 +66,15 @@ def _arrivals(config, seed):
             result.append(t)
     return result
 
-def _run(config, staffing, actions, seed):
+def _run(config, staffing, actions, seed, options=None):
+    options=options or {}
+    patience_min=float(options.get("patience_min",0) or 0)
+    priority_share=float(options.get("priority_share",0) or 0)
     horizon = config["duration"]
     arrivals = _arrivals(config, seed)
     service_rng = Random(seed + 100003)
+    patience_rng = Random(seed + 200003)
+    priority_rng = Random(seed + 300003)
     service_duration = {i: service_rng.expovariate(1 / config["service_min"]) for i in range(1, len(arrivals)+1)}
     arrival_time = {i: t for i, t in enumerate(arrivals, 1)}
     events, order = [], 0
@@ -79,13 +92,15 @@ def _run(config, staffing, actions, seed):
     for action in actions:
         schedule(action["minute"], 1, "decision", action["servers"])
     servers = [None] * config["max_servers"]
-    waiting = deque()
+    waiting = []
+    waiting_ids = set()
+    class_priority = {i: (0 if priority_rng.random() < priority_share else 1) for i in range(1,len(arrivals)+1)}
     override = None
     last = 0.
     area_queue = area_busy = capacity_area = wait_cost = staff_cost = 0.
-    admitted = rejected = finished = started = compliant = 0
+    admitted = rejected = abandoned = finished = started = compliant = 0
     total_wait = total_system = max_queue = 0.
-    frames = [{"t": 0, "kind": "start", "client": None, "queue": 0, "queue_ids": [], "busy": 0, "servers": list(servers), "active": staffing[0], "arrivals": 0, "completed": 0, "blocked": 0}]
+    frames = [{"t": 0, "kind": "start", "client": None, "queue": 0, "queue_ids": [], "busy": 0, "servers": list(servers), "active": staffing[0], "arrivals": 0, "completed": 0, "blocked": 0, "abandoned": 0}]
     series = [{"t": 0, "queue": 0, "busy": 0}]
     def levels(time):
         planned = override if override is not None else staffing[min(int(time // 60), len(staffing)-1)]
@@ -114,16 +129,28 @@ def _run(config, staffing, actions, seed):
                 label = "blocked"
             else:
                 admitted += 1
-                waiting.append((cid, t))
+                waiting.append((class_priority[cid], order, cid, t))
+                waiting.sort(key=lambda x:(x[0],x[1]))
+                waiting_ids.add(cid)
+                if patience_min > 0:
+                    patience=patience_rng.expovariate(1/patience_min)
+                    schedule(t+patience,1,"abandon",cid)
         elif kind == "departure":
             finished += 1
             total_system += t - arrival_time[cid]
             servers[slot] = None
+        elif kind == "abandon":
+            if cid in waiting_ids:
+                waiting[:] = [item for item in waiting if item[2] != cid]
+                waiting_ids.discard(cid)
+                abandoned += 1
+                label = "abandon"
         _, active = levels(t)
         for s in range(active):
             if servers[s] is not None or not waiting:
                 continue
-            next_id, arrived = waiting.popleft()
+            _, _, next_id, arrived = waiting.pop(0)
+            waiting_ids.discard(next_id)
             wait = t-arrived
             started += 1
             total_wait += wait
@@ -134,9 +161,9 @@ def _run(config, staffing, actions, seed):
         current_busy = sum(x is not None for x in servers)
         if len(frames) < 3000:
             frames.append({"t": round(t,3), "kind": label, "client": cid if kind in ("arrival", "departure") else None,
-                "queue": len(waiting), "queue_ids": [x[0] for x in list(waiting)[:20]],
+                "queue": len(waiting), "queue_ids": [x[2] for x in waiting[:20]],
                 "busy": current_busy, "servers": list(servers), "active": active,
-                "arrivals": arrivals_processed, "completed": finished, "blocked": rejected})
+                "arrivals": arrivals_processed, "completed": finished, "blocked": rejected, "abandoned": abandoned})
         if len(series) < 3000:
             series.append({"t": round(t,3), "queue": len(waiting), "busy": current_busy})
     dt = max(0., horizon-last)
@@ -149,14 +176,14 @@ def _run(config, staffing, actions, seed):
     staff_cost += planned*dt*config["staff_hour"]/60.
     if len(frames) < 3000:
         frames.append({"t": horizon, "kind": "end", "client": None, "queue": len(waiting),
-            "queue_ids": [x[0] for x in list(waiting)[:20]], "busy": occupied, "servers": list(servers),
-            "active": active, "arrivals": arrivals_processed, "completed": finished, "blocked": rejected})
-    outstanding = admitted-finished
-    lost = rejected*config["lost_cost"]
-    return {"arrivals": len(arrivals), "admitted": admitted, "blocked": rejected,
+            "queue_ids": [x[2] for x in waiting[:20]], "busy": occupied, "servers": list(servers),
+            "active": active, "arrivals": arrivals_processed, "completed": finished, "blocked": rejected, "abandoned": abandoned})
+    outstanding = admitted-finished-abandoned
+    lost = rejected*config["lost_cost"] + abandoned*config["lost_cost"]*.5
+    return {"arrivals": len(arrivals), "admitted": admitted, "blocked": rejected, "abandoned": abandoned,
         "completed": finished, "started": started, "unserved_at_close": outstanding,
         "avg_wait": total_wait/max(started,1), "avg_system": total_system/max(finished,1),
-        "sla": compliant/max(admitted,1), "p_block": rejected/max(len(arrivals),1),
+        "sla": compliant/max(admitted,1), "p_block": rejected/max(len(arrivals),1), "p_abandon": abandoned/max(admitted,1),
         "utilization": area_busy/max(capacity_area,1), "avg_queue": area_queue/horizon,
         "staff_cost": staff_cost, "waiting_cost": wait_cost, "lost_cost": lost,
         "total_cost": staff_cost + wait_cost + lost, "max_queue": max_queue,
@@ -181,24 +208,25 @@ def evaluate_game(payload):
         raise ValueError("Se requiere una dotación por cada hora")
     staffing = [_integer(s, "servidores", 1, cfg["max_servers"]) for s in staffing]
     actions = _actions(payload.get("actions", []), cfg)
-    runs = [_run(cfg, staffing, actions, seed + i*1709) for i in range(replications)]
-    columns = ("arrivals","admitted","blocked","completed","started","unserved_at_close",
-        "avg_wait","avg_system","sla","p_block","utilization","avg_queue",
+    options={"patience_min":_number(payload.get("patience_min",0),"patience_min",0,240),"priority_share":_number(payload.get("priority_share",0),"priority_share",0,1)}
+    runs = [_run(cfg, staffing, actions, seed + i*1709, options) for i in range(replications)]
+    columns = ("arrivals","admitted","blocked","abandoned","completed","started","unserved_at_close",
+        "avg_wait","avg_system","sla","p_block","p_abandon","utilization","avg_queue",
         "staff_cost","waiting_cost","lost_cost","total_cost","max_queue")
     metrics = {name: round(mean(r[name] for r in runs),4) for name in columns}
     confidence = {}
-    for name in ("sla", "avg_wait", "total_cost", "p_block"):
+    for name in ("sla", "avg_wait", "total_cost", "p_block", "p_abandon"):
         values = [r[name] for r in runs]
         error = 1.96*stdev(values)/sqrt(replications) if replications > 1 else None
         low = max(0, mean(values)-error) if error is not None else None
-        high = min(1,mean(values)+error) if error is not None and name in ("sla","p_block") else (mean(values)+error if error is not None else None)
+        high = min(1,mean(values)+error) if error is not None and name in ("sla","p_block","p_abandon") else (mean(values)+error if error is not None else None)
         confidence[name] = {"mean":metrics[name], "low":round(low,4) if low is not None else None,
             "high":round(high,4) if high is not None else None, "method":"intervalo normal exploratorio 95%"}
     budget = metrics["staff_cost"] <= cfg["budget"]
     service = metrics["sla"] >= cfg["sla_target"]
     baseline = cfg["budget"] + cfg["lost_cost"]*max(1,metrics["arrivals"])*.3
     cost_score = max(0,1-min(1,metrics["total_cost"]/baseline))
-    loss_score = 1-metrics["blocked"]/max(1,metrics["arrivals"])
+    loss_score = 1-(metrics["blocked"]+metrics["abandoned"])/max(1,metrics["arrivals"])
     resilience = 1-metrics["unserved_at_close"]/max(1,metrics["admitted"])
     score = round(35*cost_score+30*min(1,metrics["sla"]/cfg["sla_target"])
         +20*loss_score+15*resilience,1)
@@ -208,9 +236,10 @@ def evaluate_game(payload):
     if budget: achievements.append("Disciplina presupuestaria")
     if service: achievements.append("Calidad de servicio")
     if metrics["blocked"] == 0: achievements.append("Sin rechazos")
+    if metrics["abandoned"] == 0: achievements.append("Sin abandonos")
     if budget and service: achievements.append("Misión cumplida")
     return {"scenario":key, "title":cfg["name"],"config":cfg,
-        "staffing":staffing,"actions":actions,"replications":replications,"metrics":metrics,
+        "staffing":staffing,"actions":actions,"options":options,"replications":replications,"metrics":metrics,
         "confidence_95":confidence,"score":score,"achievements":achievements,
         "passes":{"budget":budget,"sla":service},"events":runs[0]["events"],"series":runs[0]["series"],
-        "method":"FIFO, horizonte finito; SLA sobre admitidos, incluidos pendientes; promedios de réplicas independientes, visualización de la primera réplica."}
+        "method":("Prioridad no expropiativa" if options["priority_share"]>0 else "FIFO")+", horizonte finito; SLA sobre admitidos, incluidos pendientes y abandonos; promedios de réplicas independientes, visualización de la primera réplica."}
