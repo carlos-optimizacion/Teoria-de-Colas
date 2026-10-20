@@ -49,6 +49,17 @@ jobs:
           assert n['arrivals'] == n['completed'] + n['in_system_at_close']
           print('Engine smoke OK')
           PY
+      - name: Streamlit AppTest
+        run: |
+          python - <<'PY'
+          from streamlit.testing.v1 import AppTest
+          at=AppTest.from_file("streamlit_app.py")
+          at.run(timeout=30)
+          if at.exception:
+              raise AssertionError(at.exception)
+          assert len(at.radio) >= 1
+          print("AppTest OK")
+          PY
       - name: Start Streamlit
         run: |
           streamlit run streamlit_app.py --server.headless true --server.address 127.0.0.1 --server.port 8501 >/tmp/streamlit.log 2>&1 &
