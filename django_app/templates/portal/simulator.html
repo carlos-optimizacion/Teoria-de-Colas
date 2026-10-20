@@ -58,7 +58,7 @@
     </div>
   </div>
   <div class="sim-time-row"><strong id="sim-clock">00:00 / 60:00</strong><div class="sim-progress"><span id="sim-progress-bar"></span></div><small>1× = 1 minuto simulado por segundo real</small></div>
-  <article class="sim-board simulator-single-board" id="sim-board" data-scene-art="{% static 'img/scenarios/banco.svg' %}"></article>
+  <div id="legacy-dynamic-scene" class="sim-legacy-scene" aria-label="Escena dinámica con puestos y clientes en atención"></div><article class="sim-board simulator-single-board" id="sim-board" data-scene-art="{% static 'img/scenarios/banco.svg' %}"></article>
   <div class="sim-summary-grid simulator-summary" id="sim-summary-grid"></div>
 </section>
 
@@ -68,4 +68,4 @@
 </section>
 {% endblock %}
 
-{% block scripts %}<script src="{% static 'js/simulator.js' %}"></script>{% endblock %}
+{% block scripts %}<script src="{% static 'js/dynamic-scene.js' %}"></script><script src="{% static 'js/simulator.js' %}"></script>{% endblock %}
