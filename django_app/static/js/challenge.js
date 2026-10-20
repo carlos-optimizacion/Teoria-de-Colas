@@ -118,10 +118,12 @@ function renderFrame(){
   el("challenge-scrub").value=step;
   const ids=f.queue_ids||[];
   el("c-queue-people").innerHTML=ids.length?ids.map(person).join("")+(f.queue>ids.length?'<span>+'+(f.queue-ids.length)+'</span>':""):"<i>Sin clientes esperando</i>";
-  el("c-server-list").innerHTML=(f.servers||[]).map((cid,i)=>{
-    const active=i<f.active,occupied=cid!=null;
-    return '<div class="arena-server '+(!active?'is-off':occupied?'is-busy':"")+'"><strong>P'+(i+1)+'</strong>'+(occupied?person(cid):'<span>'+(active?'Libre':'Cerrado')+'</span>')+'</div>';
-  }).join("");
+  el("c-server-list").innerHTML=(f.servers||[])
+    .map((cid,i)=>({cid,i})).filter(({cid,i})=>i<f.active || cid!=null)
+    .map(({cid,i})=>{
+      const active=i<f.active,occupied=cid!=null;
+      return '<div class="arena-server '+(!active?'is-off':occupied?'is-busy':"")+'"><strong>P'+(i+1)+'</strong>'+(occupied?person(cid):'<span>'+(active?'Libre':'Cierre pendiente')+'</span>')+'</div>';
+    }).join("");
   const messages={start:"Comienza la jornada.",arrival:"El cliente "+f.client+" ingresa al sistema.",blocked:"Cliente "+f.client+" rechazado por capacidad completa.",departure:"Finaliza la atención del cliente "+f.client+".",shift:"Cambio programado de dotación.",decision:"Decisión gerencial aplicada: "+f.active+" servidores disponibles.",incident:"Evento de indisponibilidad de un servidor.",end:"Fin de la jornada."};
   el("challenge-event").textContent=messages[f.kind]||"Evento operativo.";
   renderSceneActors(f);
