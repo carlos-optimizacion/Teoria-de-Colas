@@ -166,3 +166,7 @@ class PortalTests(TestCase):
     def test_gamma_service_simulation(self):
         result = simulate_queue(12, 8, 1, horizon_min=120, replications=2, seed=11, service_distribution="gamma", service_cv=1.5)
         self.assertGreaterEqual(result["wq_min"], 0)
+
+
+# Django test discovery imports the challenge suite explicitly.
+from .challenge_checks import ChallengeEngineTests  # noqa: F401
