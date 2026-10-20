@@ -27,7 +27,7 @@ def progress(request):
 
 def leaderboard(request):
     scenario=request.GET.get("scenario","")
-    qs=GameRun.objects.filter(user__isnull=False)
+    qs=GameRun.objects.filter(user__isnull=False,user__decision_progress__public_ranking=True)
     if scenario in SCENARIOS:qs=qs.filter(scenario=scenario)
     # one best run per user, deterministic display after sorting in Python
     best={}
@@ -96,6 +96,10 @@ def account_settings(request):
         request.user.last_name=str(request.POST.get("last_name",""))[:150].strip()
         request.user.email=str(request.POST.get("email",""))[:254].strip()
         request.user.save(update_fields=["first_name","last_name","email"])
+        progress,_=UserProgress.objects.get_or_create(user=request.user)
+        progress.public_ranking=request.POST.get("public_ranking")=="on"
+        progress.save(update_fields=["public_ranking","updated_at"])
         messages.success(request,"Perfil actualizado.")
         return redirect("portal:account_settings")
-    return render(request,"portal/account_settings.html",{"active":"settings"})
+    progress,_=UserProgress.objects.get_or_create(user=request.user)
+    return render(request,"portal/account_settings.html",{"active":"settings","progress":progress})
