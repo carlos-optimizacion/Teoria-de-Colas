@@ -25,6 +25,32 @@
       <a href="{% url 'portal:mg1' %}" class="arena-model"><small>07 · VARIABILIDAD</small><b>M/G/1</b><span>Servicio general</span></a>
       <a href="{% url 'portal:dd1' %}" class="arena-model"><small>08 · DETERMINISTA</small><b>D/D/1</b><span>Secuencias exactas</span></a>
     </div>
+    <div class="arena-card arena-classic" id="classic-lab">
+      <div class="arena-card-top"><h3><span>LAB</span> Mini-reto de modelos</h3><span class="arena-tag">Análisis académico</span></div>
+      <p>Prueba cualquier modelo existente con sus propios indicadores. Meta orientativa: sistema estable y espera promedio ≤ 10 minutos; no sustituye una evaluación de capacidad económica.</p>
+      <div class="arena-lab-grid">
+        <label>Modelo
+          <select id="lab-model">
+            <option value="mm1">M/M/1</option><option value="mms" selected>M/M/s</option>
+            <option value="mmsk">M/M/s/K</option><option value="mm1c">M/M/1/c</option>
+            <option value="mmstotal">M/M/s/c</option><option value="erlangb">Erlang B</option>
+            <option value="mg1">M/G/1</option><option value="dd1">D/D/1</option>
+          </select>
+        </label>
+        <label>Interarribo promedio (min)<input id="lab-arrival" type="number" min="0.1" step="0.1" value="8"></label>
+        <label>Servicio promedio (min)<input id="lab-service" type="number" min="0.1" step="0.1" value="12"></label>
+        <label>Servidores (s)<input id="lab-servers" type="number" min="1" max="25" step="1" value="2"></label>
+        <label>Capacidad total (K)<input id="lab-capacity" type="number" min="1" max="150" step="1" value="8"></label>
+        <label>Variabilidad servicio (CV)<input id="lab-cv" type="number" min="0" max="4" step="0.1" value="1"></label>
+        <label>Plazas de espera (c)<input id="lab-waiting" type="number" min="0" max="100" step="1" value="5"></label>
+        <label>Observaciones D/D/1<input id="lab-n" type="number" min="1" max="200" step="1" value="20"></label>
+      </div>
+      <button id="lab-run" class="arena-primary arena-lab-run">Calcular modelo y ejecutar simulación →</button>
+      <div id="lab-result" class="arena-classic-result" role="status">Selecciona el modelo y ejecuta tu primera prueba.</div>
+      <div id="lab-kpis" class="arena-kpis"></div>
+      <div id="lab-plot" class="arena-plot"></div>
+      <p id="lab-model-note" class="arena-note"></p>
+    </div>
   </section>
   <section class="arena-section" id="mission-panel">
     <div class="arena-section-title"><div><span class="arena-eyebrow">RUTA GAMIFICADA · DESAFÍOS</span><h2>Centro de operaciones</h2><p>Programa recursos, ejecuta la jornada y toma decisiones mientras observas la reproducción.</p></div><span class="arena-version">Modo gerencial · Beta</span></div>
@@ -95,4 +121,4 @@
 </div>
 {{ scenarios|json_script:"challenge-config" }}
 {% endblock %}
-{% block scripts %}<script src="{% static 'js/challenge.js' %}"></script>{% endblock %}
+{% block scripts %}<script src="{% static 'js/classic-lab.js' %}"></script><script src="{% static 'js/challenge.js' %}"></script>{% endblock %}
