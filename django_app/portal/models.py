@@ -10,6 +10,7 @@ class UserProgress(models.Model):
     completed_models=models.JSONField(default=list,blank=True)
     completed_scenarios=models.JSONField(default=list,blank=True)
     achievements=models.JSONField(default=list,blank=True)
+    public_ranking=models.BooleanField(default=False)
     updated_at=models.DateTimeField(auto_now=True)
 
     @staticmethod
