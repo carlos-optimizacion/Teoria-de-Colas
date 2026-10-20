@@ -52,6 +52,7 @@ jobs:
           node --check django_app/static/js/classic-lab.js
           node --check django_app/static/js/simulator.js
           node --check django_app/static/js/dynamic-scene.js
+          node --check django_app/static/js/network.js
       - name: Django tests
         working-directory: django_app
         run: python manage.py test
