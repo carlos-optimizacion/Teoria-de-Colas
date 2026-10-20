@@ -235,7 +235,7 @@ document.querySelectorAll(".sector-card").forEach(card=>card.addEventListener("c
   setup();
   el("mission-panel").scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
 }));
-el("challenge-run").addEventListener("click",()=>{actions=[];baseline=null;run();});
+el("challenge-run").addEventListener("click",()=>{baseline=null;run();});
 el("challenge-play").addEventListener("click",play);
 el("challenge-restart").addEventListener("click",()=>{stop();step=0;renderFrame();});
 el("challenge-scrub").addEventListener("input",e=>{stop();step=Number(e.target.value);renderFrame();});
@@ -257,5 +257,39 @@ async function saveScenario(){
 const saveButton=document.getElementById("challenge-save-scenario");
 if(saveButton)saveButton.addEventListener("click",saveScenario);
 
+
+function restoreSavedScenario(){
+  const script=document.getElementById("initial-saved-scenario");
+  if(!script)return;
+  try{
+    const saved=JSON.parse(script.textContent);
+    if(saved.scenario && scenarios[saved.scenario]){
+      el("challenge-scenario").value=saved.scenario;
+      setup();
+    }
+    const values={
+      "challenge-reps":saved.replications,
+      "challenge-arrival":saved.arrival_min,
+      "challenge-service":saved.service_min,
+      "challenge-capacity":saved.capacity,
+      "challenge-staff-cost":saved.staff_hour,
+      "challenge-wait-cost":saved.wait_hour,
+      "challenge-sla-min":saved.sla_min,
+      "challenge-sla-target":saved.sla_target,
+      "challenge-patience":saved.patience_min,
+      "challenge-priority":saved.priority_share
+    };
+    Object.entries(values).forEach(([id,value])=>{if(value!==undefined&&value!==null)el(id).value=String(value);});
+    if(Array.isArray(saved.staffing)){
+      document.querySelectorAll(".challenge-server").forEach((input,index)=>{if(saved.staffing[index]!=null)input.value=String(saved.staffing[index]);});
+      if(saved.staffing.length && saved.staffing.every(v=>v===saved.staffing[0]))el("challenge-uniform-servers").value=String(saved.staffing[0]);
+    }
+    actions=Array.isArray(saved.actions)?saved.actions.map(x=>({...x})):[];
+    el("challenge-actions").textContent=actions.length?"Intervenciones restauradas: "+actions.map(x=>"min "+x.minute+" → "+x.servers).join(" · "):"Escenario restaurado sin intervenciones.";
+    el("challenge-status").textContent="Estrategia guardada restaurada. Pulsa «Evaluar y simular».";
+  }catch(error){console.error("No se pudo restaurar el escenario guardado",error);}
+}
+
 setup();
+restoreSavedScenario();
 })();
