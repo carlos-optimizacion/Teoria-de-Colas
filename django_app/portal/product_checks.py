@@ -52,7 +52,8 @@ class ProductPersistenceTests(TestCase):
         progress=UserProgress.objects.get_or_create(user=self.user)[0]
         progress.public_ranking=True;progress.save()
         response=self.client.get(reverse("portal:leaderboard"))
-        self.assertContains(response,"99.0")
+        self.assertContains(response,"tester")
+        self.assertContains(response,"Banco")
 
     def test_account_settings_updates_profile_and_privacy(self):
         response=self.client.post(reverse("portal:account_settings"),{"first_name":"Carlos","last_name":"Test","email":"carlos@example.com","public_ranking":"on"})
