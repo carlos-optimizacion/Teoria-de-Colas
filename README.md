@@ -194,3 +194,24 @@ El frontend reúne el laboratorio de los ocho modelos originales, el simulador M
 **Control de calidad:** las pruebas matemáticas y Django se ejecutan en GitHub Actions. Playwright verifica la página unificada, imágenes, eventos, decisiones, simulador clásico y anchura de pantalla móvil; sus capturas se adjuntan como artefactos de CI. La aplicación no está publicada en un servidor público y la rama `main` permanece sin modificar.
 
 **Limitaciones:** esta es una beta de desarrollo. Aún faltan, para una versión productiva: perfiles persistentes, rankings multiusuario, gestión de partidas guardadas, validación de simulaciones de múltiples etapas y controles de despliegue/seguridad de producción.
+
+
+## Decision Lab 2.0 en Streamlit
+
+La versión integrada puede ejecutarse también con Streamlit usando el mismo motor matemático y de simulación validado.
+
+```bash
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
+
+Entrada principal: `streamlit_app.py`.
+
+Incluye cinco escenarios, simulación dinámica, decisiones de dotación, costos, SLA, abandonos, prioridades, distribuciones de servicio, ocho modelos matemáticos, comparación, análisis económico y red multietapa.
+
+Para Streamlit Community Cloud usa:
+- Repositorio: `carlos-optimizacion/Teoria-de-Colas`
+- Rama de revisión: `feature/decision-lab-challenge-2`
+- Archivo principal: `streamlit_app.py`
+
+Consulta `docs/STREAMLIT_DEPLOY.md` para el procedimiento completo. La persistencia multiusuario completa permanece en Django/PostgreSQL; la versión Streamlit conserva el progreso de gamificación de forma temporal en la sesión.
