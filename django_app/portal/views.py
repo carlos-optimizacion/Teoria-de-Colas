@@ -198,6 +198,8 @@ def validator_api(request):
         uploaded = request.FILES.get("file")
         if not uploaded:
             raise ValueError("Selecciona un archivo CSV.")
+        if uploaded.size > 5 * 1024 * 1024:
+            raise ValueError("El CSV no puede superar 5 MB.")
         result = validate_csv(uploaded, request.POST.get("arrival_column", ""), request.POST.get("service_column", ""))
         return _json_response({"ok": True, **result})
     except (TypeError, ValueError, UnicodeDecodeError) as exc:
