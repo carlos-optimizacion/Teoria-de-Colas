@@ -129,7 +129,7 @@
       </div>
       <div class="sim-artboard">
         <img src="${sceneArt}" alt="Escenario ilustrado del centro de atención" width="1200" height="500">
-        <div class="sim-art-status">M/M/s · ${sim.servers_count} puesto(s) · clientes reales de la réplica</div>
+        <div class="sim-art-status">Escenario ilustrativo · ${sim.servers_count} puesto(s) reales en el panel inferior</div>
         <div class="sim-art-actors" aria-hidden="true">${sceneQueue}${sceneStations}</div>
       </div>
       <div class="sim-flow">
