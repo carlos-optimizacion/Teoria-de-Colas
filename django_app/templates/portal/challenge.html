@@ -49,7 +49,17 @@
       <div class="arena-card-top"><h3>Parámetros del escenario</h3><span class="arena-tag">Configurar</span></div>
       <label>Escenario<select id="challenge-scenario">{% for key,c in scenarios.items %}<option value="{{ key }}">{{ c.name }}</option>{% endfor %}</select></label>
       <div id="scenario-preview-image-wrap" hidden><img id="scenario-preview-image" src="{% static 'img/scenarios/banco.svg' %}" alt=""></div>
-      <div id="challenge-staff" class="arena-staff compact-staff"></div>
+      <div class="target-parameter-grid">
+        <label>Interarribo promedio (min)<input id="challenge-arrival" type="number" min="0.1" max="240" step="0.1"></label>
+        <label>Servicio promedio (min)<input id="challenge-service" type="number" min="0.1" max="240" step="0.1"></label>
+        <label>Servidores base<input id="challenge-uniform-servers" type="number" min="1" max="12" step="1"></label>
+        <label>Capacidad total<input id="challenge-capacity" type="number" min="1" max="1000" step="1"></label>
+        <label>Costo servidor / h<input id="challenge-staff-cost" type="number" min="0" max="10000" step="0.5"></label>
+        <label>Costo espera / h<input id="challenge-wait-cost" type="number" min="0" max="10000" step="0.5"></label>
+        <label>Espera SLA (min)<input id="challenge-sla-min" type="number" min="0.1" max="240" step="0.5"></label>
+        <label>Meta SLA<input id="challenge-sla-target" type="number" min="0" max="1" step="0.01"></label>
+      </div>
+      <details class="hourly-staffing"><summary>Dotación por hora</summary><div id="challenge-staff" class="arena-staff compact-staff"></div></details>
       <label>Réplicas estadísticas<input id="challenge-reps" type="number" min="1" max="50" value="10"></label>
       <details class="advanced-sim-options"><summary>Opciones avanzadas</summary>
         <label>Paciencia media del cliente (min)<input id="challenge-patience" type="number" min="0" max="240" step="1" value="0"><small>0 = sin abandono. Si es mayor, la paciencia se modela exponencialmente.</small></label>
