@@ -112,3 +112,19 @@
 @keyframes scene-in{from{opacity:0;scale:.7}to{opacity:1;scale:1}}
 @media(max-width:650px){.scene-status{left:6px;top:7px;font-size:8px;padding:5px 7px}.scene-event-count{right:5px;top:6px;padding:4px 9px}.scene-event-count strong{font-size:16px}.scene-event-count small{font-size:8px}.scene-legend{gap:7px;font-size:9px}.scene-avatar{border-width:2px;font-size:8px}.scene-art-wrap{aspect-ratio:9/5}.scene-art{object-fit:cover;object-position:center}}
 @media(prefers-reduced-motion:reduce){.scene-avatar{animation:none;transition:none}}
+
+
+/* Destination cards make illustrated sectors visible without scrolling through forms. */
+.sector-gallery{margin:22px 0 30px}
+.sector-gallery-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.sector-card{appearance:none;border:2px solid #dae8ee;background:#fff;color:#133d55;border-radius:15px;display:flex;flex-direction:column;overflow:hidden;padding:0;text-align:left;cursor:pointer;min-width:0;transition:border-color .16s,transform .16s,box-shadow .16s}
+.sector-card img{display:block;width:100%;aspect-ratio:12/7;object-fit:cover;object-position:center;height:auto;background:#d8eaf0}
+.sector-card span{display:flex;flex-direction:column;gap:3px;padding:11px 13px;width:100%;box-sizing:border-box}
+.sector-card b{font-size:13px;color:#163a54}.sector-card small{font-size:11px;color:#6e8190}
+.sector-card:hover{border-color:#74bdd7;transform:translateY(-2px)}
+.sector-card.is-selected{border-color:#247fa1;box-shadow:0 0 0 3px #b3dceb9a}
+.sector-card:focus-visible{outline:3px solid #146891;outline-offset:2px}
+.arena-classic #lab-plot:empty,.arena-main #challenge-plot:empty{height:0;margin:0;min-height:0}
+@media(max-width:1050px){.sector-gallery-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.sector-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sector-card b{font-size:12px}.sector-card span{padding:8px 10px}}
+@media(prefers-reduced-motion:reduce){.sector-card{transition:none}}
