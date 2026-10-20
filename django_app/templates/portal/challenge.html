@@ -10,7 +10,7 @@
       <p>Estudia los modelos existentes, observa clientes individuales en un sistema de colas y responde a incidentes tomando decisiones gerenciales evaluadas con datos.</p>
       <a href="#mission-panel" class="arena-cta">Iniciar desafío ↓</a>
     </div>
-    <div class="arena-headline"><span>5</span> misiones gerenciales <strong>8</strong> rutas de modelos <small>Una plataforma · cálculo reproducible</small></div>
+    <div class="arena-headline"><span>5</span> misiones gerenciales <strong>8</strong> rutas de modelos <small>Un único aplicativo · cálculo reproducible</small><a class="arena-headline-link" href="{% url 'portal:simulator' %}">Simulación clásica ↗</a></div>
   </section>
 
   <section class="arena-section" id="classic-models">
@@ -60,7 +60,7 @@
           <h3><span>01</span> Selección de misión</h3>
           <label for="challenge-scenario">Escenario operativo</label>
           <select id="challenge-scenario">{% for key,c in scenarios.items %}<option value="{{ key }}">{{ c.name }}</option>{% endfor %}</select>
-          <div class="arena-brief" id="challenge-brief"></div>
+          <div class="arena-brief" id="challenge-brief"></div><div class="scenario-preview"><img id="scenario-preview-image" src="{% static 'img/scenarios/banco.svg' %}" alt="Vista ilustrada del escenario seleccionado" width="300" height="125"></div>
         </div>
         <div class="arena-card">
           <h3><span>02</span> Plan de capacidad</h3>
@@ -93,6 +93,15 @@
             <strong id="c-clock">00:00</strong>
             <span id="c-progress-label">Evento 0/0</span>
             <span id="c-arrival-label">0 llegadas</span>
+          </div>
+          <div class="scene-shell" id="scene-shell" data-assets-base="{% static 'img/scenarios/' %}">
+            <div class="scene-art-wrap">
+              <img id="c-scene-art" class="scene-art" src="{% static 'img/scenarios/banco.svg' %}" alt="Vista ilustrada del escenario operativo con puestos de atención y sala de espera" width="1200" height="500">
+              <div class="scene-status"><span class="scene-signal"></span><span id="scene-status-text">Escenario listo para operar</span></div>
+              <div class="scene-event-count"><strong id="scene-arrivals">0</strong><small>llegadas</small></div>
+              <div class="scene-moving-actors" id="scene-moving-actors" aria-hidden="true"></div>
+            </div>
+            <div class="scene-legend"><span><i class="dot dot-wait"></i> En espera</span><span><i class="dot dot-busy"></i> En servicio</span><span><i class="dot dot-finished"></i> Finalizados</span><span><i class="dot dot-blocked"></i> Rechazados</span></div>
           </div>
           <div class="arena-live-flow">
             <div class="arena-flow-cell"><div class="arena-flow-head">1 · Cola <b id="c-queue">0</b></div><div class="arena-customers" id="c-queue-people"><i>Sin clientes</i></div></div>
