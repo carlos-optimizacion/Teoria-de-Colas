@@ -55,7 +55,10 @@ function showKpis(d){
     return node.outerHTML;
   }).join("");
   el("challenge-achievements").innerHTML=(d.achievements||[]).map(x=>"<span>★ "+x+"</span>").join("");
-  el("challenge-badge").textContent=d.passes.sla&&d.passes.budget?"Misión cumplida":"Mejorar estrategia";
+  const medal=d.passes.sla&&d.passes.budget?(d.score>=90?"Oro":d.score>=80?"Plata":d.score>=70?"Bronce":"Misión cumplida"):"En entrenamiento";
+  el("challenge-badge").textContent=medal;
+  // Personal progress is stored only in this browser, not sent to a leaderboard.
+  try {const key="decisionlab.best."+d.scenario;const best=Number(localStorage.getItem(key)||0);if(d.score>best)localStorage.setItem(key,String(d.score));}catch(e){}
   el("challenge-status").className="arena-status "+(d.passes.sla&&d.passes.budget?"arena-success":"arena-warning");
   el("challenge-status").textContent=(d.passes.sla&&d.passes.budget?"Ambas metas satisfechas. ":"Revisa los límites de presupuesto y servicio. ")+"Resultado: "+d.score+" / 100 puntos.";
 }
@@ -118,7 +121,9 @@ async function run({keepTime=false}={}){
   button.disabled=true;
   el("challenge-status").textContent="Ejecutando réplicas y calculando indicadores…";
   try{
-    const req=payload();
+    // Interventions freeze the initial staffing and statistical settings.
+    // They cannot silently rewrite already simulated decisions.
+    const req=keepTime&&last?{...last.payload,actions:actions.map(x=>({...x}))}:payload();
     const token=document.cookie.split("; ").find(v=>v.startsWith("csrftoken="))?.split("=")[1]||"";
     const r=await fetch("/api/challenge/",{method:"POST",credentials:"same-origin",
       headers:{"Content-Type":"application/json","X-CSRFToken":token},body:JSON.stringify(req)});
