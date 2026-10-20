@@ -33,3 +33,20 @@ Estado: rama de trabajo, no publicada ni fusionada. Una plataforma, tres espacio
 
 ## Criterio de cierre del producto integral
 Pruebas automáticas verdes; consistencia estadística corroborada; interfaz E2E completa en móvil/escritorio; cinco misiones con acciones durante reproducción; partida reproducible y exportable; costos calibrados; rankings opcionales; configuración segura y despliegue verificable.
+
+
+## Simulación visual dinámica — Implementación actual
+
+**Componente reutilizable:** `django_app/static/js/dynamic-scene.js`, compartido por `/aplicativo-app/` (partidas) y `/simular/colas/` (laboratorio M/M/s).
+
+- Genera puestos de atención en el DOM a partir del estado `active` y del vector real `servers`. No obliga a disponer de cuatro ventanillas.
+- Al reducir capacidad, oculta estaciones inactivas **únicamente si están vacías**. Los puestos ocupados permanecen visibles como `CIERRE PENDIENTE` hasta terminar su servicio, reflejando la regla del motor.
+- Cada cliente visible está identificado por un ID de las trazas reales `queue_ids`/`queue` y `servers`. Sus desplazamientos entre fila y puesto se animan manteniendo el mismo nodo por ID entre eventos.
+- El número de estaciones y la distribución se adaptan para 1 a 12 servidores, con rejillas sensibles al ancho del navegador; en el M/M/s clásico la representación corresponde al valor elegido por el usuario.
+- Indicadores de una jornada reproducida cambian al recorrer la línea de tiempo: llegadas, finalizados, cola, puestos ocupados/activos y rechazados.
+- La imagen SVG representa el ambiente sectorial; la cantidad y ocupación de estaciones provienen **solo** del motor. Se distinguen los resultados finales de todas las réplicas y las medidas de la réplica animada.
+- Las acciones en una partida no alteran el pasado; recalculan la trayectoria con los mismos sorteos base desde la decisión correspondiente. Se conserva el mecanismo de comparación inicial/alternativa.
+
+**Verificación exigida:** Playwright comprueba la apertura de la aplicación, las cinco escenas sectoriales, la conversión de 2 a 5 puestos al cambiar dotación, la intervención gerencial, el simulador académico con 5 puestos y el diseño móvil. Django y pruebas matemáticas se ejecutan como baterías independientes. No sustituye pruebas de carga, de seguridad ni el despliegue productivo.
+
+**Estado del entregable:** apto para evaluación en rama de desarrollo una vez las baterías de CI de la revisión estén verdes; no incluye persistencia/rankings ni escenarios de colas multietapa con abandono.
