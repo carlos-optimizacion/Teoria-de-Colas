@@ -1,5 +1,6 @@
 (() => {
   const form = document.getElementById('simulator-form');
+  const dynamicScene = window.DecisionLabScene.mount(document.getElementById('legacy-dynamic-scene'));
   const el = id => document.getElementById(id);
   const number = id => Number(el(id).value);
   const pct = value => value == null ? '—' : `${(Number(value) * 100).toFixed(1)}%`;
@@ -111,11 +112,6 @@
     const visibleQueue = queue.slice(0, 18);
     const hiddenQueue = Math.max(0, queue.length - visibleQueue.length);
     const modelName = sim.servers_count === 1 ? 'M/M/1' : `M/M/${sim.servers_count}`;
-    const sceneArt = el('sim-board').dataset.sceneArt;
-    const sceneQueue = visibleQueue.slice(0, 12).map((customer, index) =>
-       `<span class="sim-actor sim-actor-wait" style="left:${9+(index%6)*6.1}%;top:${72+Math.floor(index/6)*10}%" title="Cliente ${customer} en espera">${customer}</span>`).join('');
-    const sceneStations = servers.map((customer, index) =>
-       customer == null ? '' : `<span class="sim-actor sim-actor-service" style="left:${41.2+(index%4)*17.6}%;top:${53+Math.floor(index/4)*10}%" title="Cliente ${customer} en puesto ${index+1}">${customer}</span>`).join('');
     return `
       <div class="sim-board-head">
         <div><div class="sim-scenario-label">ESCENARIO DEL ALUMNO</div><b>${modelName}</b><span>${sim.servers_count} servidor(es) · horizonte ${sim.horizon_min} min</span></div>
@@ -126,11 +122,6 @@
         <div class="sim-kpi"><b>${frame?.completed || 0}</b><small>Atendidos</small></div>
         <div class="sim-kpi"><b>${frame?.queue_length || 0}</b><small>En cola</small></div>
         <div class="sim-kpi"><b>${frame?.max_queue || 0}</b><small>Máx. cola</small></div>
-      </div>
-      <div class="sim-artboard">
-        <img src="${sceneArt}" alt="Escenario ilustrado del centro de atención" width="1200" height="500">
-        <div class="sim-art-status">Escenario ilustrativo · ${sim.servers_count} puesto(s) reales en el panel inferior</div>
-        <div class="sim-art-actors" aria-hidden="true">${sceneQueue}${sceneStations}</div>
       </div>
       <div class="sim-flow">
         <div class="sim-zone sim-entry"><div class="sim-zone-title">Llegadas</div><div class="sim-arrow">→</div><small>Clientes</small></div>
@@ -173,6 +164,8 @@
     if (force || player.renderedIndex !== found.idx) {
       player.renderedIndex = found.idx;
       el('sim-board').innerHTML = boardHtml(player.data, found.frame);
+      dynamicScene.render({queue:found.frame?.queue || [],queue_length:found.frame?.queue_length || 0,
+        servers:found.frame?.servers || Array(player.data.servers_count).fill(null),active:player.data.servers_count});
     }
     updateClock();
   }
