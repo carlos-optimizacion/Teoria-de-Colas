@@ -29,7 +29,10 @@
       <a class="nav-link {% if active == 'leaderboard' %}active{% endif %}" href="{% url 'portal:leaderboard' %}"><span class="num">★</span><span>Clasificación</span></a>
       <a class="nav-link {% if active == 'settings' %}active{% endif %}" href="{% url 'portal:account_settings' %}"><span class="num">⚙</span><span>Configuración</span></a>
       <div class="nav-section">APRENDER</div>
-      <a class="nav-link {% if active == 'fundamentals' %}active{% endif %}" href="{% url 'portal:fundamentals' %}"><span class="num">?</span><span>Fundamentos</span></a>
+      <a class="nav-link {% if active == 'fundamentals' %}active{% endif %}" href="{% url 'portal:fundamentals' %}"><span class="num">?</span><span>Conceptos clave</span></a>
+      <a class="nav-link {% if active == 'exercises' %}active{% endif %}" href="{% url 'portal:exercises' %}"><span class="num">✓</span><span>Ejercicios</span></a>
+      <a class="nav-link {% if active == 'cases' %}active{% endif %}" href="{% url 'portal:cases' %}"><span class="num">◇</span><span>Casos reales</span></a>
+      <a class="nav-link {% if active == 'glossary' %}active{% endif %}" href="{% url 'portal:glossary' %}"><span class="num">≡</span><span>Glosario</span></a>
       <details class="nav-details" {% if active == 'mm1' or active == 'mms' or active == 'mmsk' or active == 'mm1c' or active == 'mmstotal' or active == 'erlangb' or active == 'mg1' or active == 'dd1' %}open{% endif %}>
         <summary>Modelos matemáticos <span>8</span></summary>
         <a href="{% url 'portal:mm1' %}" class="nav-link {% if active == 'mm1' %}active{% endif %}">M/M/1 · Un servidor</a>
