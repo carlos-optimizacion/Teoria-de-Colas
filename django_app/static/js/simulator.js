@@ -246,9 +246,9 @@
       renderKpis(data.analytic);
       renderHelp(data.indicator_help || []);
       renderCharts(data.analytic, data.visual);
-      loadPlayer(data.visual);
       el('simulator-charts-panel').hidden = false;
       el('simulator-player-panel').hidden = false;
+      loadPlayer(data.visual);
       el('simulator-help-panel').hidden = false;
     } catch (error) {
       el('simulator-alert').innerHTML = `<div class="notice danger">${error.message}</div>`;
