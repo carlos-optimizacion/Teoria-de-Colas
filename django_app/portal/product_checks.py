@@ -35,3 +35,28 @@ class ProductPersistenceTests(TestCase):
         self.client.logout()
         self.assertEqual(self.client.get(reverse("portal:progress")).status_code,302)
         self.assertEqual(self.client.get(reverse("portal:leaderboard")).status_code,200)
+
+    def test_saved_scenario_can_be_restored_and_deleted(self):
+        item=SavedScenario.objects.create(user=self.user,name="Plan restaurable",scenario="banco",payload={"scenario":"banco","staffing":[5]*8,"arrival_min":3})
+        response=self.client.get(reverse("portal:aplicativo_app")+f"?saved={item.id}")
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'id="initial-saved-scenario"')
+        delete=self.client.post(reverse("portal:delete_saved_scenario",args=[item.id]))
+        self.assertEqual(delete.status_code,302)
+        self.assertFalse(SavedScenario.objects.filter(pk=item.id).exists())
+
+    def test_leaderboard_requires_explicit_opt_in(self):
+        GameRun.objects.create(user=self.user,scenario="banco",title="Banco",score=99,passed=True,metrics={},staffing=[],actions=[],config={})
+        response=self.client.get(reverse("portal:leaderboard"))
+        self.assertNotContains(response,"99.0")
+        progress=UserProgress.objects.get_or_create(user=self.user)[0]
+        progress.public_ranking=True;progress.save()
+        response=self.client.get(reverse("portal:leaderboard"))
+        self.assertContains(response,"99.0")
+
+    def test_account_settings_updates_profile_and_privacy(self):
+        response=self.client.post(reverse("portal:account_settings"),{"first_name":"Carlos","last_name":"Test","email":"carlos@example.com","public_ranking":"on"})
+        self.assertEqual(response.status_code,302)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name,"Carlos")
+        self.assertTrue(UserProgress.objects.get(user=self.user).public_ranking)
