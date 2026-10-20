@@ -1,135 +1,216 @@
-"""Decision Lab Challenge: motor determinista de partidas gerenciales.
-No sustituye el cálculo estacionario de queue_core: simula trayectorias de horizonte finito.
+"""Simulation-backed management challenges for Decision Lab.
+
+Finite-horizon FCFS queueing, common random numbers by customer ID, hourly
+staffing, time-specific player interventions, capacity limits and scenario shocks.
+All economic figures are illustrative parameters supplied by the exercise.
 """
 from collections import deque
 from heapq import heappop, heappush
+from math import isfinite, sqrt
 from random import Random
-from math import isfinite
 from statistics import mean, stdev
-from math import sqrt
 
 SCENARIOS = {
- "banco": {"name":"Banco en hora punta","sector":"Banca","arrival_min":4,"service_min":6,"duration":480,"max_servers":8,"staff_hour":23,"wait_hour":13,"lost_cost":60,"sla_min":10,"sla_target":0.90,"budget":1100,"capacity":24,"incident":"demanda","difficulty":1},
- "hospital": {"name":"Urgencias ambulatorias","sector":"Salud","arrival_min":3,"service_min":9,"duration":480,"max_servers":10,"staff_hour":42,"wait_hour":34,"lost_cost":180,"sla_min":15,"sla_target":0.90,"budget":2500,"capacity":40,"incident":"ausencia","difficulty":3},
- "supermercado": {"name":"Cajas de supermercado","sector":"Retail","arrival_min":2,"service_min":7,"duration":480,"max_servers":12,"staff_hour":19,"wait_hour":10,"lost_cost":45,"sla_min":8,"sla_target":0.85,"budget":1700,"capacity":35,"incident":"demanda","difficulty":2},
- "fabrica": {"name":"Inspección industrial","sector":"Manufactura","arrival_min":5,"service_min":12,"duration":480,"max_servers":8,"staff_hour":30,"wait_hour":20,"lost_cost":90,"sla_min":12,"sla_target":0.90,"budget":1600,"capacity":30,"incident":"averia","difficulty":4},
- "logistica": {"name":"Andenes de despacho","sector":"Logística","arrival_min":3,"service_min":10,"duration":480,"max_servers":10,"staff_hour":28,"wait_hour":22,"lost_cost":100,"sla_min":15,"sla_target":0.90,"budget":1800,"capacity":32,"incident":"demanda","difficulty":3},
+    "banco": dict(name="Banco en hora punta", sector="Banca", model="M/M/s/K", arrival_min=4, service_min=6, duration=480, max_servers=8, staff_hour=23, wait_hour=13, lost_cost=60, sla_min=10, sla_target=.90, budget=1100, capacity=24, incident="demanda", difficulty=1),
+    "hospital": dict(name="Urgencias ambulatorias", sector="Salud", model="M/M/s/K", arrival_min=3, service_min=9, duration=480, max_servers=10, staff_hour=42, wait_hour=34, lost_cost=180, sla_min=15, sla_target=.90, budget=2500, capacity=40, incident="ausencia", difficulty=3),
+    "supermercado": dict(name="Cajas de supermercado", sector="Retail", model="M/M/s/K", arrival_min=2, service_min=7, duration=480, max_servers=12, staff_hour=19, wait_hour=10, lost_cost=45, sla_min=8, sla_target=.85, budget=1700, capacity=35, incident="demanda", difficulty=2),
+    "fabrica": dict(name="Inspección industrial", sector="Manufactura", model="M/M/s/K", arrival_min=5, service_min=12, duration=480, max_servers=8, staff_hour=30, wait_hour=20, lost_cost=90, sla_min=12, sla_target=.90, budget=1600, capacity=30, incident="averia", difficulty=4),
+    "logistica": dict(name="Andenes de despacho", sector="Logística", model="M/M/s/K", arrival_min=3, service_min=10, duration=480, max_servers=10, staff_hour=28, wait_hour=22, lost_cost=100, sla_min=15, sla_target=.90, budget=1800, capacity=32, incident="demanda", difficulty=3),
 }
-def _validated_int(value,name,lo,hi):
+
+def _integer(value, name, lo, hi):
     try:
-        numeric=float(value)
-    except (ValueError,TypeError,OverflowError):
-        raise ValueError(f"{name} debe ser entero")
-    if isinstance(value,bool) or not isfinite(numeric) or numeric!=int(numeric): raise ValueError(f"{name} debe ser entero")
-    value=int(value)
-    if not lo<=value<=hi: raise ValueError(f"{name} fuera del intervalo [{lo},{hi}]")
-    return value
+        n = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"{name} debe ser un entero válido") from exc
+    if isinstance(value, bool) or not isfinite(n) or not n.is_integer() or not lo <= n <= hi:
+        raise ValueError(f"{name} debe ser un entero entre {lo} y {hi}")
+    return int(n)
+
+def _actions(raw, config):
+    if not isinstance(raw, list) or len(raw) > 24:
+        raise ValueError("actions debe ser una lista de máximo 24 intervenciones")
+    result = []
+    prev = -1
+    for action in raw:
+        if not isinstance(action, dict):
+            raise ValueError("Cada intervención debe ser un objeto")
+        minute = _integer(action.get("minute"), "minute", 1, config["duration"] - 1)
+        number = _integer(action.get("servers"), "servers", 1, config["max_servers"])
+        if minute <= prev:
+            raise ValueError("Las intervenciones deben ordenarse por minuto sin duplicados")
+        result.append({"minute": minute, "servers": number})
+        prev = minute
+    return result
+
+def _arrivals(config, seed):
+    """A piecewise Poisson arrival process; demand incident = 65% surge."""
+    rng = Random(seed)
+    end = config["duration"]
+    segments = [(0., end*.45, 1.), (end*.45, end*.70, 1.65), (end*.70, end, 1.)] if config["incident"] == "demanda" else [(0., end, 1.)]
+    result = []
+    for start, stop, multiplier in segments:
+        t = start
+        while True:
+            t += rng.expovariate(multiplier / config["arrival_min"])
+            if t >= stop:
+                break
+            result.append(t)
+    return result
+
+def _run(config, staffing, actions, seed):
+    horizon = config["duration"]
+    arrivals = _arrivals(config, seed)
+    service_rng = Random(seed + 100003)
+    service_duration = {i: service_rng.expovariate(1 / config["service_min"]) for i in range(1, len(arrivals)+1)}
+    arrival_time = {i: t for i, t in enumerate(arrivals, 1)}
+    events, order = [], 0
+    def schedule(time, priority, kind, cid=0, slot=-1):
+        nonlocal order
+        order += 1
+        heappush(events, (time, priority, order, kind, cid, slot))
+    for cid, t in enumerate(arrivals, 1):
+        schedule(t, 3, "arrival", cid)
+    for hour in range(1, len(staffing)):
+        schedule(hour*60, 2, "shift")
+    for moment in (horizon*.45, horizon*.60):
+        if config["incident"] in ("averia", "ausencia"):
+            schedule(moment, 2, "incident")
+    for action in actions:
+        schedule(action["minute"], 1, "decision", action["servers"])
+    servers = [None] * config["max_servers"]
+    waiting = deque()
+    override = None
+    last = 0.
+    area_queue = area_busy = capacity_area = wait_cost = staff_cost = 0.
+    admitted = rejected = finished = started = compliant = 0
+    total_wait = total_system = max_queue = 0.
+    frames = [{"t": 0, "kind": "start", "client": None, "queue": 0, "queue_ids": [], "busy": 0, "servers": list(servers), "active": staffing[0], "arrivals": 0, "completed": 0, "blocked": 0}]
+    series = [{"t": 0, "queue": 0, "busy": 0}]
+    def levels(time):
+        planned = override if override is not None else staffing[min(int(time // 60), len(staffing)-1)]
+        incident = config["incident"] in ("averia", "ausencia") and horizon*.45 <= time < horizon*.60
+        return planned, max(1, planned-1) if incident else planned
+    arrivals_processed = 0
+    for t, _, _, kind, cid, slot in events_iterator(events):
+        if t > horizon:
+            break
+        dt = t-last
+        planned, active = levels(last)
+        occupied = sum(x is not None for x in servers)
+        area_queue += len(waiting) * dt
+        area_busy += occupied * dt
+        capacity_area += max(active, occupied) * dt
+        wait_cost += len(waiting)*dt*config["wait_hour"]/60.
+        staff_cost += planned*dt*config["staff_hour"]/60.
+        last = t
+        label = kind
+        if kind == "decision":
+            override = cid
+        elif kind == "arrival":
+            arrivals_processed += 1
+            if len(waiting) + occupied >= config["capacity"]:
+                rejected += 1
+                label = "blocked"
+            else:
+                admitted += 1
+                waiting.append((cid, t))
+        elif kind == "departure":
+            finished += 1
+            total_system += t - arrival_time[cid]
+            servers[slot] = None
+        _, active = levels(t)
+        for s in range(active):
+            if servers[s] is not None or not waiting:
+                continue
+            next_id, arrived = waiting.popleft()
+            wait = t-arrived
+            started += 1
+            total_wait += wait
+            compliant += int(wait <= config["sla_min"])
+            servers[s] = next_id
+            schedule(t + service_duration[next_id], 0, "departure", next_id, s)
+        max_queue = max(max_queue, len(waiting))
+        current_busy = sum(x is not None for x in servers)
+        if len(frames) < 3000:
+            frames.append({"t": round(t,3), "kind": label, "client": cid if kind in ("arrival", "departure") else None,
+                "queue": len(waiting), "queue_ids": [x[0] for x in list(waiting)[:20]],
+                "busy": current_busy, "servers": list(servers), "active": active,
+                "arrivals": arrivals_processed, "completed": finished, "blocked": rejected})
+        if len(series) < 3000:
+            series.append({"t": round(t,3), "queue": len(waiting), "busy": current_busy})
+    dt = max(0., horizon-last)
+    planned, active = levels(last)
+    occupied = sum(x is not None for x in servers)
+    area_queue += len(waiting)*dt
+    area_busy += occupied*dt
+    capacity_area += max(active,occupied)*dt
+    wait_cost += len(waiting)*dt*config["wait_hour"]/60.
+    staff_cost += planned*dt*config["staff_hour"]/60.
+    if len(frames) < 3000:
+        frames.append({"t": horizon, "kind": "end", "client": None, "queue": len(waiting),
+            "queue_ids": [x[0] for x in list(waiting)[:20]], "busy": occupied, "servers": list(servers),
+            "active": active, "arrivals": arrivals_processed, "completed": finished, "blocked": rejected})
+    outstanding = admitted-finished
+    lost = rejected*config["lost_cost"]
+    return {"arrivals": len(arrivals), "admitted": admitted, "blocked": rejected,
+        "completed": finished, "started": started, "unserved_at_close": outstanding,
+        "avg_wait": total_wait/max(started,1), "avg_system": total_system/max(finished,1),
+        "sla": compliant/max(admitted,1), "p_block": rejected/max(len(arrivals),1),
+        "utilization": area_busy/max(capacity_area,1), "avg_queue": area_queue/horizon,
+        "staff_cost": staff_cost, "waiting_cost": wait_cost, "lost_cost": lost,
+        "total_cost": staff_cost + wait_cost + lost, "max_queue": max_queue,
+        "events": frames, "series": series}
+
+def events_iterator(heap):
+    while heap:
+        yield heappop(heap)
 
 def evaluate_game(payload):
-    """Una jornada: acciones programadas en bloques de 60 min; mismas realizaciones
-    aleatorias para comparar dotaciones; se contabiliza coste de capacidad programada.
-    """
-    key=payload.get("scenario","banco")
-    if key not in SCENARIOS: raise ValueError("Escenario no identificado")
-    cfg=SCENARIOS[key]
-    seed=_validated_int(payload.get("seed",2026),"seed",1,999999999)
-    reps=_validated_int(payload.get("replications",10),"replications",1,50)
-    blocks=cfg["duration"]//60
-    raw=payload.get("staffing",[3]*blocks)
-    if not isinstance(raw,list) or len(raw)!=blocks: raise ValueError(f"staffing requiere {blocks} bloques horarios")
-    staff=[_validated_int(v,"servidores",1,cfg["max_servers"]) for v in raw]
-    trials=[_run(cfg,staff,seed+i*1709,key) for i in range(reps)]
-    keys=["arrivals","admitted","blocked","completed","unserved_at_close","avg_wait","avg_system","sla","p_block","utilization","avg_queue","staff_cost","waiting_cost","lost_cost","total_cost","max_queue"]
-    metrics={k:round(mean(t[k] for t in trials),4) for k in keys}
-    confidence={}
-    for measure in ("sla","avg_wait","total_cost","p_block"):
-        values=[r[measure] for r in trials]
-        se=stdev(values)/sqrt(reps) if reps>1 else None
-        confidence[measure]={"mean":metrics[measure], "low":round(mean(values)-1.96*se,4) if se is not None else None,"high":round(mean(values)+1.96*se,4) if se is not None else None, "method":"aproximación normal 95%; exploratoria"}
-    within_budget=metrics["staff_cost"]<=cfg["budget"]
-    meets_sla=metrics["sla"]>=cfg["sla_target"]
-    # Los puntos son criterios publicados, nunca se computan con un 'óptimo' desconocido.
-    cost_eff=max(0,1-min(1,metrics["total_cost"]/(cfg["budget"]+cfg["lost_cost"]*max(1,metrics["arrivals"])*0.3)))
-    loss_eff=1-metrics["blocked"]/max(1,metrics["arrivals"])
-    resilience=max(0,1-metrics["unserved_at_close"]/max(1,metrics["admitted"]))
-    score=round(35*cost_eff+30*min(1,metrics["sla"]/cfg["sla_target"])+20*loss_eff+15*resilience,1)
-    if not within_budget or not meets_sla: score=min(score,69.9)
-    return {"scenario":key,"title":cfg["name"],"config":cfg,"staffing":staff,"replications":reps,
-       "metrics":metrics,"confidence_95":confidence,"score":score,"passes":{"budget":within_budget,"sla":meets_sla},
-       "events":trials[0]["events"],"series":trials[0]["series"],
-       "method":"Horizonte finito; clientes pendientes al cierre reportados por separado; promedios sobre replicas independientes."}
-
-def _run(c,staff,seed,key):
-    arrival_rng=Random(seed)
-    service_rng=Random(seed+100003)
-    horizon=c["duration"]
-    events=[]; order=0; arrivals_at=[]; arrival_time={}; service_time={}
-    t=arrival_rng.expovariate(1/c["arrival_min"])
-    while t<horizon:
-        # Afluencia extraordinaria predefinida, idéntica entre alternativas.
-        arrivals_at.append(t)
-        intensity=1.65 if (c["incident"]=="demanda" and horizon*.45<=t<horizon*.7) else 1
-        t+=arrival_rng.expovariate(intensity/c["arrival_min"])
-    for cid,t in enumerate(arrivals_at,1):
-        arrival_time[cid]=t
-        service_time[cid]=service_rng.expovariate(1/c["service_min"])
-        heappush(events,(t,1,cid,"arrival",None))
-    servers=[None]*c["max_servers"]; queue=deque()
-    last=0.; area_q=0.; busy_area=0.; total_wait=0.; total_system=0.; admitted=blocked=completed=started=on_time=0
-    wait_cost=0.; max_queue=0; timeline=[]; series=[{"t":0,"queue":0,"busy":0}]
-    staff_cost=sum(n*c["staff_hour"] for n in staff)
-    # Evaluar también los límites horarios aun si no hay llegadas.
-    for boundary in range(1,len(staff)):
-        heappush(events,(boundary*60,2,0,"staff_change",None))
-    for boundary in (horizon*.45,horizon*.60,horizon*.70):
-        heappush(events,(boundary,2,0,"staff_change",None))
-    for t,_,cid,kind,server_idx in iter(lambda:heappop(events) if events else None,None):
-        if t>horizon: break
-        dt=t-last
-        area_q+=len(queue)*dt
-        busy_area+=sum(x is not None for x in servers)*dt
-        wait_cost+=len(queue)*dt*c["wait_hour"]/60
-        last=t
-        block=min(int(t//60),len(staff)-1)
-        active=staff[block]
-        # Ausencia/avería reduce temporalmente la capacidad operativa real.
-        if c["incident"] in ("ausencia","averia") and horizon*.45<=t<horizon*.60:
-            active=max(1,active-1)
-        if kind=="arrival":
-            if len(queue)+sum(x is not None for x in servers)>=c["capacity"]:
-                blocked+=1
-            else:
-                admitted+=1
-                queue.append((cid,t))
-        elif kind=="departure":
-            completed+=1
-            total_system+=t-arrival_time[cid]
-            servers[server_idx]=None
-        # Sólo posiciones habilitadas admiten NUEVOS trabajos; no se expulsa el servicio en curso.
-        for idx in range(active):
-            if servers[idx] is None and queue:
-                next_id,at=queue.popleft()
-                started+=1; w=t-at; total_wait+=w
-                if w<=c["sla_min"]:on_time+=1
-                servers[idx]=next_id
-                duration=service_time[next_id]
-                order+=1
-                heappush(events,(t+duration,0,next_id,"departure",idx))
-        max_queue=max(max_queue,len(queue))
-        if len(timeline)<2000:timeline.append({"t":round(t,2),"kind":kind,"client":cid,"queue":len(queue),"busy":sum(x is not None for x in servers),"active":active})
-        if len(series)<2000:series.append({"t":round(t,2),"queue":len(queue),"busy":sum(x is not None for x in servers)})
-    # Correctamente se mantienen las pendientes a cierre sin simular salidas fuera de ventana.
-    remaining=horizon-last
-    area_q+=len(queue)*remaining
-    busy_area+=sum(x is not None for x in servers)*remaining
-    wait_cost+=len(queue)*remaining*c["wait_hour"]/60
-    outstanding=admitted-completed
-    # SLA conservador: todos los admitidos, incluidos pendientes, componen el denominador.
-    sla=on_time/max(1,admitted)
-    loss=blocked*c["lost_cost"]
-    return {"arrivals":len(arrivals_at),"admitted":admitted,"blocked":blocked,"completed":completed,
-     "unserved_at_close":outstanding,"avg_wait":total_wait/max(1,started),
-     "avg_system":total_system/max(1,completed),"sla":sla,"p_block":blocked/max(1,len(arrivals_at)),
-     "utilization":busy_area/max(1,sum(staff)*60),"avg_queue":area_q/horizon,
-     "staff_cost":staff_cost,"waiting_cost":wait_cost,"lost_cost":loss,"total_cost":staff_cost+wait_cost+loss,
-     "max_queue":max_queue,"events":timeline,"series":series}
+    """Evaluate a single decision strategy; no side effects or server-side persistence."""
+    if not isinstance(payload, dict):
+        raise ValueError("Se requiere un escenario JSON")
+    key = payload.get("scenario", "banco")
+    if key not in SCENARIOS:
+        raise ValueError("Escenario no identificado")
+    cfg = SCENARIOS[key]
+    seed = _integer(payload.get("seed",2026), "seed", 1, 999999999)
+    replications = _integer(payload.get("replications",10), "replications", 1, 50)
+    staffing = payload.get("staffing", [3] * (cfg["duration"] // 60))
+    if not isinstance(staffing, list) or len(staffing) != cfg["duration"] // 60:
+        raise ValueError("Se requiere una dotación por cada hora")
+    staffing = [_integer(s, "servidores", 1, cfg["max_servers"]) for s in staffing]
+    actions = _actions(payload.get("actions", []), cfg)
+    runs = [_run(cfg, staffing, actions, seed + i*1709) for i in range(replications)]
+    columns = ("arrivals","admitted","blocked","completed","started","unserved_at_close",
+        "avg_wait","avg_system","sla","p_block","utilization","avg_queue",
+        "staff_cost","waiting_cost","lost_cost","total_cost","max_queue")
+    metrics = {name: round(mean(r[name] for r in runs),4) for name in columns}
+    confidence = {}
+    for name in ("sla", "avg_wait", "total_cost", "p_block"):
+        values = [r[name] for r in runs]
+        error = 1.96*stdev(values)/sqrt(replications) if replications > 1 else None
+        low = max(0, mean(values)-error) if error is not None else None
+        high = min(1,mean(values)+error) if error is not None and name in ("sla","p_block") else (mean(values)+error if error is not None else None)
+        confidence[name] = {"mean":metrics[name], "low":round(low,4) if low is not None else None,
+            "high":round(high,4) if high is not None else None, "method":"intervalo normal exploratorio 95%"}
+    budget = metrics["staff_cost"] <= cfg["budget"]
+    service = metrics["sla"] >= cfg["sla_target"]
+    baseline = cfg["budget"] + cfg["lost_cost"]*max(1,metrics["arrivals"])*.3
+    cost_score = max(0,1-min(1,metrics["total_cost"]/baseline))
+    loss_score = 1-metrics["blocked"]/max(1,metrics["arrivals"])
+    resilience = 1-metrics["unserved_at_close"]/max(1,metrics["admitted"])
+    score = round(35*cost_score+30*min(1,metrics["sla"]/cfg["sla_target"])
+        +20*loss_score+15*resilience,1)
+    if not budget or not service:
+        score = min(score,69.9)
+    achievements = []
+    if budget: achievements.append("Disciplina presupuestaria")
+    if service: achievements.append("Calidad de servicio")
+    if metrics["blocked"] == 0: achievements.append("Sin rechazos")
+    if budget and service: achievements.append("Misión cumplida")
+    return {"scenario":key, "title":cfg["name"],"config":cfg,
+        "staffing":staffing,"actions":actions,"replications":replications,"metrics":metrics,
+        "confidence_95":confidence,"score":score,"achievements":achievements,
+        "passes":{"budget":budget,"sla":service},"events":runs[0]["events"],"series":runs[0]["series"],
+        "method":"FIFO, horizonte finito; SLA sobre admitidos, incluidos pendientes; promedios de réplicas independientes, visualización de la primera réplica."}
