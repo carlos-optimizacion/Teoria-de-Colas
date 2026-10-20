@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -86,3 +87,15 @@ def save_scenario(request):
         item=SavedScenario.objects.create(user=request.user,name=name,scenario=scenario,payload=data.get("payload") or {})
         return JsonResponse({"ok":True,"id":item.id,"name":item.name})
     except (ValueError,TypeError,json.JSONDecodeError) as exc:return JsonResponse({"ok":False,"error":str(exc)},status=400)
+
+
+@login_required
+def account_settings(request):
+    if request.method=="POST":
+        request.user.first_name=str(request.POST.get("first_name",""))[:150].strip()
+        request.user.last_name=str(request.POST.get("last_name",""))[:150].strip()
+        request.user.email=str(request.POST.get("email",""))[:254].strip()
+        request.user.save(update_fields=["first_name","last_name","email"])
+        messages.success(request,"Perfil actualizado.")
+        return redirect("portal:account_settings")
+    return render(request,"portal/account_settings.html",{"active":"settings"})
