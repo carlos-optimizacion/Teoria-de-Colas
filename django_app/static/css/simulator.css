@@ -33,3 +33,8 @@
 .sim-legacy-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.19}
 .sim-legacy-scene .dynamic-facility{background:linear-gradient(120deg,#e8f6f0dd,#e4f1f5ec)}
 @media(max-width:760px){.sim-legacy-scene{min-height:390px}}
+
+
+.sim-legacy-scene>.sim-legacy-bg{display:block;position:relative;inset:auto;opacity:1;filter:none;width:100%;height:132px;object-fit:cover}
+.sim-legacy-scene>.dynamic-facility{min-height:340px}
+@media(max-width:760px){.sim-legacy-scene>.sim-legacy-bg{height:104px}.sim-legacy-scene>.dynamic-facility{min-height:390px}}
