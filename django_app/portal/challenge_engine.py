@@ -2,9 +2,9 @@
 No sustituye el cálculo estacionario de queue_core: simula trayectorias de horizonte finito.
 """
 from collections import deque
-from dataclasses import dataclass
 from heapq import heappop, heappush
 from random import Random
+from math import isfinite
 from statistics import mean
 
 SCENARIOS = {
@@ -15,7 +15,11 @@ SCENARIOS = {
  "logistica": {"name":"Andenes de despacho","sector":"Logística","arrival_min":3,"service_min":10,"duration":480,"max_servers":10,"staff_hour":28,"wait_hour":22,"lost_cost":100,"sla_min":15,"sla_target":0.90,"budget":1800,"capacity":32,"incident":"demanda","difficulty":3},
 }
 def _validated_int(value,name,lo,hi):
-    if isinstance(value,bool) or float(value)!=int(float(value)): raise ValueError(f"{name} debe ser entero")
+    try:
+        numeric=float(value)
+    except (ValueError,TypeError,OverflowError):
+        raise ValueError(f"{name} debe ser entero")
+    if isinstance(value,bool) or not isfinite(numeric) or numeric!=int(numeric): raise ValueError(f"{name} debe ser entero")
     value=int(value)
     if not lo<=value<=hi: raise ValueError(f"{name} fuera del intervalo [{lo},{hi}]")
     return value
@@ -53,7 +57,7 @@ def _run(c,staff,seed,key):
     arrival_rng=Random(seed)
     service_rng=Random(seed+100003)
     horizon=c["duration"]
-    events=[]; order=0; arrivals_at=[]; arrival_time={}
+    events=[]; order=0; arrivals_at=[]; arrival_time={}; service_time={}
     t=arrival_rng.expovariate(1/c["arrival_min"])
     while t<horizon:
         # Afluencia extraordinaria predefinida, idéntica entre alternativas.
@@ -62,11 +66,17 @@ def _run(c,staff,seed,key):
         t+=arrival_rng.expovariate(intensity/c["arrival_min"])
     for cid,t in enumerate(arrivals_at,1):
         arrival_time[cid]=t
+        service_time[cid]=service_rng.expovariate(1/c["service_min"])
         heappush(events,(t,1,cid,"arrival",None))
     servers=[None]*c["max_servers"]; queue=deque()
     last=0.; area_q=0.; busy_area=0.; total_wait=0.; total_system=0.; admitted=blocked=completed=started=on_time=0
     wait_cost=0.; max_queue=0; timeline=[]; series=[{"t":0,"queue":0,"busy":0}]
     staff_cost=sum(n*c["staff_hour"] for n in staff)
+    # Evaluar también los límites horarios aun si no hay llegadas.
+    for boundary in range(1,len(staff)):
+        heappush(events,(boundary*60,2,0,"staff_change",None))
+    for boundary in (horizon*.45,horizon*.60,horizon*.70):
+        heappush(events,(boundary,2,0,"staff_change",None))
     for t,_,cid,kind,server_idx in iter(lambda:heappop(events) if events else None,None):
         if t>horizon: break
         dt=t-last
@@ -85,7 +95,7 @@ def _run(c,staff,seed,key):
             else:
                 admitted+=1
                 queue.append((cid,t))
-        else:
+        elif kind=="departure":
             completed+=1
             total_system+=t-arrival_time[cid]
             servers[server_idx]=None
@@ -96,7 +106,7 @@ def _run(c,staff,seed,key):
                 started+=1; w=t-at; total_wait+=w
                 if w<=c["sla_min"]:on_time+=1
                 servers[idx]=next_id
-                duration=service_rng.expovariate(1/c["service_min"])
+                duration=service_time[next_id]
                 order+=1
                 heappush(events,(t+duration,0,next_id,"departure",idx))
         max_queue=max(max_queue,len(queue))
@@ -108,7 +118,7 @@ def _run(c,staff,seed,key):
     busy_area+=sum(x is not None for x in servers)*remaining
     wait_cost+=len(queue)*remaining*c["wait_hour"]/60
     outstanding=admitted-completed
-    # Para representar la espera SLA al cierre: los no iniciados no se computan como éxitos.
+    # SLA conservador: todos los admitidos, incluidos pendientes, componen el denominador.
     sla=on_time/max(1,admitted)
     loss=blocked*c["lost_cost"]
     return {"arrivals":len(arrivals_at),"admitted":admitted,"blocked":blocked,"completed":completed,
