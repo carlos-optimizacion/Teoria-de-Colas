@@ -23,6 +23,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -83,3 +84,5 @@ if not DEBUG:
     SECURE_HSTS_SECONDS=int(os.getenv("DJANGO_HSTS_SECONDS","3600"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS=True
     SECURE_HSTS_PRELOAD=False
+
+STATICFILES_STORAGE="whitenoise.storage.CompressedManifestStaticFilesStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage"
