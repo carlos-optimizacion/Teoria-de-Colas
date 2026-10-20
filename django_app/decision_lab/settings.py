@@ -60,7 +60,12 @@ if os.getenv("DB_ENGINE","sqlite").lower() in ("postgres","postgresql"):
 else:
     DATABASES={"default":{"ENGINE":"django.db.backends.sqlite3","NAME":BASE_DIR/"db.sqlite3"}}
 
-AUTH_PASSWORD_VALIDATORS = []
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME":"django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME":"django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME":"django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME":"django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
 LANGUAGE_CODE = "es-pe"
 TIME_ZONE = "America/Lima"
 USE_I18N = True
@@ -77,6 +82,8 @@ SECURE_CONTENT_TYPE_NOSNIFF=True
 X_FRAME_OPTIONS="DENY"
 SESSION_COOKIE_HTTPONLY=True
 CSRF_COOKIE_HTTPONLY=False
+SECURE_REFERRER_POLICY="same-origin"
+CSRF_TRUSTED_ORIGINS=[x.strip() for x in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS","").split(",") if x.strip()]
 if not DEBUG:
     SECURE_SSL_REDIRECT=os.getenv("DJANGO_SECURE_SSL_REDIRECT","1")=="1"
     SESSION_COOKIE_SECURE=True
@@ -84,5 +91,7 @@ if not DEBUG:
     SECURE_HSTS_SECONDS=int(os.getenv("DJANGO_HSTS_SECONDS","3600"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS=True
     SECURE_HSTS_PRELOAD=False
+    if os.getenv("DJANGO_BEHIND_PROXY","0")=="1":
+        SECURE_PROXY_SSL_HEADER=("HTTP_X_FORWARDED_PROTO","https")
 
 STATICFILES_STORAGE="whitenoise.storage.CompressedManifestStaticFilesStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage"
