@@ -1,9 +1,11 @@
 from django.urls import path
-from . import views
+from . import views, challenge_views
 
 app_name = "portal"
 
 urlpatterns = [
+    path('challenge/', challenge_views.challenge, name='challenge'),
+    path('api/challenge/', challenge_views.challenge_api, name='challenge_api'),
     path("", views.home, name="home"),
     path("fundamentos/", views.fundamentals, name="fundamentals"),
     path("modelos/mm1/", views.model_mm1, name="mm1"),
