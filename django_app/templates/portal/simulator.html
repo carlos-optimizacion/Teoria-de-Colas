@@ -8,7 +8,7 @@
 <section class="model-hero simulator-hero">
   <div>
     <span class="eyebrow">SIMULACIÓN · M/M/s</span>
-    <h1>Simula, observa y valida.</h1>
+    <h1>Simula, observa y valida.</h1><p><a href="{% url 'portal:aplicativo_app' %}" class="btn secondary" style="margin:8px 0">Ver Aplicativo App unificado ↗</a></p>
     <p>Define tú mismo la cantidad de servidores y las condiciones del sistema. El simulador no recomienda una dotación: muestra los indicadores, reproduce la cola y te permite modificar el escenario hasta sustentar tu propia decisión.</p>
   </div>
   <div class="formula-card">
@@ -58,7 +58,7 @@
     </div>
   </div>
   <div class="sim-time-row"><strong id="sim-clock">00:00 / 60:00</strong><div class="sim-progress"><span id="sim-progress-bar"></span></div><small>1× = 1 minuto simulado por segundo real</small></div>
-  <article class="sim-board simulator-single-board" id="sim-board"></article>
+  <article class="sim-board simulator-single-board" id="sim-board" data-scene-art="{% static 'img/scenarios/banco.svg' %}"></article>
   <div class="sim-summary-grid simulator-summary" id="sim-summary-grid"></div>
 </section>
 
