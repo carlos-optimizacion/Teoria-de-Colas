@@ -1,0 +1,41 @@
+name: Vista previa y prueba de navegador
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'django_app/**'
+      - '.github/workflows/visual-preview.yml'
+  workflow_dispatch:
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r django_app/requirements.txt playwright
+          python -m playwright install --with-deps chromium
+      - name: Start Django
+        run: |
+          cd django_app
+          python manage.py migrate --noinput
+          python manage.py runserver --noreload 127.0.0.1:8000 > /tmp/challenge-server.log 2>&1 &
+          echo $! > /tmp/challenge-server.pid
+          sleep 3
+      - name: Browser smoke and screenshots
+        run: python django_app/tests_browser/smoke_challenge.py
+      - name: Upload UI previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: decision-lab-challenge-ui
+          path: visual-artifacts/
+          if-no-files-found: ignore
+      - name: Print server errors
+        if: failure()
+        run: cat /tmp/challenge-server.log
