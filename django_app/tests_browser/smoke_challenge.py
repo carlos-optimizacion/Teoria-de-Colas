@@ -1,6 +1,4 @@
-"""Headless smoke test and screenshots of Decision Lab Challenge.
-Run after starting Django on http://127.0.0.1:8000.
-"""
+"""Playwright end-to-end checks for unified app and event-driven illustrations."""
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
@@ -9,37 +7,44 @@ OUT.mkdir(exist_ok=True)
 errors = []
 with sync_playwright() as playwright:
     browser = playwright.chromium.launch(headless=True, args=["--no-sandbox"])
-    desktop = browser.new_page(viewport={"width": 1440, "height": 900}, device_scale_factor=1)
-    desktop.on("pageerror", lambda error: errors.append(str(error)))
-    desktop.goto("http://127.0.0.1:8000/challenge/", wait_until="domcontentloaded")
-    desktop.locator("#challenge-scenario").wait_for(state="visible")
-    assert desktop.locator(".arena-model").count() == 8, "Existing models missing"
-    assert desktop.locator("#classic-lab").is_visible(), "Classic lab missing"
-    desktop.screenshot(path=str(OUT / "01-arena-desktop.png"), full_page=True)
-    desktop.locator("#lab-run").click()
-    desktop.wait_for_function(
-        "document.querySelector('#lab-kpis').children.length >= 8", timeout=30000)
-    assert "Mini-reto" in desktop.locator("#lab-result").inner_text() or "Sistema" in desktop.locator("#lab-result").inner_text()
-    desktop.screenshot(path=str(OUT / "02-classic-model.png"), full_page=True)
-    desktop.locator("#challenge-run").click()
-    desktop.wait_for_function(
-        "document.querySelector('#challenge-kpis').children.length >= 8", timeout=30000)
-    desktop.locator("#challenge-play").click()
-    desktop.wait_for_timeout(600)
-    desktop.locator("#challenge-play").click()
-    desktop.locator("#challenge-intervene-count").fill("5")
-    desktop.locator("#challenge-intervene").click()
-    desktop.wait_for_function(
-        "document.querySelector('#challenge-actions').textContent.includes('Intervenciones:')",
-        timeout=30000)
-    desktop.screenshot(path=str(OUT / "03-mission-intervention.png"), full_page=True)
-    mobile = browser.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=1)
-    mobile.on("pageerror", lambda error: errors.append(str(error)))
-    mobile.goto("http://127.0.0.1:8000/challenge/", wait_until="domcontentloaded")
-    mobile.locator("#challenge-scenario").wait_for(state="visible")
-    mobile.screenshot(path=str(OUT / "04-arena-mobile.png"), full_page=True)
-    # Allow for 1px pixel rounding, but no horizontal scrolling.
-    assert mobile.evaluate("document.documentElement.scrollWidth <= innerWidth + 2"), "Mobile horizontal overflow"
+    page = browser.new_page(viewport={"width":1440,"height":900},device_scale_factor=1)
+    page.on("pageerror",lambda error:errors.append(str(error)))
+    page.goto("http://127.0.0.1:8000/aplicativo-app/",wait_until="domcontentloaded")
+    page.locator("#challenge-scenario").wait_for(state="visible")
+    assert page.locator(".arena-model").count()==8
+    assert page.locator("#classic-lab").is_visible()
+    assert page.locator("#c-scene-art").evaluate("(img)=>img.complete && img.naturalWidth>0")
+    page.screenshot(path=str(OUT/"01-aplicativo-app.png"),full_page=True)
+    for key in ("banco","hospital","supermercado","fabrica","logistica"):
+        page.locator("#challenge-scenario").select_option(key)
+        page.wait_for_function("document.querySelector('#c-scene-art').complete && document.querySelector('#c-scene-art').naturalWidth>0")
+        assert page.locator("#c-scene-art").get_attribute("src").endswith(key+".svg")
+        page.locator("#scene-shell").screenshot(path=str(OUT/("escena-"+key+".png")))
+    page.locator("#challenge-scenario").select_option("banco")
+    page.locator("#lab-run").click()
+    page.wait_for_function("document.querySelector('#lab-kpis').children.length>=8",timeout=30000)
+    page.screenshot(path=str(OUT/"02-laboratorio-modelos.png"),full_page=True)
+    page.locator("#challenge-run").click()
+    page.wait_for_function("document.querySelector('#challenge-kpis').children.length>=8",timeout=30000)
+    page.locator("#challenge-scrub").evaluate("(e)=>{e.value='30';e.dispatchEvent(new Event('input',{bubbles:true}));}")
+    assert page.locator(".scene-avatar").count()>=1,"Missing dynamic customer avatars"
+    page.locator("#challenge-play").click()
+    page.wait_for_timeout(550)
+    page.locator("#challenge-play").click()
+    page.locator("#challenge-intervene-count").fill("5")
+    page.locator("#challenge-intervene").click()
+    page.wait_for_function("document.querySelector('#challenge-actions').textContent.includes('Intervenciones:')",timeout=30000)
+    page.screenshot(path=str(OUT/"03-mision-intervencion.png"),full_page=True)
+    page.goto("http://127.0.0.1:8000/simular/colas/",wait_until="domcontentloaded")
+    page.wait_for_function("document.querySelector('#sim-board .sim-artboard img')!==null",timeout=30000)
+    assert page.locator("#sim-board .sim-artboard img").evaluate("(img)=>img.complete && img.naturalWidth>0")
+    page.locator("#sim-board .sim-artboard").screenshot(path=str(OUT/"simulador-clasico-ilustrado.png"))
+    phone=browser.new_page(viewport={"width":390,"height":844},device_scale_factor=1)
+    phone.on("pageerror",lambda error:errors.append(str(error)))
+    phone.goto("http://127.0.0.1:8000/aplicativo-app/",wait_until="domcontentloaded")
+    phone.locator("#challenge-scenario").wait_for(state="visible")
+    phone.screenshot(path=str(OUT/"04-aplicativo-movil.png"),full_page=True)
+    assert phone.evaluate("document.documentElement.scrollWidth <= innerWidth + 2"),"Horizontal mobile overflow"
     browser.close()
-assert not errors, "Browser JavaScript errors: " + repr(errors)
-print("Browser smoke passed: legacy model + management game + intervention + responsive layout")
+assert not errors,"Browser errors: "+repr(errors)
+print("E2E OK: unified app, 5 scenes, 8 models, illustrated legacy simulator, interventions, mobile")
