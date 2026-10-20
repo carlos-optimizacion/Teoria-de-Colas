@@ -37,6 +37,7 @@ jobs:
         run: |
           node --check django_app/static/js/challenge.js
           node --check django_app/static/js/classic-lab.js
+          node --check django_app/static/js/simulator.js
       - name: Django tests
         working-directory: django_app
         run: python manage.py test
