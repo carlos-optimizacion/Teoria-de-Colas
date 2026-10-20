@@ -5,7 +5,8 @@ from collections import deque
 from heapq import heappop, heappush
 from random import Random
 from math import isfinite
-from statistics import mean
+from statistics import mean, stdev
+from math import sqrt
 
 SCENARIOS = {
  "banco": {"name":"Banco en hora punta","sector":"Banca","arrival_min":4,"service_min":6,"duration":480,"max_servers":8,"staff_hour":23,"wait_hour":13,"lost_cost":60,"sla_min":10,"sla_target":0.90,"budget":1100,"capacity":24,"incident":"demanda","difficulty":1},
@@ -40,6 +41,11 @@ def evaluate_game(payload):
     trials=[_run(cfg,staff,seed+i*1709,key) for i in range(reps)]
     keys=["arrivals","admitted","blocked","completed","unserved_at_close","avg_wait","avg_system","sla","p_block","utilization","avg_queue","staff_cost","waiting_cost","lost_cost","total_cost","max_queue"]
     metrics={k:round(mean(t[k] for t in trials),4) for k in keys}
+    confidence={}
+    for measure in ("sla","avg_wait","total_cost","p_block"):
+        values=[r[measure] for r in trials]
+        se=stdev(values)/sqrt(reps) if reps>1 else None
+        confidence[measure]={"mean":metrics[measure], "low":round(mean(values)-1.96*se,4) if se is not None else None,"high":round(mean(values)+1.96*se,4) if se is not None else None, "method":"aproximación normal 95%; exploratoria"}
     within_budget=metrics["staff_cost"]<=cfg["budget"]
     meets_sla=metrics["sla"]>=cfg["sla_target"]
     # Los puntos son criterios publicados, nunca se computan con un 'óptimo' desconocido.
@@ -49,7 +55,7 @@ def evaluate_game(payload):
     score=round(35*cost_eff+30*min(1,metrics["sla"]/cfg["sla_target"])+20*loss_eff+15*resilience,1)
     if not within_budget or not meets_sla: score=min(score,69.9)
     return {"scenario":key,"title":cfg["name"],"config":cfg,"staffing":staff,"replications":reps,
-       "metrics":metrics,"score":score,"passes":{"budget":within_budget,"sla":meets_sla},
+       "metrics":metrics,"confidence_95":confidence,"score":score,"passes":{"budget":within_budget,"sla":meets_sla},
        "events":trials[0]["events"],"series":trials[0]["series"],
        "method":"Horizonte finito; clientes pendientes al cierre reportados por separado; promedios sobre replicas independientes."}
 
