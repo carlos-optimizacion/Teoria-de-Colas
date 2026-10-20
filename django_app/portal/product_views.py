@@ -56,8 +56,11 @@ def run_export(request,run_id,fmt):
         response=JsonResponse(payload,json_dumps_params={"indent":2}); response["Content-Disposition"]=f'attachment; filename="decision-lab-run-{run.id}.json"'; return response
     if fmt=="csv":
         response=HttpResponse(content_type="text/csv");response["Content-Disposition"]=f'attachment; filename="decision-lab-run-{run.id}.csv"'
+        def csv_safe(value):
+            text=json.dumps(value,ensure_ascii=False) if isinstance(value,(dict,list)) else str(value)
+            return "'"+text if text[:1] in ("=","+","-","@") else text
         w=csv.writer(response);w.writerow(["campo","valor"])
-        for k,v in payload.items():w.writerow([k,json.dumps(v,ensure_ascii=False) if isinstance(v,(dict,list)) else v])
+        for k,v in payload.items():w.writerow([csv_safe(k),csv_safe(v)])
         return response
     if fmt=="pdf":
         try:
