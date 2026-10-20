@@ -22,6 +22,7 @@ function setup(){
   el("scenario-preview-image").src=artBase+scenarioKey+".svg";
   el("scene-status-text").textContent="Escenario "+c.sector+" · listo";
   el("scene-shell").dataset.sector=scenarioKey;
+  document.querySelectorAll(".sector-card").forEach(card=>{card.classList.toggle("is-selected",card.dataset.sector===scenarioKey);card.setAttribute("aria-pressed",String(card.dataset.sector===scenarioKey));});
   el("scene-moving-actors").replaceChildren();
   el("scene-arrivals").textContent="0";
   el("challenge-brief").innerHTML='<div><b>Modelo:</b> '+c.model+'</div><div><b>Presupuesto:</b> '+money(c.budget)+'</div><div><b>Objetivo:</b> '+percentage(c.sla_target)+' de admitidos con espera ≤ '+c.sla_min+' minutos</div><div><b>Llegadas:</b> cada '+c.arrival_min+' min</div><div><b>Servicio:</b> '+c.service_min+' min</div><div><b>Evento:</b> '+c.incident+'</div>';
@@ -217,6 +218,11 @@ function exportGame(){
   setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
 el("challenge-scenario").addEventListener("change",setup);
+document.querySelectorAll(".sector-card").forEach(card=>card.addEventListener("click",()=>{
+  el("challenge-scenario").value=card.dataset.sector;
+  setup();
+  el("mission-panel").scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
+}));
 el("challenge-run").addEventListener("click",()=>{actions=[];baseline=null;run();});
 el("challenge-play").addEventListener("click",play);
 el("challenge-restart").addEventListener("click",()=>{stop();step=0;renderFrame();});
