@@ -106,3 +106,14 @@ class ChallengeEngineTests(TestCase):
             evaluate_game({"scenario":"banco","staffing":[3]*8,"priority_share":1.2})
         with self.assertRaises(ValueError):
             evaluate_game({"scenario":"banco","staffing":[3]*8,"patience_min":-1})
+
+    def test_operational_overrides_change_real_simulation(self):
+        base={"scenario":"banco","staffing":[3]*8,"replications":2,"seed":123}
+        standard=evaluate_game(base)
+        costly=evaluate_game({**base,"staff_hour":100,"arrival_min":2,"service_min":5,"capacity":12,"sla_min":8,"sla_target":.8})
+        self.assertEqual(costly["config"]["staff_hour"],100)
+        self.assertEqual(costly["config"]["capacity"],12)
+        self.assertGreater(costly["metrics"]["staff_cost"],standard["metrics"]["staff_cost"])
+        self.assertNotEqual(costly["metrics"]["arrivals"],standard["metrics"]["arrivals"])
+        with self.assertRaises(ValueError):
+            evaluate_game({**base,"capacity":0})
