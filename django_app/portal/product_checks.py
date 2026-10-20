@@ -61,3 +61,13 @@ class ProductPersistenceTests(TestCase):
         self.user.refresh_from_db()
         self.assertEqual(self.user.first_name,"Carlos")
         self.assertTrue(UserProgress.objects.get(user=self.user).public_ranking)
+
+    def test_first_model_use_awards_progress_once(self):
+        payload={"model":"mm1","t_llegada":10,"t_atencion":5,"servers":1}
+        first=self.client.post("/api/model/",data=json.dumps(payload),content_type="application/json")
+        self.assertEqual(first.status_code,200)
+        p=UserProgress.objects.get(user=self.user)
+        self.assertIn("mm1",p.completed_models);xp=p.xp
+        second=self.client.post("/api/model/",data=json.dumps(payload),content_type="application/json")
+        self.assertEqual(second.status_code,200)
+        p.refresh_from_db();self.assertEqual(p.xp,xp)
