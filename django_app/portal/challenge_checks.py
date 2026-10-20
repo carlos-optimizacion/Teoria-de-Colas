@@ -26,3 +26,48 @@ class ChallengeEngineTests(SimpleTestCase):
         r=self.client.post("/api/challenge/",data='{"scenario":"banco","staffing":[3,3,3,3,3,3,3,3],"replications":2}',content_type="application/json")
         self.assertEqual(r.status_code,200)
         self.assertTrue(r.json()["ok"])
+
+    def test_dynamic_intervention_preserves_past(self):
+        start={"scenario":"banco","staffing":[3]*8,"replications":2,"seed":87}
+        plain=evaluate_game(start)
+        dynamic=evaluate_game({**start,"actions":[{"minute":240,"servers":6}]})
+        self.assertEqual(plain["metrics"]["arrivals"],dynamic["metrics"]["arrivals"])
+        self.assertGreater(dynamic["metrics"]["staff_cost"],plain["metrics"]["staff_cost"])
+        self.assertEqual(plain["metrics"]["staff_cost"],552)
+        self.assertEqual(dynamic["metrics"]["staff_cost"],828)
+        before=lambda r:[(f["t"],f["kind"],f["client"],f["queue_ids"],f["servers"])
+            for f in r["events"] if f["t"]<240]
+        self.assertEqual(before(plain),before(dynamic))
+
+    def test_each_snapshot_has_consistent_clients(self):
+        result=evaluate_game({"scenario":"hospital","staffing":[5]*8,"replications":2})
+        for frame in result["events"]:
+            self.assertEqual(frame["busy"],sum(x is not None for x in frame["servers"]))
+            self.assertLessEqual(len(frame["queue_ids"]),frame["queue"])
+            self.assertLessEqual(frame["blocked"],frame["arrivals"])
+        last=result["events"][-1]
+        self.assertEqual(last["kind"],"end")
+        self.assertEqual(last["t"],480)
+
+    def test_action_validation_and_api(self):
+        p={"scenario":"banco","staffing":[3]*8,"actions":[{"minute":200,"servers":5},{"minute":190,"servers":4}]}
+        with self.assertRaises(ValueError):
+            evaluate_game(p)
+        for wrong in [float("nan"),1.5,False,0,900]:
+            with self.subTest(wrong=wrong):
+                with self.assertRaises(ValueError):
+                    evaluate_game({"scenario":"banco","staffing":[wrong]*8})
+        import json
+        response=self.client.post("/api/challenge/",data=json.dumps({
+            "scenario":"banco","staffing":[3]*8,"actions":[{"minute":240,"servers":4}],
+            "replications":2}),content_type="application/json")
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.json()["actions"],[{"minute":240,"servers":4}])
+        self.assertGreater(len(response.json()["events"]),10)
+
+    def test_challenge_template_loads_json_configuration(self):
+        response=self.client.get("/challenge/")
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'id="challenge-config"')
+        self.assertContains(response,'id="challenge-scrub"')
+        self.assertContains(response,'M/M/s/K')
