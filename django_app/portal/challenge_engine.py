@@ -201,7 +201,17 @@ def evaluate_game(payload):
     key = payload.get("scenario", "banco")
     if key not in SCENARIOS:
         raise ValueError("Escenario no identificado")
-    cfg = SCENARIOS[key]
+    cfg = dict(SCENARIOS[key])
+    override_specs={
+        "arrival_min":(.1,240),"service_min":(.1,240),"staff_hour":(0,10000),
+        "wait_hour":(0,10000),"lost_cost":(0,100000),"sla_min":(.1,240),
+        "sla_target":(0,1),"budget":(0,10000000),
+    }
+    for field,(lo,hi) in override_specs.items():
+        if field in payload:
+            cfg[field]=_number(payload[field],field,lo,hi)
+    if "capacity" in payload:
+        cfg["capacity"]=_integer(payload["capacity"],"capacity",1,1000)
     seed = _integer(payload.get("seed",2026), "seed", 1, 999999999)
     replications = _integer(payload.get("replications",10), "replications", 1, 50)
     staffing = payload.get("staffing", [3] * (cfg["duration"] // 60))
