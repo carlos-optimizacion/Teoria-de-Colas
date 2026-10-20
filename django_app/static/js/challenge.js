@@ -69,6 +69,8 @@ function payload(){
     sla_target:Number(el("challenge-sla-target").value),
     patience_min:Number(el("challenge-patience").value),
     priority_share:Number(el("challenge-priority").value),
+    service_distribution:el("challenge-service-dist").value,
+    service_cv:Number(el("challenge-service-cv").value),
     seed:2026,
     actions:actions.map(x=>({...x}))
   };
@@ -278,7 +280,9 @@ function restoreSavedScenario(){
       "challenge-sla-min":saved.sla_min,
       "challenge-sla-target":saved.sla_target,
       "challenge-patience":saved.patience_min,
-      "challenge-priority":saved.priority_share
+      "challenge-priority":saved.priority_share,
+      "challenge-service-dist":saved.service_distribution,
+      "challenge-service-cv":saved.service_cv
     };
     Object.entries(values).forEach(([id,value])=>{if(value!==undefined&&value!==null)el(id).value=String(value);});
     if(Array.isArray(saved.staffing)){
