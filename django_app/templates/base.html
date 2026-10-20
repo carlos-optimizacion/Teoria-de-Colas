@@ -13,42 +13,42 @@
 <body>
 <div class="app-shell">
   <aside class="sidebar">
-    <div class="brand"><div class="brand-mark">DL</div><div><b>Decision Lab</b><span>Teoría de Colas</span></div></div>
-    <nav class="side-nav">
-      <div class="nav-section">PLATAFORMA</div>
-      <a class="nav-link {% if active == 'home' %}active{% endif %}" href="{% url 'portal:home' %}">⌂ <span>Inicio</span></a>
-      <a class="nav-link {% if active == 'fundamentals' %}active{% endif %}" href="{% url 'portal:fundamentals' %}"><span class="num">01</span><span>Fundamentos de colas</span></a>
-
-      <div class="nav-section">APRENDER · MODELOS</div>
-      <a class="nav-link {% if active == 'mm1' %}active{% endif %}" href="{% url 'portal:mm1' %}"><span class="num">02</span><span>Modelo M/M/1</span></a>
-      <a class="nav-link {% if active == 'mms' %}active{% endif %}" href="{% url 'portal:mms' %}"><span class="num">04</span><span>Modelo M/M/s</span></a>
-      <a class="nav-link {% if active == 'mmsk' %}active{% endif %}" href="{% url 'portal:mmsk' %}"><span class="num">06</span><span>Modelo M/M/s/K</span></a>
-      <a class="nav-link {% if active == 'mm1c' %}active{% endif %}" href="{% url 'portal:mm1c' %}"><span class="num">08</span><span>Modelo M/M/1/c</span></a>
-      <a class="nav-link {% if active == 'mmstotal' %}active{% endif %}" href="{% url 'portal:mmstotal' %}"><span class="num">10</span><span>Modelo M/M/s/c</span></a>
-      <a class="nav-link {% if active == 'erlangb' %}active{% endif %}" href="{% url 'portal:erlangb' %}"><span class="num">12</span><span>M/M/c/c · Erlang B</span></a>
-      <a class="nav-link {% if active == 'mg1' %}active{% endif %}" href="{% url 'portal:mg1' %}"><span class="num">14</span><span>Modelo M/G/1</span></a>
-      <a class="nav-link {% if active == 'dd1' %}active{% endif %}" href="{% url 'portal:dd1' %}"><span class="num">16</span><span>Modelo D/D/1</span></a>
-
-      <div class="nav-section">APLICAR · DECISIONES</div>
-      <a class="nav-link {% if active == 'cases' %}active{% endif %}" href="{% url 'portal:cases' %}"><span class="num">18</span><span>Casos prácticos aplicados</span></a>
-      <a class="nav-link {% if active == 'simple' %}active{% endif %}" href="{% url 'portal:simple' %}"><span class="num">19</span><span>Modelos de colas simples</span></a>
-      <a class="nav-link {% if active == 'complex' %}active{% endif %}" href="{% url 'portal:complex' %}"><span class="num">20</span><span>Modelos de colas complejas</span></a>
-      <a class="nav-link {% if active == 'comparator' %}active{% endif %}" href="{% url 'portal:comparator' %}"><span class="num">21</span><span>Comparador de modelos</span></a>
-      <a class="nav-link {% if active == 'economics' %}active{% endif %}" href="{% url 'portal:economics' %}"><span class="num">22</span><span>Análisis económico</span></a>
-      <a class="nav-link {% if active == 'sizing' %}active{% endif %}" href="{% url 'portal:sizing' %}"><span class="num">23</span><span>Dimensionamiento de servidores</span></a>
-
-      <div class="nav-section">ANALIZAR · DATOS</div>
-      <a class="nav-link {% if active == 'validator' %}active{% endif %}" href="{% url 'portal:validator' %}"><span class="num">24</span><span>Validador de supuestos</span></a>
-      <a class="nav-link {% if active == 'endtoend' %}active{% endif %}" href="{% url 'portal:endtoend' %}"><span class="num">25</span><span>Análisis End-to-End</span></a>
-
-      <div class="nav-section">SIMULAR · EXPERIMENTAR</div>
-      <a class="nav-link {% if active == 'challenge' %}active{% endif %}" href="{% url 'portal:challenge' %}"><span class="num">★</span><span>Decision Lab Challenge</span></a>
-      <a class="nav-link {% if active == 'simulator' %}active{% endif %}" href="{% url 'portal:simulator' %}"><span class="num">26</span><span>Simulador de colas</span></a>
+    <div class="brand"><div class="brand-mark">DL</div><div><b>Decision Lab</b><span>Aplicativo unificado · Teoría de colas</span></div></div>
+    <nav class="side-nav" aria-label="Navegación principal">
+      <div class="nav-section">EXPLORAR</div>
+      <a class="nav-link {% if active == 'home' %}active{% endif %}" href="{% url 'portal:home' %}"><span class="num">⌂</span><span>Inicio</span></a>
+      <a class="nav-link {% if active == 'challenge' %}active{% endif %}" href="{% url 'portal:aplicativo_app' %}"><span class="num">◆</span><span>Aplicativo App</span><span class="nav-mini">2.0</span></a>
+      <a class="nav-link {% if active == 'simulator' %}active{% endif %}" href="{% url 'portal:simulator' %}"><span class="num">▶</span><span>Simulación animada</span></a>
+      <a class="nav-link {% if active == 'comparator' %}active{% endif %}" href="{% url 'portal:comparator' %}"><span class="num">⇄</span><span>Comparador</span></a>
+      <a class="nav-link {% if active == 'economics' %}active{% endif %}" href="{% url 'portal:economics' %}"><span class="num">▥</span><span>Análisis económico</span></a>
+      <div class="nav-section">APRENDER</div>
+      <a class="nav-link {% if active == 'fundamentals' %}active{% endif %}" href="{% url 'portal:fundamentals' %}"><span class="num">?</span><span>Fundamentos</span></a>
+      <details class="nav-details" {% if active == 'mm1' or active == 'mms' or active == 'mmsk' or active == 'mm1c' or active == 'mmstotal' or active == 'erlangb' or active == 'mg1' or active == 'dd1' %}open{% endif %}>
+        <summary>Modelos matemáticos <span>8</span></summary>
+        <a href="{% url 'portal:mm1' %}" class="nav-link {% if active == 'mm1' %}active{% endif %}">M/M/1 · Un servidor</a>
+        <a href="{% url 'portal:mms' %}" class="nav-link {% if active == 'mms' %}active{% endif %}">M/M/s · Erlang C</a>
+        <a href="{% url 'portal:mmsk' %}" class="nav-link {% if active == 'mmsk' %}active{% endif %}">M/M/s/K · Capacidad finita</a>
+        <a href="{% url 'portal:mm1c' %}" class="nav-link {% if active == 'mm1c' %}active{% endif %}">M/M/1/c · Espera limitada</a>
+        <a href="{% url 'portal:mmstotal' %}" class="nav-link {% if active == 'mmstotal' %}active{% endif %}">M/M/s/c · Aforo</a>
+        <a href="{% url 'portal:erlangb' %}" class="nav-link {% if active == 'erlangb' %}active{% endif %}">Erlang B · Pérdidas</a>
+        <a href="{% url 'portal:mg1' %}" class="nav-link {% if active == 'mg1' %}active{% endif %}">M/G/1 · Variabilidad</a>
+        <a href="{% url 'portal:dd1' %}" class="nav-link {% if active == 'dd1' %}active{% endif %}">D/D/1 · Determinista</a>
+      </details>
+      <div class="nav-section">APLICAR Y EVALUAR</div>
+      <details class="nav-details" {% if active == 'cases' or active == 'simple' or active == 'complex' or active == 'sizing' or active == 'validator' or active == 'endtoend' %}open{% endif %}>
+        <summary>Herramientas de decisión <span>6</span></summary>
+        <a href="{% url 'portal:cases' %}" class="nav-link {% if active == 'cases' %}active{% endif %}">Casos prácticos</a>
+        <a href="{% url 'portal:simple' %}" class="nav-link {% if active == 'simple' %}active{% endif %}">Colas simples</a>
+        <a href="{% url 'portal:complex' %}" class="nav-link {% if active == 'complex' %}active{% endif %}">Colas complejas</a>
+        <a href="{% url 'portal:sizing' %}" class="nav-link {% if active == 'sizing' %}active{% endif %}">Dimensionamiento</a>
+        <a href="{% url 'portal:validator' %}" class="nav-link {% if active == 'validator' %}active{% endif %}">Validación de supuestos</a>
+        <a href="{% url 'portal:endtoend' %}" class="nav-link {% if active == 'endtoend' %}active{% endif %}">End-to-End</a>
+      </details>
     </nav>
     <div class="sidebar-card"><b>Django 6.1.1</b><span>Motor matemático compartido con Streamlit · simulación DES integrada.</span></div>
   </aside>
   <main class="main-content">
-    <header class="topbar"><div><span class="top-kicker">INVESTIGACIÓN DE OPERACIONES</span><strong>{% block header %}Decision Lab{% endblock %}</strong></div><div class="top-status"><span class="status-dot">● Motor compartido activo</span><span class="version-pill">Django 6.1</span></div></header>
+    <header class="topbar"><div><span class="top-kicker">INVESTIGACIÓN DE OPERACIONES</span><strong>{% block header %}Decision Lab{% endblock %}</strong></div><div class="top-status"><span class="status-dot">● Motor compartido activo</span><a href="{% url 'portal:aplicativo_app' %}" class="version-pill">App 2.0 · Beta</a></div></header>
     {% block content %}{% endblock %}
   </main>
 </div>
