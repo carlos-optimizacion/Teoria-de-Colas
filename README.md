@@ -176,3 +176,21 @@ La herramienta es un apoyo analítico. Una recomendación real debe contrastarse
 
 **Mag. Carlos Alberto Nieto Astahuamán**  
 Aplicación educativa desarrollada con fines académicos.
+
+
+---
+
+## Aplicativo App 2.0 — Frontend unificado (rama de revisión)
+
+La experiencia integrada utiliza **Django**, en lugar de mantener una segunda copia del sistema. Se accede a la misma aplicación mediante `/aplicativo-app/` y `/challenge/`.
+
+**Para evaluarla localmente:**
+- **Windows:** ejecutar `Iniciar_Aplicativo_App.bat`.
+- **Linux/macOS:** ejecutar `sh Iniciar_Aplicativo_App.sh`.
+- Abre `http://127.0.0.1:8000/aplicativo-app/`.
+
+El frontend reúne el laboratorio de los ocho modelos originales, el simulador M/M/s, el comparador y análisis económico del portal, y las cinco misiones gerenciales gamificadas. Las escenas SVG de cada sector se ubican en `django_app/static/img/scenarios/`. Los avatares y ocupaciones mostrados en estas escenas se alimentan de datos de los eventos simulados, no de animaciones aleatorias independientes.
+
+**Control de calidad:** las pruebas matemáticas y Django se ejecutan en GitHub Actions. Playwright verifica la página unificada, imágenes, eventos, decisiones, simulador clásico y anchura de pantalla móvil; sus capturas se adjuntan como artefactos de CI. La aplicación no está publicada en un servidor público y la rama `main` permanece sin modificar.
+
+**Limitaciones:** esta es una beta de desarrollo. Aún faltan, para una versión productiva: perfiles persistentes, rankings multiusuario, gestión de partidas guardadas, validación de simulaciones de múltiples etapas y controles de despliegue/seguridad de producción.
