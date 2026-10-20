@@ -88,3 +88,21 @@ class ChallengeEngineTests(TestCase):
         self.assertContains(response,'id="classic-lab"')
         self.assertContains(response,'js/classic-lab.js')
         self.assertContains(response,'M/M/s/K')
+
+    def test_patience_abandonment_and_priority_are_reproducible(self):
+        payload={"scenario":"supermercado","staffing":[1]*8,"replications":2,"seed":2026,
+                 "patience_min":0.2,"priority_share":0.30}
+        a=evaluate_game(payload); b=evaluate_game(payload)
+        self.assertEqual(a,b)
+        self.assertGreater(a["metrics"]["abandoned"],0)
+        self.assertAlmostEqual(a["metrics"]["admitted"],
+            a["metrics"]["completed"]+a["metrics"]["abandoned"]+a["metrics"]["unserved_at_close"])
+        self.assertEqual(a["options"]["priority_share"],0.3)
+        self.assertEqual(a["options"]["patience_min"],0.2)
+        self.assertTrue(any(frame.get("kind")=="abandon" for frame in a["events"]))
+
+    def test_advanced_options_validation(self):
+        with self.assertRaises(ValueError):
+            evaluate_game({"scenario":"banco","staffing":[3]*8,"priority_share":1.2})
+        with self.assertRaises(ValueError):
+            evaluate_game({"scenario":"banco","staffing":[3]*8,"patience_min":-1})
