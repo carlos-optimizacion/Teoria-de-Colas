@@ -1,149 +1,131 @@
 {% extends 'base.html' %}{% load static %}
-{% block title %}Arena de simulación | Decision Lab{% endblock %}
-{% block header %}Arena · Simulaciones y desafíos{% endblock %}
+{% block title %}Aplicativo App | Decision Lab 2.0{% endblock %}
+{% block header %}Simulación y decisiones{% endblock %}
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/challenge.css' %}">
-<div class="arena">
-  <section class="arena-hero">
-    <div><span class="arena-eyebrow">DECISION LAB · SIMULATION ARENA</span>
-      <h1>De la fórmula a la decisión.</h1>
-      <p>Estudia los modelos existentes, observa clientes individuales en un sistema de colas y responde a incidentes tomando decisiones gerenciales evaluadas con datos.</p>
-      <a href="#mission-panel" class="arena-cta">Iniciar desafío ↓</a>
+<div class="arena target-app">
+  <section class="sector-gallery target-sector-strip" aria-labelledby="scenarios-title">
+    <div class="sector-gallery-grid">
+      <button class="sector-card" type="button" data-sector="banco"><img src="{% static 'img/scenarios/banco.svg' %}" alt="Banco" width="1200" height="500"><span><b>Banco</b><small>Gestión de ventanillas</small></span></button>
+      <button class="sector-card" type="button" data-sector="hospital"><img src="{% static 'img/scenarios/hospital.svg' %}" alt="Hospital" width="1200" height="500"><span><b>Hospital</b><small>Atención ambulatoria</small></span></button>
+      <button class="sector-card" type="button" data-sector="supermercado"><img src="{% static 'img/scenarios/supermercado.svg' %}" alt="Supermercado" width="1200" height="500"><span><b>Supermercado</b><small>Cajas de pago</small></span></button>
+      <button class="sector-card" type="button" data-sector="fabrica"><img src="{% static 'img/scenarios/fabrica.svg' %}" alt="Fábrica" width="1200" height="500"><span><b>Fábrica</b><small>Inspección de calidad</small></span></button>
+      <button class="sector-card" type="button" data-sector="logistica"><img src="{% static 'img/scenarios/logistica.svg' %}" alt="Logística" width="1200" height="500"><span><b>Logística</b><small>Andenes de despacho</small></span></button>
     </div>
-    <div class="arena-headline"><span>5</span> misiones gerenciales <strong>8</strong> rutas de modelos <small>Un único aplicativo · cálculo reproducible</small><a class="arena-headline-link" href="{% url 'portal:simulator' %}">Simulación clásica ↗</a></div>
   </section>
 
-  <section class="sector-gallery" aria-labelledby="scenarios-title">
-    <div class="arena-section-title"><div><span class="arena-eyebrow">ELIGE TU MISIÓN</span><h2 id="scenarios-title">Cinco escenarios operativos ilustrados</h2><p>Explora el espacio de atención, decide la capacidad y analiza cómo cambia el desempeño.</p></div></div>
-    <div class="sector-gallery-grid">
-      <button class="sector-card" type="button" data-sector="banco"><img src="{% static 'img/scenarios/banco.svg' %}" alt="Ilustración de ventanillas bancarias" width="1200" height="500"><span><b>Banco</b><small>Gestión de ventanillas</small></span></button>
-      <button class="sector-card" type="button" data-sector="hospital"><img src="{% static 'img/scenarios/hospital.svg' %}" alt="Ilustración de puestos hospitalarios" width="1200" height="500"><span><b>Hospital</b><small>Atención ambulatoria</small></span></button>
-      <button class="sector-card" type="button" data-sector="supermercado"><img src="{% static 'img/scenarios/supermercado.svg' %}" alt="Ilustración de cajas de supermercado" width="1200" height="500"><span><b>Supermercado</b><small>Cajas y clientes</small></span></button>
-      <button class="sector-card" type="button" data-sector="fabrica"><img src="{% static 'img/scenarios/fabrica.svg' %}" alt="Ilustración de puestos de inspección" width="1200" height="500"><span><b>Fábrica</b><small>Control de calidad</small></span></button>
-      <button class="sector-card" type="button" data-sector="logistica"><img src="{% static 'img/scenarios/logistica.svg' %}" alt="Ilustración de andenes logísticos" width="1200" height="500"><span><b>Logística</b><small>Andenes de despacho</small></span></button>
-    </div>
-  </section>
-  <section class="arena-section" id="classic-models">
-    <div class="arena-section-title"><div><span class="arena-eyebrow">RUTA ACADÉMICA</span><h2>Simulaciones y modelos existentes</h2><p>Accede a los cálculos originales. El laboratorio animado M/M/s sigue disponible independientemente de la arena.</p></div><a class="arena-mini-link" href="{% url 'portal:simulator' %}">Abrir simulador M/M/s ↗</a></div>
-    <div class="arena-model-grid">
-      <a href="{% url 'portal:mm1' %}" class="arena-model"><small>01 · SIMPLE</small><b>M/M/1</b><span>Un servidor</span></a>
-      <a href="{% url 'portal:mms' %}" class="arena-model"><small>02 · MULTICANAL</small><b>M/M/s</b><span>Erlang C</span></a>
-      <a href="{% url 'portal:mmsk' %}" class="arena-model"><small>03 · CAPACIDAD</small><b>M/M/s/K</b><span>Bloqueo de clientes</span></a>
-      <a href="{% url 'portal:mm1c' %}" class="arena-model"><small>04 · ESPERA FINITA</small><b>M/M/1/c</b><span>Plazas limitadas</span></a>
-      <a href="{% url 'portal:mmstotal' %}" class="arena-model"><small>05 · AFORO</small><b>M/M/s/c</b><span>Capacidad total</span></a>
-      <a href="{% url 'portal:erlangb' %}" class="arena-model"><small>06 · PÉRDIDAS</small><b>Erlang B</b><span>Sin sala de espera</span></a>
-      <a href="{% url 'portal:mg1' %}" class="arena-model"><small>07 · VARIABILIDAD</small><b>M/G/1</b><span>Servicio general</span></a>
-      <a href="{% url 'portal:dd1' %}" class="arena-model"><small>08 · DETERMINISTA</small><b>D/D/1</b><span>Secuencias exactas</span></a>
-    </div>
-    <div class="arena-card arena-classic" id="classic-lab">
-      <div class="arena-card-top"><h3><span>LAB</span> Mini-reto de modelos</h3><span class="arena-tag">Análisis académico</span></div>
-      <p>Prueba cualquier modelo existente con sus propios indicadores. Meta orientativa: sistema estable y espera promedio ≤ 10 minutos; no sustituye una evaluación de capacidad económica.</p>
-      <div class="arena-lab-grid">
-        <label>Modelo
-          <select id="lab-model">
-            <option value="mm1">M/M/1</option><option value="mms" selected>M/M/s</option>
-            <option value="mmsk">M/M/s/K</option><option value="mm1c">M/M/1/c</option>
-            <option value="mmstotal">M/M/s/c</option><option value="erlangb">Erlang B</option>
-            <option value="mg1">M/G/1</option><option value="dd1">D/D/1</option>
-          </select>
-        </label>
-        <label>Interarribo promedio (min)<input id="lab-arrival" type="number" min="0.1" step="0.1" value="8"></label>
-        <label>Servicio promedio (min)<input id="lab-service" type="number" min="0.1" step="0.1" value="12"></label>
-        <label>Servidores (s)<input id="lab-servers" type="number" min="1" max="25" step="1" value="2"></label>
-        <label>Capacidad total (K)<input id="lab-capacity" type="number" min="1" max="150" step="1" value="8"></label>
-        <label>Variabilidad servicio (CV)<input id="lab-cv" type="number" min="0" max="4" step="0.1" value="1"></label>
-        <label>Plazas de espera (c)<input id="lab-waiting" type="number" min="0" max="100" step="1" value="5"></label>
-        <label>Observaciones D/D/1<input id="lab-n" type="number" min="1" max="200" step="1" value="20"></label>
+  <section class="target-sim-card" id="mission-panel">
+    <header class="target-sim-header">
+      <div class="target-sim-title"><span class="target-sim-icon">▦</span><div><h1 id="target-scene-title">Simulación gerencial</h1><p id="challenge-brief">Configura el escenario y ejecuta la jornada.</p></div></div>
+      <div class="target-clock"><small>Tiempo simulado</small><b id="c-clock">00:00</b><span id="c-progress-label">Evento 0/0</span></div>
+      <div class="target-head-kpis">
+        <article class="head-kpi ok"><small>Atendidos</small><b id="c-completed">0</b></article>
+        <article class="head-kpi info"><small>En cola</small><b id="c-queue">0</b></article>
+        <article class="head-kpi warn"><small>Rechazados</small><b id="live-rejected">0</b></article>
       </div>
-      <button id="lab-run" class="arena-primary arena-lab-run">Calcular modelo y ejecutar simulación →</button>
-      <div id="lab-result" class="arena-classic-result" role="status">Selecciona el modelo y ejecuta tu primera prueba.</div>
-      <div id="lab-kpis" class="arena-kpis"></div>
-      <div id="lab-plot" class="arena-plot"></div>
-      <p id="lab-model-note" class="arena-note"></p>
-    </div>
-  </section>
-  <section class="arena-section" id="mission-panel">
-    <div class="arena-section-title"><div><span class="arena-eyebrow">RUTA GAMIFICADA · DESAFÍOS</span><h2>Centro de operaciones</h2><p>Programa recursos, ejecuta la jornada y toma decisiones mientras observas la reproducción.</p></div><span class="arena-version">Modo gerencial · Beta</span></div>
-    <div class="arena-columns">
-      <aside class="arena-sidebar">
-        <div class="arena-card">
-          <h3><span>01</span> Selección de misión</h3>
-          <label for="challenge-scenario">Escenario operativo</label>
-          <select id="challenge-scenario">{% for key,c in scenarios.items %}<option value="{{ key }}">{{ c.name }}</option>{% endfor %}</select>
-          <div class="arena-brief" id="challenge-brief"></div><div class="scenario-preview"><img id="scenario-preview-image" src="{% static 'img/scenarios/banco.svg' %}" alt="Vista ilustrada del escenario seleccionado" width="300" height="125"></div>
-        </div>
-        <div class="arena-card">
-          <h3><span>02</span> Plan de capacidad</h3>
-          <p>Define servidores por hora. Las decisiones durante la partida modificarán la capacidad desde el instante elegido.</p>
-          <div id="challenge-staff" class="arena-staff"></div>
-          <label for="challenge-reps">Réplicas estadísticas</label>
-          <input id="challenge-reps" type="number" min="1" max="50" step="1" value="10">
-          <button id="challenge-run" class="arena-primary">Evaluar y simular jornada →</button>
-        </div>
-      </aside>
-      <div class="arena-main">
-        <div class="arena-card">
-          <div class="arena-card-top"><h3><span>03</span> Resultados proyectados al cierre</h3><span id="challenge-badge" class="arena-tag">Sin evaluar</span></div>
-          <div id="challenge-status" class="arena-status" role="status">Prepara una misión y pulsa «Evaluar y simular jornada».</div>
-          <div class="arena-kpis" id="challenge-kpis"></div>
-          <div id="challenge-achievements" class="arena-achievements"></div>
-        </div>
-        <div class="arena-card">
-          <h3><span>04</span> Operación animada</h3>
-          <div class="arena-toolbar">
-            <button id="challenge-play" class="arena-secondary" disabled>▶ Reproducir</button>
-            <button id="challenge-restart" class="arena-secondary" disabled>↺ Inicio</button>
-            <label for="challenge-speed">Velocidad
-              <select id="challenge-speed"><option value="1">1 evento</option><option value="3" selected>3 eventos</option><option value="10">10 eventos</option><option value="30">30 eventos</option></select>
-            </label>
-          </div>
-          <label for="challenge-scrub" class="arena-sr-only">Recorrer los eventos de la jornada</label>
-          <input id="challenge-scrub" class="arena-scrub" type="range" min="0" max="1" step="1" value="0" disabled>
-          <div class="arena-ticker">
-            <strong id="c-clock">00:00</strong>
-            <span id="c-progress-label">Evento 0/0</span>
-            <span id="c-arrival-label">0 llegadas</span>
-          </div>
-          <div class="scene-shell" id="scene-shell" data-assets-base="{% static 'img/scenarios/' %}">
-            <div class="scene-art-wrap">
-              <img id="c-scene-art" class="scene-art" src="{% static 'img/scenarios/banco.svg' %}" alt="Vista ilustrada del escenario operativo con puestos de atención y sala de espera" width="1200" height="500">
-              <div class="scene-status"><span class="scene-signal"></span><span id="scene-status-text">Escenario listo para operar</span></div>
-              <div class="scene-event-count"><strong id="scene-arrivals">0</strong><small>llegadas</small></div>
-              <div class="scene-moving-actors" id="scene-moving-actors" aria-hidden="true"></div>
-            </div>
-            <div class="scene-legend"><span><i class="dot dot-wait"></i> En espera</span><span><i class="dot dot-busy"></i> En servicio</span><span><i class="dot dot-finished"></i> Finalizados</span><span><i class="dot dot-blocked"></i> Rechazados</span></div>
-          </div>
-          <div class="scene-live-kpis" aria-label="Indicadores de la jornada hasta este instante">
-            <div><small>Llegadas</small><b id="live-arrivals">0</b></div>
-            <div><small>Atenciones finalizadas</small><b id="live-completed">0</b></div>
-            <div><small>Esperando</small><b id="live-waiting">0</b></div>
-            <div><small>Puestos ocupados / activos</small><b id="live-capacity">0 / 0</b></div>
-            <div><small>Rechazados</small><b id="live-rejected">0</b></div>
-          </div>
-          <div class="arena-live-flow">
-            <div class="arena-flow-cell"><div class="arena-flow-head">1 · Cola <b id="c-queue">0</b></div><div class="arena-customers" id="c-queue-people"><i>Sin clientes</i></div></div>
-            <div class="arena-flow-cell arena-flow-servers"><div class="arena-flow-head">2 · Servidores <b id="c-busy">0</b></div><div class="arena-servers" id="c-server-list"></div></div>
-            <div class="arena-flow-cell"><div class="arena-flow-head">3 · Finalizados <b id="c-completed">0</b></div><div id="c-arrivals" class="arena-flow-count">0 clientes recibidos</div><div id="c-blocked" class="arena-flow-lost">0 bloqueados</div></div>
-          </div>
-          <div id="challenge-event" class="arena-event" aria-live="polite">La reproducción mostrará las llegadas, atenciones, bloqueos y cambios de capacidad.</div>
-          <div class="arena-intervention">
-            <div><b>Tomar una decisión durante la jornada</b><p>Se aplicará en el siguiente minuto simulado, conservando las mismas llegadas y duraciones de servicio.</p></div>
-            <div><label for="challenge-intervene-count">Servidores activos</label><input id="challenge-intervene-count" type="number" min="1" value="4"></div>
-            <button class="arena-secondary" id="challenge-intervene" disabled>Aplicar decisión</button>
-          </div>
-          <div id="challenge-actions" class="arena-actions"></div>
-          <div id="challenge-plot" class="arena-plot"></div>
-        </div>
-        <div class="arena-card">
-          <h3><span>05</span> Análisis y comparación</h3>
-          <div id="challenge-analysis">Los resultados y sus intervalos de incertidumbre aparecerán al evaluar.</div>
-          <div id="challenge-comparison" class="arena-comparison"></div>
-          <button class="arena-secondary" id="challenge-export" disabled>↓ Exportar partida reproducible (JSON)</button>
-          <p class="arena-note">Los indicadores corresponden a un horizonte finito y la animación representa la primera réplica; no equivalen automáticamente a promedios estacionarios.</p>
-        </div>
+    </header>
+
+    <div class="scene-shell target-scene-shell" id="scene-shell" data-assets-base="{% static 'img/scenarios/' %}">
+      <div class="scene-art-wrap">
+        <img id="c-scene-art" class="scene-art" src="{% static 'img/scenarios/banco.svg' %}" alt="Escenario de simulación" width="1200" height="500">
+        <div class="scene-status"><span class="scene-signal"></span><span id="scene-status-text">Sistema listo</span></div>
+        <div class="scene-event-count"><strong id="scene-arrivals">0</strong><small>llegadas</small></div>
+        <div class="scene-moving-actors" id="scene-moving-actors" aria-hidden="true"></div>
       </div>
     </div>
+
+    <div class="target-player-bar">
+      <div class="arena-toolbar">
+        <button id="challenge-play" class="arena-primary compact" disabled>▶ Iniciar</button>
+        <button id="challenge-restart" class="arena-secondary" disabled>↺ Reiniciar</button>
+        <label>Velocidad<select id="challenge-speed"><option value="1">1×</option><option value="3" selected>3×</option><option value="10">10×</option><option value="30">30×</option></select></label>
+      </div>
+      <div class="target-progress-wrap"><span id="c-arrival-label">0 llegadas</span><input id="challenge-scrub" class="arena-scrub" type="range" min="0" max="1" step="1" value="0" disabled></div>
+    </div>
   </section>
+
+  <section class="target-bottom-grid">
+    <article class="arena-card target-params">
+      <div class="arena-card-top"><h3>Parámetros del escenario</h3><span class="arena-tag">Configurar</span></div>
+      <label>Escenario<select id="challenge-scenario">{% for key,c in scenarios.items %}<option value="{{ key }}">{{ c.name }}</option>{% endfor %}</select></label>
+      <div id="scenario-preview-image-wrap" hidden><img id="scenario-preview-image" src="{% static 'img/scenarios/banco.svg' %}" alt=""></div>
+      <div id="challenge-staff" class="arena-staff compact-staff"></div>
+      <label>Réplicas estadísticas<input id="challenge-reps" type="number" min="1" max="50" value="10"></label>
+      <button id="challenge-run" class="arena-primary">Evaluar y simular</button>
+      <div class="target-intervene">
+        <label>Decisión en curso: servidores<input id="challenge-intervene-count" type="number" min="1" value="4"></label>
+        <button id="challenge-intervene" class="arena-secondary" disabled>Aplicar cambio</button>
+      </div>
+      <div id="challenge-actions" class="arena-actions"></div>
+    </article>
+
+    <article class="arena-card target-results">
+      <div class="arena-card-top"><h3>Resultados en tiempo real</h3><span id="challenge-badge" class="arena-tag">Sin evaluar</span></div>
+      <div id="challenge-status" class="arena-status">Prepara y ejecuta una misión.</div>
+      <div class="scene-live-kpis target-live-kpis">
+        <div><small>Llegadas</small><b id="live-arrivals">0</b></div>
+        <div><small>Finalizados</small><b id="live-completed">0</b></div>
+        <div><small>Esperando</small><b id="live-waiting">0</b></div>
+        <div><small>Ocupados/activos</small><b id="live-capacity">0 / 0</b></div>
+        <div class="hidden-live"><small>Rechazados</small><b id="c-blocked">0 bloqueados</b></div>
+      </div>
+      <div class="arena-kpis target-result-kpis" id="challenge-kpis"></div>
+      <div id="challenge-achievements" class="arena-achievements"></div>
+      <div class="arena-live-flow target-detail-flow">
+        <div class="arena-flow-cell"><div class="arena-flow-head">Cola <b id="c-queue-shadow">—</b></div><div class="arena-customers" id="c-queue-people"><i>Sin clientes</i></div></div>
+        <div class="arena-flow-cell arena-flow-servers"><div class="arena-flow-head">Servidores <b id="c-busy">0</b></div><div class="arena-servers" id="c-server-list"></div></div>
+        <div class="arena-flow-cell"><div class="arena-flow-head">Recibidos <b id="c-arrivals">0 clientes recibidos</b></div></div>
+      </div>
+      <div id="challenge-event" class="arena-event">La reproducción mostrará eventos de la jornada.</div>
+    </article>
+
+    <article class="arena-card target-analysis">
+      <div class="arena-card-top"><h3>Cola, costos y comparación</h3><span class="arena-tag">Analítica</span></div>
+      <div id="challenge-plot" class="arena-plot target-plot"></div>
+      <div id="challenge-analysis">Los costos e intervalos aparecerán al ejecutar la simulación.</div>
+      <div id="challenge-comparison" class="arena-comparison"></div>
+      <div class="target-report-actions">
+        <button class="arena-secondary" id="challenge-export" disabled>JSON</button>
+        {% if request.user.is_authenticated %}
+        <button class="arena-secondary" id="challenge-save-scenario" disabled>Guardar escenario</button>
+        <a class="arena-secondary target-report-link" id="challenge-report-link" hidden>Reporte</a>
+        {% else %}
+        <a class="arena-secondary target-report-link" href="{% url 'login' %}">Ingresar para guardar</a>
+        {% endif %}
+      </div>
+    </article>
+  </section>
+
+  <details class="target-academic-lab">
+    <summary>Laboratorio académico · 8 modelos matemáticos</summary>
+    <section id="classic-models" class="arena-section">
+      <div class="arena-model-grid">
+        <a href="{% url 'portal:mm1' %}" class="arena-model"><b>M/M/1</b><span>Un servidor</span></a>
+        <a href="{% url 'portal:mms' %}" class="arena-model"><b>M/M/s</b><span>Erlang C</span></a>
+        <a href="{% url 'portal:mmsk' %}" class="arena-model"><b>M/M/s/K</b><span>Capacidad finita</span></a>
+        <a href="{% url 'portal:mm1c' %}" class="arena-model"><b>M/M/1/c</b><span>Espera limitada</span></a>
+        <a href="{% url 'portal:mmstotal' %}" class="arena-model"><b>M/M/s/c</b><span>Aforo</span></a>
+        <a href="{% url 'portal:erlangb' %}" class="arena-model"><b>Erlang B</b><span>Pérdidas</span></a>
+        <a href="{% url 'portal:mg1' %}" class="arena-model"><b>M/G/1</b><span>Variabilidad</span></a>
+        <a href="{% url 'portal:dd1' %}" class="arena-model"><b>D/D/1</b><span>Determinista</span></a>
+      </div>
+      <div class="arena-card arena-classic" id="classic-lab">
+        <div class="arena-lab-grid">
+          <label>Modelo<select id="lab-model"><option value="mm1">M/M/1</option><option value="mms" selected>M/M/s</option><option value="mmsk">M/M/s/K</option><option value="mm1c">M/M/1/c</option><option value="mmstotal">M/M/s/c</option><option value="erlangb">Erlang B</option><option value="mg1">M/G/1</option><option value="dd1">D/D/1</option></select></label>
+          <label>Interarribo (min)<input id="lab-arrival" type="number" min="0.1" step="0.1" value="8"></label>
+          <label>Servicio (min)<input id="lab-service" type="number" min="0.1" step="0.1" value="12"></label>
+          <label>Servidores<input id="lab-servers" type="number" min="1" max="25" value="2"></label>
+          <label>Capacidad K<input id="lab-capacity" type="number" min="1" max="150" value="8"></label>
+          <label>CV servicio<input id="lab-cv" type="number" min="0" max="4" step="0.1" value="1"></label>
+          <label>Plazas espera<input id="lab-waiting" type="number" min="0" max="100" value="5"></label>
+          <label>N D/D/1<input id="lab-n" type="number" min="1" max="200" value="20"></label>
+        </div>
+        <button id="lab-run" class="arena-primary arena-lab-run">Calcular modelo</button>
+        <div id="lab-result" class="arena-classic-result">Selecciona el modelo.</div>
+        <div id="lab-kpis" class="arena-kpis"></div><div id="lab-plot" class="arena-plot"></div><p id="lab-model-note" class="arena-note"></p>
+      </div>
+    </section>
+  </details>
 </div>
 {{ scenarios|json_script:"challenge-config" }}
 {% endblock %}
