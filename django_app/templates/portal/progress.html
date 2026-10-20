@@ -5,7 +5,7 @@
 <div class="stats-strip"><article><small>XP total</small><b>{{ progress.xp }}</b></article><article><small>Monedas</small><b>{{ progress.coins }}</b></article><article><small>Escenarios dominados</small><b>{{ progress.completed_scenarios|length }}/5</b></article><article><small>Logros</small><b>{{ progress.achievements|length }}</b></article></div>
 <div class="product-grid two">
 <section class="panel"><div class="panel-title"><span>01</span><div><b>Mejores resultados por escenario</b><small>La puntuación máxima real que has obtenido.</small></div></div>
-<div class="progress-scenarios">{% for key,cfg in scenarios.items %}<article><div><b>{{ cfg.name }}</b><small>{{ cfg.sector }}</small></div>{% with run=best|get_item:key %}{% if run %}<strong>{{ run.score }}</strong>{% else %}<strong>—</strong>{% endif %}{% endwith %}</article>{% endfor %}</div>
+<div class="progress-scenarios">{% for key,cfg,run in best_rows %}<article><div><b>{{ cfg.name }}</b><small>{{ cfg.sector }}</small></div>{% if run %}<strong>{{ run.score }}</strong>{% else %}<strong>—</strong>{% endif %}</article>{% endfor %}</div>
 </section>
 <section class="panel"><div class="panel-title"><span>02</span><div><b>Logros</b><small>Reconocimientos obtenidos por desempeño.</small></div></div><div class="achievement-list">{% for item in progress.achievements %}<span>★ {{ item }}</span>{% empty %}<p>Completa una misión cumpliendo presupuesto y SLA para desbloquear tu primer logro.</p>{% endfor %}</div></section>
 </div>
