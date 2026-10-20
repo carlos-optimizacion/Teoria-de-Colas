@@ -18,6 +18,7 @@ from .services import (
 )
 from .simulator_service import simulator_analysis
 from .challenge_engine import SCENARIOS
+from .models import UserProgress
 
 
 def _json_body(request):
@@ -146,7 +147,22 @@ def simulator(request):
 @require_POST
 def model_api(request):
     try:
-        return _json_response({"ok": True, **calculate_model(_json_body(request))})
+        body=_json_body(request)
+        result=calculate_model(body)
+        progress_data=None
+        if request.user.is_authenticated:
+            key=str(body.get("model",""))
+            progress,_=UserProgress.objects.get_or_create(user=request.user)
+            models=list(progress.completed_models or [])
+            if key in MODEL_CATALOG and key not in models:
+                models.append(key);progress.completed_models=models;progress.xp+=30;progress.coins+=15
+                progress.level=UserProgress.level_for_xp(progress.xp)
+                achievements=list(progress.achievements or [])
+                if len(models)>=len(MODEL_CATALOG) and "Dominio de los 8 modelos" not in achievements:
+                    achievements.append("Dominio de los 8 modelos");progress.achievements=achievements
+                progress.save()
+            progress_data={"level":progress.level,"xp":progress.xp,"coins":progress.coins,"completed_models":len(progress.completed_models or [])}
+        return _json_response({"ok": True, **result,"progress":progress_data})
     except (TypeError, ValueError, json.JSONDecodeError) as exc:
         return _error(exc)
 
