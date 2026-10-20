@@ -82,7 +82,7 @@ with sync_playwright() as playwright:
     page.wait_for_function("document.querySelectorAll('#network-stage-results article').length===3",timeout=30000)
     assert "Cuello de botella" in page.locator("#network-status").inner_text()
     page.screenshot(path=str(OUT/"06-red-colas-multietapa.png"),full_page=True)
-        page.goto("http://127.0.0.1:8000/escenarios-guardados/",wait_until="domcontentloaded")
+    page.goto("http://127.0.0.1:8000/escenarios-guardados/",wait_until="domcontentloaded")
     assert page.get_by_text("Estrategia navegador").count()==1
     page.goto("http://127.0.0.1:8000/reportes/",wait_until="domcontentloaded")
     assert page.locator(".data-table tbody tr").count()>=1
