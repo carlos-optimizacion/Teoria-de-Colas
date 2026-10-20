@@ -161,6 +161,9 @@ async function run({keepTime=false}={}){
     const d=await r.json();
     if(!r.ok||!d.ok)throw new Error(d.error||"No se pudo ejecutar el desafío.");
     last={...d,payload:req};
+    const reportLink=document.getElementById("challenge-report-link");
+    if(reportLink && d.run_id){reportLink.href="/reportes/"+d.run_id+"/";reportLink.hidden=false;}
+    const saveButton=document.getElementById("challenge-save-scenario");if(saveButton)saveButton.disabled=false;
     showKpis(d);showAnalysis(d);showChart(d);
     for(const id of ["challenge-play","challenge-restart","challenge-scrub","challenge-intervene","challenge-export"])el(id).disabled=false;
     el("challenge-scrub").max=Math.max(0,last.events.length-1);
@@ -214,5 +217,21 @@ el("challenge-restart").addEventListener("click",()=>{stop();step=0;renderFrame(
 el("challenge-scrub").addEventListener("input",e=>{stop();step=Number(e.target.value);renderFrame();});
 el("challenge-intervene").addEventListener("click",intervention);
 el("challenge-export").addEventListener("click",exportGame);
+
+async function saveScenario(){
+  if(!last)return;
+  const name=window.prompt("Nombre del escenario",""+last.title+" · estrategia");
+  if(!name)return;
+  const token=document.cookie.split("; ").find(v=>v.startsWith("csrftoken="))?.split("=")[1]||"";
+  const response=await fetch("/api/scenario/save/",{method:"POST",credentials:"same-origin",
+    headers:{"Content-Type":"application/json","X-CSRFToken":token},
+    body:JSON.stringify({name,scenario:last.scenario,payload:last.payload})});
+  const data=await response.json();
+  if(!response.ok||!data.ok){el("challenge-status").textContent=data.error||"No se pudo guardar.";return;}
+  el("challenge-status").textContent="Escenario guardado como «"+data.name+"».";
+}
+const saveButton=document.getElementById("challenge-save-scenario");
+if(saveButton)saveButton.addEventListener("click",saveScenario);
+
 setup();
 })();
