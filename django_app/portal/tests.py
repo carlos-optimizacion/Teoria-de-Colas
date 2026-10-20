@@ -170,3 +170,5 @@ class PortalTests(TestCase):
 
 # Django test discovery imports the challenge suite explicitly.
 from .challenge_checks import ChallengeEngineTests  # noqa: F401
+
+from .product_checks import ProductPersistenceTests  # noqa: F401
