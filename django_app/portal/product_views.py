@@ -103,3 +103,15 @@ def account_settings(request):
         return redirect("portal:account_settings")
     progress,_=UserProgress.objects.get_or_create(user=request.user)
     return render(request,"portal/account_settings.html",{"active":"settings","progress":progress})
+
+
+@login_required
+def saved_scenarios(request):
+    return render(request,"portal/saved_scenarios.html",{"active":"saved_scenarios","items":request.user.saved_queue_scenarios.all()})
+
+@login_required
+@require_POST
+def delete_saved_scenario(request,item_id):
+    item=get_object_or_404(SavedScenario,user=request.user,id=item_id)
+    item.delete()
+    return redirect("portal:saved_scenarios")
