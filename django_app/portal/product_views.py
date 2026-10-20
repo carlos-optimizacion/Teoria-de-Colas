@@ -21,8 +21,8 @@ def signup(request):
 def progress(request):
     p,_=UserProgress.objects.get_or_create(user=request.user)
     runs=request.user.queue_runs.all()[:20]
-    best={key:request.user.queue_runs.filter(scenario=key).order_by("-score").first() for key in SCENARIOS}
-    return render(request,"portal/progress.html",{"active":"progress","progress":p,"runs":runs,"best":best,"scenarios":SCENARIOS})
+    best_rows=[(key,cfg,request.user.queue_runs.filter(scenario=key).order_by("-score").first()) for key,cfg in SCENARIOS.items()]
+    return render(request,"portal/progress.html",{"active":"progress","progress":p,"runs":runs,"best_rows":best_rows})
 
 def leaderboard(request):
     scenario=request.GET.get("scenario","")
