@@ -1,29 +1,177 @@
 (() => {
-const el=id=>document.getElementById(id),scenarios=SCENARIOS;
-let last=null,timer=null,step=0;
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function setup(){let c=scenarios[el('challenge-scenario').value];el('challenge-brief').innerHTML='<p><b>Presupuesto:</b> S/ '+c.budget+'</p><p><b>Meta SLA:</b> '+(c.sla_target*100)+'% antes de '+c.sla_min+' minutos</p><p><b>Interarribo:</b> '+c.arrival_min+' min · <b>Servicio:</b> '+c.service_min+' min</p><p><b>Incidente:</b> '+esc(c.incident)+'</p>';
-el('challenge-staff').innerHTML=Array.from({length:8},(_,i)=>'<label class="hourrow">Hora '+(i+1)+' <input class="challenge-server" type="number" min="1" max="'+c.max_servers+'" step="1" value="'+Math.min(c.max_servers,4)+'"></label>').join('');
+"use strict";
+const el=id=>document.getElementById(id);
+const scenarios=JSON.parse(el("challenge-config").textContent);
+let last=null,baseline=null,actions=[],step=0,timer=null,updating=false;
+const money=v=>"S/ "+Number(v).toFixed(2);
+const decimal=(v,n=2)=>Number(v).toFixed(n);
+const percentage=v=>(100*Number(v)).toFixed(1)+"%";
+const person=id=>'<span class="arena-person" title="Cliente '+Number(id)+'">'+Number(id)+'</span>';
+
+function stop(){
+  if(timer!==null)clearInterval(timer);
+  timer=null;
+  el("challenge-play").textContent="▶ Reproducir";
 }
-function kpis(m,score){return [['Puntos',score+'/100'],['SLA',(100*m.sla).toFixed(1)+'%'],['Costo total','S/ '+m.total_cost.toFixed(2)],['Bloqueos',m.blocked.toFixed(1)],['Espera',m.avg_wait.toFixed(1)+' min'],['En cola',m.avg_queue.toFixed(2)],['Utilización',(m.utilization*100).toFixed(1)+'%'],['Pendientes al cierre',m.unserved_at_close.toFixed(1)]].map(([a,b])=>'<div class="mission-kpi"><small>'+a+'</small><b>'+b+'</b></div>').join('')}
-async function run(){clearInterval(timer);el('challenge-status').textContent='Calculando réplicas…';
-try {const payload={scenario:el('challenge-scenario').value,staffing:[...document.querySelectorAll('.challenge-server')].map(e=>Number(e.value)),replications:Number(el('challenge-reps').value),seed:2026};
-const token=document.cookie.split('; ').find(x=>x.startsWith('csrftoken='))?.split('=')[1]||'';
-const r=await fetch('/api/challenge/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':token},body:JSON.stringify(payload)});const d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Error de evaluación');
-last={...d,payload};const m=d.metrics;el('challenge-status').className='challenge-status '+(!d.passes.budget||!d.passes.sla?'challenge-warning':'');
-el('challenge-status').textContent=(d.passes.budget&&d.passes.sla?'Objetivos cumplidos. ':'Una o más metas incumplidas. ')+'Puntuación: '+d.score+' / 100.';
-el('challenge-kpis').innerHTML=kpis(m,d.score);
-const ci=d.confidence_95||{};const interval=(key,unit='')=>ci[key]&&ci[key].low!=null?ci[key].low.toFixed(2)+' a '+ci[key].high.toFixed(2)+unit:'No disponible (requiere más réplicas)';
-el('challenge-analysis').innerHTML='<p><b>IC 95% exploratorio del costo total:</b> S/ '+interval('total_cost')+'</p><p><b>IC 95% exploratorio de espera:</b> '+interval('avg_wait',' min')+'</p><p><b>Personal:</b> S/ '+m.staff_cost.toFixed(2)+' · <b>Espera:</b> S/ '+m.waiting_cost.toFixed(2)+' · <b>Clientes bloqueados:</b> S/ '+m.lost_cost.toFixed(2)+'</p><p><b>Meta de presupuesto:</b> '+(d.passes.budget?'Cumplida':'No cumplida')+' · <b>Meta de servicio:</b> '+(d.passes.sla?'Cumplida':'No cumplida')+'</p><p>'+esc(d.method)+'</p>';
-el('challenge-play').disabled=false;el('challenge-export').disabled=false;step=0;showFrame();
-if(window.Plotly)Plotly.react('challenge-plot',[{x:d.series.map(x=>x.t),y:d.series.map(x=>x.queue),type:'scatter',mode:'lines',line:{shape:'hv'},name:'Clientes en cola'}],{margin:{t:15,b:40,l:45,r:10},xaxis:{title:'Minutos'},yaxis:{title:'Cola'}},{displayModeBar:false});
-}catch(e){el('challenge-status').textContent=e.message;}
+function setup(){
+  stop();last=null;baseline=null;actions=[];step=0;
+  const c=scenarios[el("challenge-scenario").value];
+  el("challenge-brief").innerHTML='<div><b>Modelo:</b> '+c.model+'</div><div><b>Presupuesto:</b> '+money(c.budget)+'</div><div><b>Objetivo:</b> '+percentage(c.sla_target)+' de admitidos con espera ≤ '+c.sla_min+' minutos</div><div><b>Llegadas:</b> cada '+c.arrival_min+' min</div><div><b>Servicio:</b> '+c.service_min+' min</div><div><b>Evento:</b> '+c.incident+'</div>';
+  el("challenge-staff").innerHTML=Array.from({length:8},(_,i)=>'<label class="hourrow" for="hour-'+i+'">Hora '+(i+1)+' <input id="hour-'+i+'" class="challenge-server" type="number" min="1" max="'+c.max_servers+'" step="1" value="'+Math.min(c.max_servers,4)+'"></label>').join("");
+  el("challenge-intervene-count").max=c.max_servers;
+  el("challenge-intervene-count").value=Math.min(c.max_servers,4);
+  el("challenge-status").textContent="Configura el escenario y pulsa «Evaluar y simular jornada».";
+  el("challenge-kpis").replaceChildren();el("challenge-achievements").replaceChildren();
+  el("challenge-analysis").textContent="Los resultados y sus intervalos de incertidumbre aparecerán al evaluar.";
+  el("challenge-comparison").replaceChildren();
+  el("challenge-actions").replaceChildren();
+  el("challenge-badge").textContent="Sin evaluar";
+  for(const name of ["challenge-play","challenge-restart","challenge-scrub","challenge-intervene","challenge-export"])el(name).disabled=true;
+  el("c-clock").textContent="00:00";el("c-queue").textContent="0";el("c-busy").textContent="0";
+  el("c-completed").textContent="0";el("c-arrivals").textContent="0 clientes recibidos";
+  el("c-queue-people").textContent="Sin clientes";el("c-server-list").replaceChildren();
+  el("c-progress-label").textContent="Evento 0/0";el("c-arrival-label").textContent="0 llegadas";
+  el("c-blocked").textContent="0 bloqueados";
+  if(window.Plotly)Plotly.purge(el("challenge-plot"));
 }
-function showFrame(){if(!last)return;let f=last.events[Math.min(step,last.events.length-1)]||{t:0,queue:0,busy:0};
-el('c-clock').textContent=f.t.toFixed(1)+' min';el('c-queue').textContent=f.queue;el('c-busy').textContent=f.busy;el('c-arrivals').textContent=last.events.slice(0,step+1).filter(e=>e.kind==='arrival').length;
-el('challenge-event').textContent='Evento '+(step+1)+'/'+last.events.length+' · Cliente '+(f.client||'—')+' · '+(f.kind==='arrival'?'llegada':'salida')+' · '+f.active+' servidores habilitados';
+function payload(){
+  return {
+    scenario:el("challenge-scenario").value,
+    staffing:[...document.querySelectorAll(".challenge-server")].map(e=>Number(e.value)),
+    replications:Number(el("challenge-reps").value),
+    seed:2026,
+    actions:actions.map(x=>({...x}))
+  };
 }
-function play(){if(!last)return;if(timer){clearInterval(timer);timer=null;el('challenge-play').textContent='▶ Continuar';return;}if(step>=last.events.length-1)step=0;el('challenge-play').textContent='⏸ Pausar';
-timer=setInterval(()=>{step=Math.min(step+Number(el('challenge-speed').value),last.events.length-1);showFrame();if(step>=last.events.length-1){clearInterval(timer);timer=null;el('challenge-play').textContent='↻ Repetir';}},180);}
-el('challenge-scenario').addEventListener('change',setup);el('challenge-run').addEventListener('click',run);el('challenge-play').addEventListener('click',play);el('challenge-export').addEventListener('click',()=>{if(!last)return;const b=new Blob([JSON.stringify(last,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='decision-lab-'+last.scenario+'.json';a.click();URL.revokeObjectURL(a.href);});setup();
+const kpis=[["Puntuación","score"],["SLA","sla"],["Costo total","total_cost"],["Espera al iniciar","avg_wait"],
+  ["Cola media","avg_queue"],["Utilización","utilization"],["Bloqueados","blocked"],["Pendientes al cierre","unserved_at_close"]];
+function showKpis(d){
+  const m=d.metrics;
+  el("challenge-kpis").innerHTML=kpis.map(([label,key])=>{
+    const value=key==="score"?d.score+" / 100":key==="sla"||key==="utilization"?percentage(m[key]):key==="total_cost"?money(m[key]):key==="avg_wait"?decimal(m[key])+" min":decimal(m[key],key==="blocked"||key==="unserved_at_close"?1:2);
+    const node=document.createElement("div");
+    node.className="arena-kpi";
+    node.innerHTML="<small>"+label+"</small><b>"+value+"</b>";
+    return node.outerHTML;
+  }).join("");
+  el("challenge-achievements").innerHTML=(d.achievements||[]).map(x=>"<span>★ "+x+"</span>").join("");
+  el("challenge-badge").textContent=d.passes.sla&&d.passes.budget?"Misión cumplida":"Mejorar estrategia";
+  el("challenge-status").className="arena-status "+(d.passes.sla&&d.passes.budget?"arena-success":"arena-warning");
+  el("challenge-status").textContent=(d.passes.sla&&d.passes.budget?"Ambas metas satisfechas. ":"Revisa los límites de presupuesto y servicio. ")+"Resultado: "+d.score+" / 100 puntos.";
+}
+function showAnalysis(d){
+  const m=d.metrics,ci=d.confidence_95||{};
+  const interval=(key,suffix="")=>ci[key]&&ci[key].low!=null?decimal(ci[key].low)+" – "+decimal(ci[key].high)+suffix:"No disponible con una réplica";
+  el("challenge-analysis").innerHTML="<p><b>Personal:</b> "+money(m.staff_cost)+" · <b>Costo de espera:</b> "+money(m.waiting_cost)+" · <b>Pérdida por bloqueo:</b> "+money(m.lost_cost)+"</p>"
+  +"<p><b>Intervalo exploratorio 95% del costo:</b> "+interval("total_cost"," soles")+" · <b>Espera:</b> "+interval("avg_wait"," min")+"</p>"
+  +"<p><b>Presupuesto:</b> "+(d.passes.budget?"Cumplido":"No cumplido")+" · <b>Objetivo de servicio:</b> "+(d.passes.sla?"Cumplido":"No cumplido")+"</p><p>"+d.method+"</p>";
+  if(!baseline)baseline=d;
+  const b=baseline.metrics;
+  if(baseline!==d){
+    const rows=[["SLA",percentage(b.sla),percentage(m.sla)],["Costo total",money(b.total_cost),money(m.total_cost)],
+      ["Espera",decimal(b.avg_wait)+" min",decimal(m.avg_wait)+" min"],["Puntuación",baseline.score,d.score]];
+    el("challenge-comparison").innerHTML="<b>Comparación con tu primera estrategia (misma semilla)</b><table><thead><tr><th>Indicador</th><th>Inicial</th><th>Actual</th></tr></thead><tbody>"+rows.map(r=>"<tr>"+r.map(x=>"<td>"+x+"</td>").join("")+"</tr>").join("")+"</tbody></table>";
+  }
+  el("challenge-actions").textContent=actions.length?"Intervenciones: "+actions.map(x=>"min "+x.minute+" → "+x.servers+" servidores").join(" · "):"Aún no se han tomado decisiones durante la jornada.";
+}
+function clock(t){const whole=Math.max(0,Math.floor(t));return String(Math.floor(whole/60)).padStart(2,"0")+":"+String(whole%60).padStart(2,"0");}
+function renderFrame(){
+  if(!last||!last.events.length)return;
+  const f=last.events[Math.min(step,last.events.length-1)];
+  el("c-clock").textContent=clock(f.t);
+  el("c-queue").textContent=f.queue;el("c-busy").textContent=f.busy;
+  el("c-completed").textContent=f.completed;el("c-arrivals").textContent=f.arrivals+" clientes recibidos";
+  el("c-blocked").textContent=f.blocked+" bloqueados";
+  el("c-progress-label").textContent="Evento "+step+"/"+(last.events.length-1);
+  el("c-arrival-label").textContent=f.arrivals+" llegadas";
+  el("challenge-scrub").value=step;
+  const ids=f.queue_ids||[];
+  el("c-queue-people").innerHTML=ids.length?ids.map(person).join("")+(f.queue>ids.length?'<span>+'+(f.queue-ids.length)+'</span>':""):"<i>Sin clientes esperando</i>";
+  el("c-server-list").innerHTML=(f.servers||[]).map((cid,i)=>{
+    const active=i<f.active,occupied=cid!=null;
+    return '<div class="arena-server '+(!active?'is-off':occupied?'is-busy':"")+'"><strong>P'+(i+1)+'</strong>'+(occupied?person(cid):'<span>'+(active?'Libre':'Cerrado')+'</span>')+'</div>';
+  }).join("");
+  const messages={start:"Comienza la jornada.",arrival:"El cliente "+f.client+" ingresa al sistema.",blocked:"Cliente "+f.client+" rechazado por capacidad completa.",departure:"Finaliza la atención del cliente "+f.client+".",shift:"Cambio programado de dotación.",decision:"Decisión gerencial aplicada: "+f.active+" servidores disponibles.",incident:"Evento de indisponibilidad de un servidor.",end:"Fin de la jornada."};
+  el("challenge-event").textContent=messages[f.kind]||"Evento operativo.";
+}
+function seekTime(t){
+  const frames=last.events;
+  let lo=0,hi=frames.length-1;
+  while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(frames[mid].t<=t)lo=mid;else hi=mid-1;}
+  step=lo;renderFrame();
+}
+function showChart(d){
+  if(!window.Plotly)return;
+  const series=d.series||[];
+  window.Plotly.react(el("challenge-plot"),[
+    {x:series.map(v=>v.t),y:series.map(v=>v.queue),mode:"lines",type:"scatter",line:{shape:"hv",width:2,color:"#107eab"},name:"En cola"},
+    {x:series.map(v=>v.t),y:series.map(v=>v.busy),mode:"lines",type:"scatter",line:{shape:"hv",width:2,color:"#2a9975"},name:"En servicio"}
+  ],{margin:{t:25,l:42,r:12,b:45},paper_bgcolor:"#fff",plot_bgcolor:"#fff",
+    legend:{orientation:"h",y:1.15},xaxis:{title:"Tiempo simulado (min)",gridcolor:"#e5eef3"},
+    yaxis:{title:"Clientes",rangemode:"tozero",gridcolor:"#e5eef3"}},{responsive:true,displayModeBar:false});
+}
+async function run({keepTime=false}={}){
+  if(updating)return;
+  updating=true;stop();
+  const cursor=keepTime&&last?last.events[step].t:0;
+  const button=el("challenge-run");
+  button.disabled=true;
+  el("challenge-status").textContent="Ejecutando réplicas y calculando indicadores…";
+  try{
+    const req=payload();
+    const token=document.cookie.split("; ").find(v=>v.startsWith("csrftoken="))?.split("=")[1]||"";
+    const r=await fetch("/api/challenge/",{method:"POST",credentials:"same-origin",
+      headers:{"Content-Type":"application/json","X-CSRFToken":token},body:JSON.stringify(req)});
+    const d=await r.json();
+    if(!r.ok||!d.ok)throw new Error(d.error||"No se pudo ejecutar el desafío.");
+    last={...d,payload:req};
+    showKpis(d);showAnalysis(d);showChart(d);
+    for(const id of ["challenge-play","challenge-restart","challenge-scrub","challenge-intervene","challenge-export"])el(id).disabled=false;
+    el("challenge-scrub").max=Math.max(0,last.events.length-1);
+    step=0;
+    if(keepTime)seekTime(cursor);else renderFrame();
+  }catch(e){
+    el("challenge-status").className="arena-status arena-warning";
+    el("challenge-status").textContent=e.message;
+  }finally{updating=false;button.disabled=false;}
+}
+function play(){
+  if(!last)return;
+  if(timer!==null){stop();return;}
+  if(step>=last.events.length-1)step=0;
+  el("challenge-play").textContent="⏸ Pausar";
+  timer=setInterval(()=>{
+    step=Math.min(last.events.length-1,step+Number(el("challenge-speed").value));
+    renderFrame();
+    if(step>=last.events.length-1)stop();
+  },220);
+}
+function intervention(){
+  if(!last)return;
+  const duration=last.config.duration;
+  const cursor=last.events[step].t;
+  const minute=Math.max(1,Math.floor(cursor)+1,actions.length?actions[actions.length-1].minute+1:1);
+  if(minute>=duration){el("challenge-status").textContent="No pueden modificarse recursos al cierre de la jornada.";return;}
+  const servers=Number(el("challenge-intervene-count").value);
+  if(!Number.isInteger(servers)||servers<1||servers>last.config.max_servers){
+    el("challenge-status").textContent="Indica un número válido de servidores.";return;
+  }
+  actions.push({minute,servers});
+  run({keepTime:true});
+}
+function exportGame(){
+  if(!last)return;
+  const blob=new Blob([JSON.stringify(last,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download="decision-lab-"+last.scenario+"-partida.json";a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+el("challenge-scenario").addEventListener("change",setup);
+el("challenge-run").addEventListener("click",()=>{actions=[];baseline=null;run();});
+el("challenge-play").addEventListener("click",play);
+el("challenge-restart").addEventListener("click",()=>{stop();step=0;renderFrame();});
+el("challenge-scrub").addEventListener("input",e=>{stop();step=Number(e.target.value);renderFrame();});
+el("challenge-intervene").addEventListener("click",intervention);
+el("challenge-export").addEventListener("click",exportGame);
+setup();
 })();
