@@ -142,5 +142,6 @@
   </details>
 </div>
 {{ scenarios|json_script:"challenge-config" }}
+{% if initial_payload %}{{ initial_payload|json_script:"initial-saved-scenario" }}{% endif %}
 {% endblock %}
 {% block scripts %}<script src="{% static 'js/dynamic-scene.js' %}"></script><script src="{% static 'js/classic-lab.js' %}"></script><script src="{% static 'js/challenge.js' %}"></script>{% endblock %}
