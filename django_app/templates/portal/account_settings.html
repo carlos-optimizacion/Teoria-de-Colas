@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% block title %}Configuración | Decision Lab{% endblock %}{% block header %}Configuración{% endblock %}
+{% block content %}<section class="product-page"><div class="product-hero compact"><div><span class="eyebrow">CUENTA</span><h1>Configuración de perfil</h1><p>Datos visibles en reportes y clasificación.</p></div></div>
+<section class="panel account-settings-panel">{% if messages %}{% for message in messages %}<div class="notice success">{{ message }}</div>{% endfor %}{% endif %}
+<form method="post">{% csrf_token %}<div class="form-grid">
+<label>Nombre<input name="first_name" value="{{ request.user.first_name }}"></label>
+<label>Apellido<input name="last_name" value="{{ request.user.last_name }}"></label>
+<label>Correo<input name="email" type="email" value="{{ request.user.email }}"></label>
+<label>Usuario<input value="{{ request.user.username }}" disabled></label>
+</div><button class="btn primary" type="submit">Guardar cambios</button></form>
+<hr><p><a href="{% url 'password_change' %}">Cambiar contraseña</a></p></section></section>{% endblock %}
