@@ -65,6 +65,21 @@ class ChallengeEngineTests(SimpleTestCase):
         self.assertEqual(response.json()["actions"],[{"minute":240,"servers":4}])
         self.assertGreater(len(response.json()["events"]),10)
 
+    def test_unified_app_is_same_portal(self):
+        from django.urls import reverse
+        response=self.client.get(reverse("portal:aplicativo_app"))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'id="challenge-config"')
+        self.assertContains(response,'id="scene-shell"')
+        self.assertContains(response,'img/scenarios/banco.svg')
+        self.assertContains(response,'id="classic-lab"')
+
+    def test_original_simulator_has_visual_asset(self):
+        response=self.client.get("/simular/colas/")
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,"data-scene-art")
+        self.assertContains(response,"banco.svg")
+
     def test_challenge_template_loads_json_configuration(self):
         response=self.client.get("/challenge/")
         self.assertEqual(response.status_code,200)
