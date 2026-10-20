@@ -44,7 +44,7 @@ def challenge_api(request):
             user=user,session_key=request.session.session_key or "",scenario=result["scenario"],title=result["title"],
             score=result["score"],passed=result["passes"]["budget"] and result["passes"]["sla"],
             seed=int(body.get("seed",2026)),replications=result["replications"],staffing=result["staffing"],actions=result["actions"],
-            metrics=result["metrics"],config=result["config"],
+            metrics=result["metrics"],config={**result["config"],**result.get("options",{})},
         )
         progress_data=None
         if user:
