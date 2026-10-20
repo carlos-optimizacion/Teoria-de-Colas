@@ -172,3 +172,5 @@ class PortalTests(TestCase):
 from .challenge_checks import ChallengeEngineTests  # noqa: F401
 
 from .product_checks import ProductPersistenceTests  # noqa: F401
+
+from .network_checks import NetworkEngineTests  # noqa: F401
