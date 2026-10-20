@@ -1,0 +1,3 @@
+{% extends 'base.html' %}
+{% block title %}Ingresar | Decision Lab{% endblock %}{% block header %}Acceso{% endblock %}
+{% block content %}<section class="account-shell"><div class="account-card"><span class="eyebrow">CUENTA DECISION LAB</span><h1>Continúa tu progreso</h1><p>Ingresa para guardar partidas, XP, medallas y reportes.</p><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn primary" type="submit">Ingresar</button></form><p class="account-link">¿Aún no tienes cuenta? <a href="{% url 'portal:signup' %}">Crear cuenta</a></p></div></section>{% endblock %}
