@@ -19,6 +19,7 @@ from .services import (
 from .simulator_service import simulator_analysis
 from .challenge_engine import SCENARIOS
 from .models import UserProgress
+from .network_engine import simulate_network
 
 
 def _json_body(request):
@@ -252,3 +253,15 @@ def glossary(request):
         ("Ley de Little","Relación L=λW, bajo condiciones de estabilidad pertinentes."),
     ]
     return render(request,"portal/glossary.html",{"active":"glossary","terms":terms})
+
+
+@ensure_csrf_cookie
+def network_simulator(request):
+    return render(request,"portal/network.html",{"active":"network"})
+
+@require_POST
+def network_api(request):
+    try:
+        return _json_response({"ok":True,**simulate_network(_json_body(request))})
+    except (TypeError,ValueError,json.JSONDecodeError) as exc:
+        return _error(exc)
