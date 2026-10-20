@@ -33,6 +33,19 @@ jobs:
       - name: Django system check
         working-directory: django_app
         run: python manage.py check
+      - name: Migration drift check
+        working-directory: django_app
+        run: python manage.py makemigrations --check --dry-run
+      - name: Production deploy check
+        working-directory: django_app
+        env:
+          DJANGO_DEBUG: "0"
+          DJANGO_SECRET_KEY: "ci-only-long-secret-key-not-for-production-0123456789"
+          DJANGO_ALLOWED_HOSTS: "example.test"
+          DJANGO_SECURE_SSL_REDIRECT: "0"
+        run: |
+          python manage.py check --deploy
+          python manage.py collectstatic --noinput
       - name: Challenge JavaScript syntax
         run: |
           node --check django_app/static/js/challenge.js
