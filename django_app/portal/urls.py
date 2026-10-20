@@ -6,6 +6,7 @@ app_name = "portal"
 urlpatterns = [
     path('accounts/signup/', product_views.signup, name='signup'),
     path('progreso/', product_views.progress, name='progress'),
+    path('configuracion/', product_views.account_settings, name='account_settings'),
     path('clasificacion/', product_views.leaderboard, name='leaderboard'),
     path('reportes/', product_views.reports, name='reports'),
     path('reportes/<int:run_id>/', product_views.run_report, name='run_report'),
