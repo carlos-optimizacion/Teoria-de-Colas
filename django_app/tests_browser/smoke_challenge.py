@@ -38,6 +38,7 @@ with sync_playwright() as playwright:
     page.locator("#lab-run").click()
     page.wait_for_function("document.querySelector('#lab-kpis').children.length>=8",timeout=30000)
     page.screenshot(path=str(OUT/"02-laboratorio-modelos.png"),full_page=True)
+    page.locator(".hourly-staffing > summary").click()
     page.locator("#hour-0").fill("2")
     page.locator("#hour-1").fill("5")
     page.locator("#challenge-run").click()
