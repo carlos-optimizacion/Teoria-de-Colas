@@ -26,6 +26,16 @@ function setup(){
   document.querySelectorAll(".sector-card").forEach(card=>{card.classList.toggle("is-selected",card.dataset.sector===scenarioKey);card.setAttribute("aria-pressed",String(card.dataset.sector===scenarioKey));});
   scene.render({servers:Array(c.max_servers).fill(null),active:Math.min(c.max_servers,4),queue_ids:[],queue_length:0});
   el("scene-arrivals").textContent="0";
+  const title=document.getElementById("target-scene-title");if(title)title.textContent="Simulación: "+c.name+" ("+c.model+")";
+  el("challenge-arrival").value=c.arrival_min;
+  el("challenge-service").value=c.service_min;
+  el("challenge-capacity").value=c.capacity;
+  el("challenge-staff-cost").value=c.staff_hour;
+  el("challenge-wait-cost").value=c.wait_hour;
+  el("challenge-sla-min").value=c.sla_min;
+  el("challenge-sla-target").value=c.sla_target;
+  el("challenge-uniform-servers").max=c.max_servers;
+  el("challenge-uniform-servers").value=Math.min(c.max_servers,4);
   el("challenge-brief").innerHTML='<div><b>Modelo:</b> '+c.model+'</div><div><b>Presupuesto:</b> '+money(c.budget)+'</div><div><b>Objetivo:</b> '+percentage(c.sla_target)+' de admitidos con espera ≤ '+c.sla_min+' minutos</div><div><b>Llegadas:</b> cada '+c.arrival_min+' min</div><div><b>Servicio:</b> '+c.service_min+' min</div><div><b>Evento:</b> '+c.incident+'</div>';
   el("challenge-staff").innerHTML=Array.from({length:8},(_,i)=>'<label class="hourrow" for="hour-'+i+'">Hora '+(i+1)+' <input id="hour-'+i+'" class="challenge-server" type="number" min="1" max="'+c.max_servers+'" step="1" value="'+Math.min(c.max_servers,4)+'"></label>').join("");
   el("challenge-intervene-count").max=c.max_servers;
@@ -50,6 +60,13 @@ function payload(){
     scenario:el("challenge-scenario").value,
     staffing:[...document.querySelectorAll(".challenge-server")].map(e=>Number(e.value)),
     replications:Number(el("challenge-reps").value),
+    arrival_min:Number(el("challenge-arrival").value),
+    service_min:Number(el("challenge-service").value),
+    capacity:Number(el("challenge-capacity").value),
+    staff_hour:Number(el("challenge-staff-cost").value),
+    wait_hour:Number(el("challenge-wait-cost").value),
+    sla_min:Number(el("challenge-sla-min").value),
+    sla_target:Number(el("challenge-sla-target").value),
     patience_min:Number(el("challenge-patience").value),
     priority_share:Number(el("challenge-priority").value),
     seed:2026,
@@ -207,6 +224,11 @@ function exportGame(){
   const a=document.createElement("a");a.href=url;a.download="decision-lab-"+last.scenario+"-partida.json";a.click();
   setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
+const uniformServers=document.getElementById("challenge-uniform-servers");
+uniformServers.addEventListener("change",()=>{
+  const count=Number(uniformServers.value);
+  document.querySelectorAll(".challenge-server").forEach(input=>input.value=String(count));
+});
 el("challenge-scenario").addEventListener("change",setup);
 document.querySelectorAll(".sector-card").forEach(card=>card.addEventListener("click",()=>{
   el("challenge-scenario").value=card.dataset.sector;
