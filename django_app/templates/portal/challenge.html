@@ -63,7 +63,9 @@
       <label>Réplicas estadísticas<input id="challenge-reps" type="number" min="1" max="50" value="10"></label>
       <details class="advanced-sim-options"><summary>Opciones avanzadas</summary>
         <label>Paciencia media del cliente (min)<input id="challenge-patience" type="number" min="0" max="240" step="1" value="0"><small>0 = sin abandono. Si es mayor, la paciencia se modela exponencialmente.</small></label>
-        <label>Proporción prioritaria<input id="challenge-priority" type="number" min="0" max="1" step="0.05" value="0"><small>0 = FIFO puro; 0.20 = 20% de clientes con prioridad no expropiativa.</small></label>
+        <label>Proporción prioritaria<input id="challenge-priority" type="number" min="0" max="1" step="0.05" value="0"><small>0 = FIFO puro; 0.20 = 20% con prioridad no expropiativa.</small></label>
+        <label>Distribución del servicio<select id="challenge-service-dist"><option value="exponential">Exponencial</option><option value="deterministic">Determinista</option><option value="gamma">Gamma</option><option value="lognormal">Lognormal</option></select></label>
+        <label>CV del servicio<input id="challenge-service-cv" type="number" min=".05" max="4" step=".05" value="1"><small>Usado por gamma y lognormal; CV=1 equivale a alta variabilidad.</small></label>
       </details>
       <button id="challenge-run" class="arena-primary">Evaluar y simular</button>
       <div class="target-intervene">
