@@ -1,7 +1,7 @@
-from django.test import SimpleTestCase
+from django.test import TestCase
 from .challenge_engine import SCENARIOS, evaluate_game
 
-class ChallengeEngineTests(SimpleTestCase):
+class ChallengeEngineTests(TestCase):
     def test_five_missions(self):
         self.assertEqual(len(SCENARIOS), 5)
         for key,scenario in SCENARIOS.items():
