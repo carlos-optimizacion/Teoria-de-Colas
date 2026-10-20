@@ -5,7 +5,7 @@ staffing, time-specific player interventions, capacity limits and scenario shock
 All economic figures are illustrative parameters supplied by the exercise.
 """
 from heapq import heappop, heappush
-from math import isfinite, sqrt
+from math import isfinite, log, sqrt
 from random import Random
 from statistics import mean, stdev
 
@@ -70,12 +70,24 @@ def _run(config, staffing, actions, seed, options=None):
     options=options or {}
     patience_min=float(options.get("patience_min",0) or 0)
     priority_share=float(options.get("priority_share",0) or 0)
+    service_distribution=str(options.get("service_distribution","exponential"))
+    service_cv=float(options.get("service_cv",1) or 1)
     horizon = config["duration"]
     arrivals = _arrivals(config, seed)
     service_rng = Random(seed + 100003)
     patience_rng = Random(seed + 200003)
     priority_rng = Random(seed + 300003)
-    service_duration = {i: service_rng.expovariate(1 / config["service_min"]) for i in range(1, len(arrivals)+1)}
+    def service_draw():
+        mean=config["service_min"]
+        if service_distribution=="deterministic": return mean
+        if service_distribution=="gamma":
+            shape=1/(service_cv**2);scale=mean/shape
+            return service_rng.gammavariate(shape,scale)
+        if service_distribution=="lognormal":
+            sigma2=log(1+service_cv**2);sigma=sqrt(sigma2);mu=log(mean)-sigma2/2
+            return service_rng.lognormvariate(mu,sigma)
+        return service_rng.expovariate(1/mean)
+    service_duration = {i: service_draw() for i in range(1, len(arrivals)+1)}
     arrival_time = {i: t for i, t in enumerate(arrivals, 1)}
     events, order = [], 0
     def schedule(time, priority, kind, cid=0, slot=-1):
@@ -219,7 +231,13 @@ def evaluate_game(payload):
         raise ValueError("Se requiere una dotación por cada hora")
     staffing = [_integer(s, "servidores", 1, cfg["max_servers"]) for s in staffing]
     actions = _actions(payload.get("actions", []), cfg)
-    options={"patience_min":_number(payload.get("patience_min",0),"patience_min",0,240),"priority_share":_number(payload.get("priority_share",0),"priority_share",0,1)}
+    service_distribution=str(payload.get("service_distribution","exponential")).lower()
+    if service_distribution not in {"exponential","deterministic","gamma","lognormal"}:
+        raise ValueError("service_distribution no soportada")
+    options={"patience_min":_number(payload.get("patience_min",0),"patience_min",0,240),
+        "priority_share":_number(payload.get("priority_share",0),"priority_share",0,1),
+        "service_distribution":service_distribution,
+        "service_cv":_number(payload.get("service_cv",1),"service_cv",.05,4)}
     runs = [_run(cfg, staffing, actions, seed + i*1709, options) for i in range(replications)]
     columns = ("arrivals","admitted","blocked","abandoned","completed","started","unserved_at_close",
         "avg_wait","avg_system","sla","p_block","p_abandon","utilization","avg_queue",
@@ -253,4 +271,4 @@ def evaluate_game(payload):
         "staffing":staffing,"actions":actions,"options":options,"replications":replications,"metrics":metrics,
         "confidence_95":confidence,"score":score,"achievements":achievements,
         "passes":{"budget":budget,"sla":service},"events":runs[0]["events"],"series":runs[0]["series"],
-        "method":("Prioridad no expropiativa" if options["priority_share"]>0 else "FIFO")+", horizonte finito; SLA sobre admitidos, incluidos pendientes y abandonos; promedios de réplicas independientes, visualización de la primera réplica."}
+        "method":("Prioridad no expropiativa" if options["priority_share"]>0 else "FIFO")+", servicio "+options["service_distribution"]+", horizonte finito; SLA sobre admitidos, incluidos pendientes y abandonos; promedios de réplicas independientes, visualización de la primera réplica."}
