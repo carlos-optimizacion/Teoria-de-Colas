@@ -25,6 +25,7 @@
       <a class="nav-link {% if active == 'reports' %}active{% endif %}" href="{% url 'portal:reports' %}"><span class="num">▤</span><span>Reportes</span></a>
       <div class="nav-section">USUARIO</div>
       <a class="nav-link {% if active == 'progress' %}active{% endif %}" href="{% url 'portal:progress' %}"><span class="num">◉</span><span>Mi progreso</span></a>
+      <a class="nav-link {% if active == 'saved_scenarios' %}active{% endif %}" href="{% url 'portal:saved_scenarios' %}"><span class="num">▣</span><span>Escenarios guardados</span></a>
       <a class="nav-link {% if active == 'leaderboard' %}active{% endif %}" href="{% url 'portal:leaderboard' %}"><span class="num">★</span><span>Clasificación</span></a>
       <a class="nav-link {% if active == 'settings' %}active{% endif %}" href="{% url 'portal:account_settings' %}"><span class="num">⚙</span><span>Configuración</span></a>
       <div class="nav-section">APRENDER</div>
