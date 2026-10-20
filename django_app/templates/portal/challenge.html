@@ -51,6 +51,10 @@
       <div id="scenario-preview-image-wrap" hidden><img id="scenario-preview-image" src="{% static 'img/scenarios/banco.svg' %}" alt=""></div>
       <div id="challenge-staff" class="arena-staff compact-staff"></div>
       <label>Réplicas estadísticas<input id="challenge-reps" type="number" min="1" max="50" value="10"></label>
+      <details class="advanced-sim-options"><summary>Opciones avanzadas</summary>
+        <label>Paciencia media del cliente (min)<input id="challenge-patience" type="number" min="0" max="240" step="1" value="0"><small>0 = sin abandono. Si es mayor, la paciencia se modela exponencialmente.</small></label>
+        <label>Proporción prioritaria<input id="challenge-priority" type="number" min="0" max="1" step="0.05" value="0"><small>0 = FIFO puro; 0.20 = 20% de clientes con prioridad no expropiativa.</small></label>
+      </details>
       <button id="challenge-run" class="arena-primary">Evaluar y simular</button>
       <div class="target-intervene">
         <label>Decisión en curso: servidores<input id="challenge-intervene-count" type="number" min="1" value="4"></label>
