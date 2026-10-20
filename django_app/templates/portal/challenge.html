@@ -1,0 +1,149 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}Aplicativo App | Decision Lab 2.0{% endblock %}
+{% block header %}Simulación y decisiones{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/challenge.css' %}">
+<div class="arena target-app">
+  <section class="sector-gallery target-sector-strip" aria-labelledby="scenarios-title">
+    <div class="sector-gallery-grid">
+      <button class="sector-card" type="button" data-sector="banco"><img src="{% static 'img/scenarios/banco.svg' %}" alt="Banco" width="1200" height="500"><span><b>Banco</b><small>Gestión de ventanillas</small></span></button>
+      <button class="sector-card" type="button" data-sector="hospital"><img src="{% static 'img/scenarios/hospital.svg' %}" alt="Hospital" width="1200" height="500"><span><b>Hospital</b><small>Atención ambulatoria</small></span></button>
+      <button class="sector-card" type="button" data-sector="supermercado"><img src="{% static 'img/scenarios/supermercado.svg' %}" alt="Supermercado" width="1200" height="500"><span><b>Supermercado</b><small>Cajas de pago</small></span></button>
+      <button class="sector-card" type="button" data-sector="fabrica"><img src="{% static 'img/scenarios/fabrica.svg' %}" alt="Fábrica" width="1200" height="500"><span><b>Fábrica</b><small>Inspección de calidad</small></span></button>
+      <button class="sector-card" type="button" data-sector="logistica"><img src="{% static 'img/scenarios/logistica.svg' %}" alt="Logística" width="1200" height="500"><span><b>Logística</b><small>Andenes de despacho</small></span></button>
+    </div>
+  </section>
+
+  <section class="target-sim-card" id="mission-panel">
+    <header class="target-sim-header">
+      <div class="target-sim-title"><span class="target-sim-icon">▦</span><div><h1 id="target-scene-title">Simulación gerencial</h1><p id="challenge-brief">Configura el escenario y ejecuta la jornada.</p></div></div>
+      <div class="target-clock"><small>Tiempo simulado</small><b id="c-clock">00:00</b><span id="c-progress-label">Evento 0/0</span></div>
+      <div class="target-head-kpis">
+        <article class="head-kpi ok"><small>Atendidos</small><b id="c-completed">0</b></article>
+        <article class="head-kpi info"><small>En cola</small><b id="c-queue">0</b></article>
+        <article class="head-kpi warn"><small>Rechazados</small><b id="live-rejected">0</b></article>
+      </div>
+    </header>
+
+    <div class="scene-shell target-scene-shell" id="scene-shell" data-assets-base="{% static 'img/scenarios/' %}">
+      <div class="scene-art-wrap">
+        <img id="c-scene-art" class="scene-art" src="{% static 'img/scenarios/banco.svg' %}" alt="Escenario de simulación" width="1200" height="500">
+        <div class="scene-status"><span class="scene-signal"></span><span id="scene-status-text">Sistema listo</span></div>
+        <div class="scene-event-count"><strong id="scene-arrivals">0</strong><small>llegadas</small></div>
+        <div class="scene-moving-actors" id="scene-moving-actors" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="target-player-bar">
+      <div class="arena-toolbar">
+        <button id="challenge-play" class="arena-primary compact" disabled>▶ Iniciar</button>
+        <button id="challenge-restart" class="arena-secondary" disabled>↺ Reiniciar</button>
+        <label>Velocidad<select id="challenge-speed"><option value="1">1×</option><option value="3" selected>3×</option><option value="10">10×</option><option value="30">30×</option></select></label>
+      </div>
+      <div class="target-progress-wrap"><span id="c-arrival-label">0 llegadas</span><input id="challenge-scrub" class="arena-scrub" type="range" min="0" max="1" step="1" value="0" disabled></div>
+    </div>
+  </section>
+
+  <section class="target-bottom-grid">
+    <article class="arena-card target-params">
+      <div class="arena-card-top"><h3>Parámetros del escenario</h3><span class="arena-tag">Configurar</span></div>
+      <label>Escenario<select id="challenge-scenario">{% for key,c in scenarios.items %}<option value="{{ key }}">{{ c.name }}</option>{% endfor %}</select></label>
+      <div id="scenario-preview-image-wrap" hidden><img id="scenario-preview-image" src="{% static 'img/scenarios/banco.svg' %}" alt=""></div>
+      <div class="target-parameter-grid">
+        <label>Interarribo promedio (min)<input id="challenge-arrival" type="number" min="0.1" max="240" step="0.1"></label>
+        <label>Servicio promedio (min)<input id="challenge-service" type="number" min="0.1" max="240" step="0.1"></label>
+        <label>Servidores base<input id="challenge-uniform-servers" type="number" min="1" max="12" step="1"></label>
+        <label>Capacidad total<input id="challenge-capacity" type="number" min="1" max="1000" step="1"></label>
+        <label>Costo servidor / h<input id="challenge-staff-cost" type="number" min="0" max="10000" step="0.5"></label>
+        <label>Costo espera / h<input id="challenge-wait-cost" type="number" min="0" max="10000" step="0.5"></label>
+        <label>Espera SLA (min)<input id="challenge-sla-min" type="number" min="0.1" max="240" step="0.5"></label>
+        <label>Meta SLA<input id="challenge-sla-target" type="number" min="0" max="1" step="0.01"></label>
+      </div>
+      <details class="hourly-staffing"><summary>Dotación por hora</summary><div id="challenge-staff" class="arena-staff compact-staff"></div></details>
+      <label>Réplicas estadísticas<input id="challenge-reps" type="number" min="1" max="50" value="10"></label>
+      <details class="advanced-sim-options"><summary>Opciones avanzadas</summary>
+        <label>Paciencia media del cliente (min)<input id="challenge-patience" type="number" min="0" max="240" step="1" value="0"><small>0 = sin abandono. Si es mayor, la paciencia se modela exponencialmente.</small></label>
+        <label>Proporción prioritaria<input id="challenge-priority" type="number" min="0" max="1" step="0.05" value="0"><small>0 = FIFO puro; 0.20 = 20% con prioridad no expropiativa.</small></label>
+        <label>Distribución del servicio<select id="challenge-service-dist"><option value="exponential">Exponencial</option><option value="deterministic">Determinista</option><option value="gamma">Gamma</option><option value="lognormal">Lognormal</option></select></label>
+        <label>CV del servicio<input id="challenge-service-cv" type="number" min=".05" max="4" step=".05" value="1"><small>Usado por gamma y lognormal; CV=1 equivale a alta variabilidad.</small></label>
+      </details>
+      <button id="challenge-run" class="arena-primary">Evaluar y simular</button>
+      <div class="target-intervene">
+        <label>Decisión en curso: servidores<input id="challenge-intervene-count" type="number" min="1" value="4"></label>
+        <button id="challenge-intervene" class="arena-secondary" disabled>Aplicar cambio</button>
+      </div>
+      <div id="challenge-actions" class="arena-actions"></div>
+    </article>
+
+    <article class="arena-card target-results">
+      <div class="arena-card-top"><h3>Resultados en tiempo real</h3><span id="challenge-badge" class="arena-tag">Sin evaluar</span></div>
+      <div id="challenge-status" class="arena-status">Prepara y ejecuta una misión.</div>
+      <div class="scene-live-kpis target-live-kpis">
+        <div><small>Llegadas</small><b id="live-arrivals">0</b></div>
+        <div><small>Finalizados</small><b id="live-completed">0</b></div>
+        <div><small>Esperando</small><b id="live-waiting">0</b></div>
+        <div><small>Ocupados/activos</small><b id="live-capacity">0 / 0</b></div>
+        <div class="hidden-live"><small>Rechazados</small><b id="c-blocked">0 bloqueados</b></div>
+      </div>
+      <div class="arena-kpis target-result-kpis" id="challenge-kpis"></div>
+      <div id="challenge-achievements" class="arena-achievements"></div>
+      <div class="arena-live-flow target-detail-flow">
+        <div class="arena-flow-cell"><div class="arena-flow-head">Cola <b id="c-queue-shadow">—</b></div><div class="arena-customers" id="c-queue-people"><i>Sin clientes</i></div></div>
+        <div class="arena-flow-cell arena-flow-servers"><div class="arena-flow-head">Servidores <b id="c-busy">0</b></div><div class="arena-servers" id="c-server-list"></div></div>
+        <div class="arena-flow-cell"><div class="arena-flow-head">Recibidos <b id="c-arrivals">0 clientes recibidos</b></div></div>
+      </div>
+      <div id="challenge-event" class="arena-event">La reproducción mostrará eventos de la jornada.</div>
+    </article>
+
+    <article class="arena-card target-analysis">
+      <div class="arena-card-top"><h3>Cola, costos y comparación</h3><span class="arena-tag">Analítica</span></div>
+      <div id="challenge-plot" class="arena-plot target-plot"></div>
+      <div id="challenge-analysis">Los costos e intervalos aparecerán al ejecutar la simulación.</div>
+      <div id="challenge-comparison" class="arena-comparison"></div>
+      <div class="target-report-actions">
+        <button class="arena-secondary" id="challenge-export" disabled>JSON</button>
+        {% if request.user.is_authenticated %}
+        <button class="arena-secondary" id="challenge-save-scenario" disabled>Guardar escenario</button>
+        <a class="arena-secondary target-report-link" id="challenge-report-link" hidden>Reporte</a>
+        {% else %}
+        <a class="arena-secondary target-report-link" href="{% url 'login' %}">Ingresar para guardar</a>
+        {% endif %}
+      </div>
+    </article>
+  </section>
+
+  <details class="target-academic-lab">
+    <summary>Laboratorio académico · 8 modelos matemáticos</summary>
+    <section id="classic-models" class="arena-section">
+      <div class="arena-model-grid">
+        <a href="{% url 'portal:mm1' %}" class="arena-model"><b>M/M/1</b><span>Un servidor</span></a>
+        <a href="{% url 'portal:mms' %}" class="arena-model"><b>M/M/s</b><span>Erlang C</span></a>
+        <a href="{% url 'portal:mmsk' %}" class="arena-model"><b>M/M/s/K</b><span>Capacidad finita</span></a>
+        <a href="{% url 'portal:mm1c' %}" class="arena-model"><b>M/M/1/c</b><span>Espera limitada</span></a>
+        <a href="{% url 'portal:mmstotal' %}" class="arena-model"><b>M/M/s/c</b><span>Aforo</span></a>
+        <a href="{% url 'portal:erlangb' %}" class="arena-model"><b>Erlang B</b><span>Pérdidas</span></a>
+        <a href="{% url 'portal:mg1' %}" class="arena-model"><b>M/G/1</b><span>Variabilidad</span></a>
+        <a href="{% url 'portal:dd1' %}" class="arena-model"><b>D/D/1</b><span>Determinista</span></a>
+      </div>
+      <div class="arena-card arena-classic" id="classic-lab">
+        <div class="arena-lab-grid">
+          <label>Modelo<select id="lab-model"><option value="mm1">M/M/1</option><option value="mms" selected>M/M/s</option><option value="mmsk">M/M/s/K</option><option value="mm1c">M/M/1/c</option><option value="mmstotal">M/M/s/c</option><option value="erlangb">Erlang B</option><option value="mg1">M/G/1</option><option value="dd1">D/D/1</option></select></label>
+          <label>Interarribo (min)<input id="lab-arrival" type="number" min="0.1" step="0.1" value="8"></label>
+          <label>Servicio (min)<input id="lab-service" type="number" min="0.1" step="0.1" value="12"></label>
+          <label>Servidores<input id="lab-servers" type="number" min="1" max="25" value="2"></label>
+          <label>Capacidad K<input id="lab-capacity" type="number" min="1" max="150" value="8"></label>
+          <label>CV servicio<input id="lab-cv" type="number" min="0" max="4" step="0.1" value="1"></label>
+          <label>Plazas espera<input id="lab-waiting" type="number" min="0" max="100" value="5"></label>
+          <label>N D/D/1<input id="lab-n" type="number" min="1" max="200" value="20"></label>
+        </div>
+        <button id="lab-run" class="arena-primary arena-lab-run">Calcular modelo</button>
+        <div id="lab-result" class="arena-classic-result">Selecciona el modelo.</div>
+        <div id="lab-kpis" class="arena-kpis"></div><div id="lab-plot" class="arena-plot"></div><p id="lab-model-note" class="arena-note"></p>
+      </div>
+    </section>
+  </details>
+</div>
+{{ scenarios|json_script:"challenge-config" }}
+{% if initial_payload %}{{ initial_payload|json_script:"initial-saved-scenario" }}{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/dynamic-scene.js' %}"></script><script src="{% static 'js/classic-lab.js' %}"></script><script src="{% static 'js/challenge.js' %}"></script>{% endblock %}

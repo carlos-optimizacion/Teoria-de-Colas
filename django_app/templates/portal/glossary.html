@@ -1,0 +1,3 @@
+{% extends 'base.html' %}{% block title %}Glosario | Decision Lab{% endblock %}{% block header %}Glosario{% endblock %}
+{% block content %}<section class="product-page"><div class="product-hero compact"><div><span class="eyebrow">CONCEPTOS</span><h1>Glosario de teoría de colas</h1><p>Definiciones breves usadas en modelos, simulaciones y reportes.</p></div></div>
+<section class="panel"><div class="glossary-grid">{% for term,definition in terms %}<article><b>{{ term }}</b><p>{{ definition }}</p></article>{% endfor %}</div></section></section>{% endblock %}

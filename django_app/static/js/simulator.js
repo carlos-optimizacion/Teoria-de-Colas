@@ -1,5 +1,6 @@
 (() => {
   const form = document.getElementById('simulator-form');
+  const dynamicScene = window.DecisionLabScene.mount(document.getElementById('legacy-dynamic-scene'));
   const el = id => document.getElementById(id);
   const number = id => Number(el(id).value);
   const pct = value => value == null ? '—' : `${(Number(value) * 100).toFixed(1)}%`;
@@ -163,6 +164,8 @@
     if (force || player.renderedIndex !== found.idx) {
       player.renderedIndex = found.idx;
       el('sim-board').innerHTML = boardHtml(player.data, found.frame);
+      dynamicScene.render({queue:found.frame?.queue || [],queue_length:found.frame?.queue_length || 0,
+        servers:found.frame?.servers || Array(player.data.servers_count).fill(null),active:player.data.servers_count});
     }
     updateClock();
   }
@@ -243,9 +246,9 @@
       renderKpis(data.analytic);
       renderHelp(data.indicator_help || []);
       renderCharts(data.analytic, data.visual);
-      loadPlayer(data.visual);
       el('simulator-charts-panel').hidden = false;
       el('simulator-player-panel').hidden = false;
+      loadPlayer(data.visual);
       el('simulator-help-panel').hidden = false;
     } catch (error) {
       el('simulator-alert').innerHTML = `<div class="notice danger">${error.message}</div>`;

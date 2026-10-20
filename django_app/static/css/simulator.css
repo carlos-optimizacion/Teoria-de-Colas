@@ -13,3 +13,28 @@
 .indicator-help-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.indicator-help-card{border:1px solid #E3E9EF;background:#FFFFFF;border-radius:14px;padding:16px;display:grid;grid-template-columns:48px 1fr;gap:12px}.indicator-help-symbol{width:48px;height:48px;border-radius:13px;background:#EEF5FA;color:#1F5F99;display:grid;place-items:center;font-weight:900}.indicator-help-card b{display:block;color:#173B59;font-size:13px}.indicator-help-card p{margin:5px 0 0;color:#667085;font-size:12px;line-height:1.55}.indicator-help-card small{display:block;margin-top:7px;color:#7A8798;font-size:11px;line-height:1.45}.indicator-help-card:last-child{grid-column:1/-1}
 @media(max-width:1100px){.simulator-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.simulator-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.simulator-chart-grid{grid-template-columns:1fr}.indicator-help-grid{grid-template-columns:1fr}.indicator-help-card:last-child{grid-column:auto}}
 @media(max-width:720px){.simulator-form-grid,.simulator-kpi-grid{grid-template-columns:1fr}.simulator-summary{grid-template-columns:repeat(2,1fr)}}
+
+
+/* Legacy M/M/s and gamified scenes share the same illustrated setting. */
+.sim-artboard{position:relative;overflow:hidden;border-radius:15px;aspect-ratio:12/5;background:#deebf0;margin:12px 0 18px;border:1px solid #d1e5ef}
+.sim-artboard>img{display:block;width:100%;height:100%;object-fit:cover}
+.sim-art-status{position:absolute;top:12px;left:12px;background:rgba(11,46,67,.88);color:#F5FCFF;border-radius:15px;padding:8px 12px;font-size:11px;font-weight:800;max-width:70%}
+.sim-art-actors{position:absolute;inset:0;pointer-events:none}
+.sim-actor{position:absolute;width:clamp(23px,3.1vw,39px);height:clamp(23px,3.1vw,39px);transform:translate(-50%,-50%);display:grid;place-items:center;border-radius:50%;font-size:10px;font-weight:900;color:#083e5b;box-shadow:0 4px 10px #1139514d;border:3px solid #fff;animation:sim-actor-enter .3s ease-out}
+.sim-actor-wait{background:linear-gradient(135deg,#b9e0fd,#58a5dc)}
+.sim-actor-service{background:linear-gradient(135deg,#b8f3ce,#4dc594)}
+.sim-flow{margin-top:4px}
+@keyframes sim-actor-enter{from{opacity:0;scale:.75}to{opacity:1;scale:1}}
+@media(max-width:720px){.sim-artboard{aspect-ratio:9/5}.sim-artboard>img{object-position:center}.sim-art-status{top:6px;left:6px;font-size:9px;padding:5px 8px}.sim-actor{width:23px;height:23px;font-size:8px;border-width:2px}}
+@media(prefers-reduced-motion:reduce){.sim-actor{animation:none}}
+
+
+.sim-legacy-scene{position:relative;min-height:370px;border:1px solid #c5dfe9;border-radius:16px;overflow:hidden;background:#e4f1f6;margin:12px 0 18px}
+.sim-legacy-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.19}
+.sim-legacy-scene .dynamic-facility{background:linear-gradient(120deg,#e8f6f0dd,#e4f1f5ec)}
+@media(max-width:760px){.sim-legacy-scene{min-height:390px}}
+
+
+.sim-legacy-scene>.sim-legacy-bg{display:block;position:relative;inset:auto;opacity:1;filter:none;width:100%;height:132px;object-fit:cover}
+.sim-legacy-scene>.dynamic-facility{min-height:340px}
+@media(max-width:760px){.sim-legacy-scene>.sim-legacy-bg{height:104px}.sim-legacy-scene>.dynamic-facility{min-height:390px}}

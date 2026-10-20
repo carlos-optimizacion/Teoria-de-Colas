@@ -1,0 +1,3 @@
+{% extends 'base.html' %}{% block title %}Ejercicios | Decision Lab{% endblock %}{% block header %}Ejercicios{% endblock %}
+{% block content %}<section class="product-page"><div class="product-hero compact"><div><span class="eyebrow">APRENDER HACIENDO</span><h1>Ejercicios de teoría de colas</h1><p>Casos cortos vinculados a los motores matemáticos de la aplicación.</p></div></div>
+<div class="exercise-grid">{% for item in items %}<article class="panel exercise-card"><span class="arena-tag">{{ item.model }}</span><h3>{{ item.title }}</h3><p>{{ item.prompt }}</p><a class="btn secondary" href="{% url item.url %}">Resolver con el modelo</a></article>{% endfor %}</div></section>{% endblock %}

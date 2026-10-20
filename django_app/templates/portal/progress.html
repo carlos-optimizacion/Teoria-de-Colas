@@ -1,0 +1,13 @@
+{% extends 'base.html' %}{% block title %}Mi progreso | Decision Lab{% endblock %}{% block header %}Mi progreso{% endblock %}
+{% block content %}
+<section class="product-page">
+<div class="product-hero compact"><div><span class="eyebrow">PERFIL DEL ANALISTA</span><h1>{{ request.user.get_short_name|default:request.user.username }}</h1><p>Progreso acumulado a partir de simulaciones y desafíos ejecutados.</p></div><div class="level-orb"><b>Nivel {{ progress.level }}</b><span>{{ progress.xp }} XP</span></div></div>
+<div class="stats-strip stats-five"><article><small>XP total</small><b>{{ progress.xp }}</b></article><article><small>Nivel</small><b>{{ progress.level }}</b></article><article><small>Modelos usados</small><b>{{ progress.completed_models|length }}/8</b></article><article><small>Escenarios dominados</small><b>{{ progress.completed_scenarios|length }}/5</b></article><article><small>Logros</small><b>{{ progress.achievements|length }}</b></article></div>
+<div class="product-grid two">
+<section class="panel"><div class="panel-title"><span>01</span><div><b>Mejores resultados por escenario</b><small>La puntuación máxima real que has obtenido.</small></div></div>
+<div class="progress-scenarios">{% for key,cfg,run in best_rows %}<article><div><b>{{ cfg.name }}</b><small>{{ cfg.sector }}</small></div>{% if run %}<strong>{{ run.score }}</strong>{% else %}<strong>—</strong>{% endif %}</article>{% endfor %}</div>
+</section>
+<section class="panel"><div class="panel-title"><span>02</span><div><b>Logros</b><small>Reconocimientos obtenidos por desempeño.</small></div></div><div class="achievement-list">{% for item in progress.achievements %}<span>★ {{ item }}</span>{% empty %}<p>Completa una misión cumpliendo presupuesto y SLA para desbloquear tu primer logro.</p>{% endfor %}</div></section>
+</div>
+<section class="panel"><div class="panel-title"><span>03</span><div><b>Partidas recientes</b><small>Historial persistente de simulaciones.</small></div></div><div class="data-table"><table><thead><tr><th>Fecha</th><th>Escenario</th><th>Puntuación</th><th>Estado</th><th>Reporte</th></tr></thead><tbody>{% for run in runs %}<tr><td>{{ run.created_at|date:"d/m/Y H:i" }}</td><td>{{ run.title }}</td><td><b>{{ run.score }}</b></td><td>{% if run.passed %}<span class="status-ok">Cumplido</span>{% else %}<span class="status-warn">Por mejorar</span>{% endif %}</td><td><a href="{% url 'portal:run_report' run.id %}">Ver</a></td></tr>{% empty %}<tr><td colspan="5">Aún no hay partidas guardadas.</td></tr>{% endfor %}</tbody></table></div></section>
+</section>{% endblock %}

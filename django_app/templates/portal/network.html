@@ -1,0 +1,12 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}Red de colas | Decision Lab{% endblock %}{% block header %}Red de colas{% endblock %}
+{% block content %}
+<section class="product-page"><div class="product-hero compact"><div><span class="eyebrow">SIMULACIÓN MULTIETAPA</span><h1>Red de colas en tándem</h1><p>Evalúa de 2 a 4 etapas secuenciales con recursos independientes y observa dónde se forma el cuello de botella.</p></div></div>
+<div class="product-grid two">
+<section class="panel"><div class="panel-title"><span>01</span><div><b>Configurar red</b><small>Horizonte finito · llegadas Poisson · servicios exponenciales por etapa.</small></div></div>
+<form id="network-form">{% csrf_token %}<div class="form-grid"><label>Interarribo (min)<input id="net-arrival" type="number" value="4" min=".1" step=".1"></label><label>Horizonte (min)<input id="net-horizon" type="number" value="480" min="30" max="1440"></label></div>
+<div id="network-stages"></div><div class="network-buttons"><button type="button" class="btn secondary" id="net-add">+ Etapa</button><button type="button" class="btn secondary" id="net-remove">− Etapa</button></div><button class="btn primary" type="submit">Simular red</button></form></section>
+<section class="panel"><div class="panel-title"><span>02</span><div><b>Resultado global</b><small>Rendimiento de extremo a extremo.</small></div></div><div id="network-kpis" class="stats-strip"></div><div id="network-status" class="notice">Configura la red y simula.</div></section></div>
+<section class="panel"><div class="panel-title"><span>03</span><div><b>Etapas y cuellos de botella</b></div></div><div id="network-stage-results" class="network-stage-results"></div><div id="network-chart" class="simulator-chart"></div></section>
+</section>
+{% endblock %}{% block scripts %}<script src="{% static 'js/network.js' %}"></script>{% endblock %}

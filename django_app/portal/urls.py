@@ -1,11 +1,26 @@
 from django.urls import path
-from . import views
+from . import views, challenge_views, product_views
 
 app_name = "portal"
 
 urlpatterns = [
+    path('accounts/signup/', product_views.signup, name='signup'),
+    path('progreso/', product_views.progress, name='progress'),
+    path('configuracion/', product_views.account_settings, name='account_settings'),
+    path('clasificacion/', product_views.leaderboard, name='leaderboard'),
+    path('reportes/', product_views.reports, name='reports'),
+    path('escenarios-guardados/', product_views.saved_scenarios, name='saved_scenarios'),
+    path('escenarios-guardados/<int:item_id>/eliminar/', product_views.delete_saved_scenario, name='delete_saved_scenario'),
+    path('reportes/<int:run_id>/', product_views.run_report, name='run_report'),
+    path('reportes/<int:run_id>/<str:fmt>/', product_views.run_export, name='run_export'),
+    path('api/scenario/save/', product_views.save_scenario, name='save_scenario'),
+    path('challenge/', challenge_views.challenge, name='challenge'),
+    path('aplicativo-app/', challenge_views.challenge, name='aplicativo_app'),
+    path('api/challenge/', challenge_views.challenge_api, name='challenge_api'),
     path("", views.home, name="home"),
     path("fundamentos/", views.fundamentals, name="fundamentals"),
+    path("ejercicios/", views.exercises, name="exercises"),
+    path("glosario/", views.glossary, name="glossary"),
     path("modelos/mm1/", views.model_mm1, name="mm1"),
     path("modelos/mms/", views.model_mms, name="mms"),
     path("modelos/mmsk/", views.model_mmsk, name="mmsk"),
@@ -23,6 +38,7 @@ urlpatterns = [
     path("analizar/validador/", views.validator, name="validator"),
     path("analizar/end-to-end/", views.end_to_end, name="endtoend"),
     path("simular/colas/", views.simulator, name="simulator"),
+    path("simular/red-de-colas/", views.network_simulator, name="network"),
     path("api/model/", views.model_api, name="model_api"),
     path("api/queue/", views.queue_api, name="queue_api"),
     path("api/compare/", views.compare_api, name="compare_api"),
@@ -31,4 +47,5 @@ urlpatterns = [
     path("api/validator/", views.validator_api, name="validator_api"),
     path("api/end-to-end/", views.end_to_end_api, name="end_to_end_api"),
     path("api/simulator/", views.simulator_api, name="simulator_api"),
+    path("api/network/", views.network_api, name="network_api"),
 ]

@@ -17,6 +17,9 @@ from .services import (
     validate_csv,
 )
 from .simulator_service import simulator_analysis
+from .challenge_engine import SCENARIOS
+from .models import UserProgress
+from .network_engine import simulate_network
 
 
 def _json_body(request):
@@ -53,7 +56,7 @@ def _error(exc):
 
 @ensure_csrf_cookie
 def home(request):
-    return render(request, "portal/home.html", {"active": "home", "models": MODEL_CATALOG})
+    return render(request, "portal/challenge.html", {"active": "challenge", "scenarios": SCENARIOS})
 
 
 @ensure_csrf_cookie
@@ -145,7 +148,22 @@ def simulator(request):
 @require_POST
 def model_api(request):
     try:
-        return _json_response({"ok": True, **calculate_model(_json_body(request))})
+        body=_json_body(request)
+        result=calculate_model(body)
+        progress_data=None
+        if request.user.is_authenticated:
+            key=str(body.get("model",""))
+            progress,_=UserProgress.objects.get_or_create(user=request.user)
+            models=list(progress.completed_models or [])
+            if key in MODEL_CATALOG and key not in models:
+                models.append(key);progress.completed_models=models;progress.xp+=30;progress.coins+=15
+                progress.level=UserProgress.level_for_xp(progress.xp)
+                achievements=list(progress.achievements or [])
+                if len(models)>=len(MODEL_CATALOG) and "Dominio de los 8 modelos" not in achievements:
+                    achievements.append("Dominio de los 8 modelos");progress.achievements=achievements
+                progress.save()
+            progress_data={"level":progress.level,"xp":progress.xp,"coins":progress.coins,"completed_models":len(progress.completed_models or [])}
+        return _json_response({"ok": True, **result,"progress":progress_data})
     except (TypeError, ValueError, json.JSONDecodeError) as exc:
         return _error(exc)
 
@@ -180,6 +198,8 @@ def validator_api(request):
         uploaded = request.FILES.get("file")
         if not uploaded:
             raise ValueError("Selecciona un archivo CSV.")
+        if uploaded.size > 5 * 1024 * 1024:
+            raise ValueError("El CSV no puede superar 5 MB.")
         result = validate_csv(uploaded, request.POST.get("arrival_column", ""), request.POST.get("service_column", ""))
         return _json_response({"ok": True, **result})
     except (TypeError, ValueError, UnicodeDecodeError) as exc:
@@ -204,3 +224,46 @@ def simulator_api(request):
 
 # Alias compatible con la primera fase del PR.
 queue_api = model_api
+
+
+@ensure_csrf_cookie
+def exercises(request):
+    items=[
+        {"title":"Banco: dimensionar ventanillas","model":"M/M/s","prompt":"Compara 2, 3 y 4 servidores y justifica el menor costo que cumpla el SLA.","url":"portal:mms"},
+        {"title":"Supermercado: capacidad limitada","model":"M/M/s/K","prompt":"Evalúa bloqueo y tasa efectiva cuando el sistema tiene aforo limitado.","url":"portal:mmsk"},
+        {"title":"Call center: pérdida sin espera","model":"Erlang B","prompt":"Calcula probabilidad de bloqueo sin sala de espera.","url":"portal:erlangb"},
+        {"title":"Servicio variable","model":"M/G/1","prompt":"Analiza el efecto del coeficiente de variación sobre Wq.","url":"portal:mg1"},
+        {"title":"Proceso determinista","model":"D/D/1","prompt":"Construye la secuencia de llegada, inicio, salida y espera.","url":"portal:dd1"},
+    ]
+    return render(request,"portal/exercises.html",{"active":"exercises","items":items})
+
+@ensure_csrf_cookie
+def glossary(request):
+    terms=[
+        ("λ (lambda)","Tasa promedio de llegadas por unidad de tiempo."),
+        ("μ (mu)","Tasa promedio de servicio de un servidor."),
+        ("ρ (rho)","Utilización de la capacidad; en M/M/s, λ/(sμ)."),
+        ("Lq","Número promedio de clientes en cola."),
+        ("L","Número promedio de clientes en el sistema."),
+        ("Wq","Tiempo promedio de espera antes de iniciar servicio."),
+        ("W","Tiempo promedio total en el sistema."),
+        ("SLA","Meta probabilística o temporal de nivel de servicio."),
+        ("Bloqueo","Cliente que no ingresa por falta de capacidad."),
+        ("Abandono","Cliente admitido que se retira antes de ser atendido."),
+        ("Erlang C","Modelo de espera para M/M/s con capacidad de cola ilimitada."),
+        ("Erlang B","Modelo de pérdidas sin cola de espera."),
+        ("Ley de Little","Relación L=λW, bajo condiciones de estabilidad pertinentes."),
+    ]
+    return render(request,"portal/glossary.html",{"active":"glossary","terms":terms})
+
+
+@ensure_csrf_cookie
+def network_simulator(request):
+    return render(request,"portal/network.html",{"active":"network"})
+
+@require_POST
+def network_api(request):
+    try:
+        return _json_response({"ok":True,**simulate_network(_json_body(request))})
+    except (TypeError,ValueError,json.JSONDecodeError) as exc:
+        return _error(exc)

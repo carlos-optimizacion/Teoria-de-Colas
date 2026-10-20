@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: decision_lab
+      POSTGRES_USER: decision_lab
+      POSTGRES_PASSWORD: decision_lab_dev
+    volumes: [decisionlab_pg:/var/lib/postgresql/data]
+  web:
+    build: .
+    command: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn decision_lab.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+    ports: ["8000:8000"]
+    environment:
+      DJANGO_SECRET_KEY: local-docker-change-me
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      DJANGO_SECURE_SSL_REDIRECT: "0"
+      DB_ENGINE: postgres
+      DB_NAME: decision_lab
+      DB_USER: decision_lab
+      DB_PASSWORD: decision_lab_dev
+      DB_HOST: db
+      DB_PORT: "5432"
+    depends_on: [db]
+volumes:
+  decisionlab_pg:
