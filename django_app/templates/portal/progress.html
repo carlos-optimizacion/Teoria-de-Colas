@@ -2,7 +2,7 @@
 {% block content %}
 <section class="product-page">
 <div class="product-hero compact"><div><span class="eyebrow">PERFIL DEL ANALISTA</span><h1>{{ request.user.get_short_name|default:request.user.username }}</h1><p>Progreso acumulado a partir de simulaciones y desafíos ejecutados.</p></div><div class="level-orb"><b>Nivel {{ progress.level }}</b><span>{{ progress.xp }} XP</span></div></div>
-<div class="stats-strip"><article><small>XP total</small><b>{{ progress.xp }}</b></article><article><small>Monedas</small><b>{{ progress.coins }}</b></article><article><small>Escenarios dominados</small><b>{{ progress.completed_scenarios|length }}/5</b></article><article><small>Logros</small><b>{{ progress.achievements|length }}</b></article></div>
+<div class="stats-strip stats-five"><article><small>XP total</small><b>{{ progress.xp }}</b></article><article><small>Nivel</small><b>{{ progress.level }}</b></article><article><small>Modelos usados</small><b>{{ progress.completed_models|length }}/8</b></article><article><small>Escenarios dominados</small><b>{{ progress.completed_scenarios|length }}/5</b></article><article><small>Logros</small><b>{{ progress.achievements|length }}</b></article></div>
 <div class="product-grid two">
 <section class="panel"><div class="panel-title"><span>01</span><div><b>Mejores resultados por escenario</b><small>La puntuación máxima real que has obtenido.</small></div></div>
 <div class="progress-scenarios">{% for key,cfg,run in best_rows %}<article><div><b>{{ cfg.name }}</b><small>{{ cfg.sector }}</small></div>{% if run %}<strong>{{ run.score }}</strong>{% else %}<strong>—</strong>{% endif %}</article>{% endfor %}</div>
