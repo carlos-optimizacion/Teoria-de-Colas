@@ -2,7 +2,7 @@ import json
 import math
 
 from django.http import JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import render
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 
@@ -17,6 +17,7 @@ from .services import (
     validate_csv,
 )
 from .simulator_service import simulator_analysis
+from .challenge_engine import SCENARIOS
 
 
 def _json_body(request):
@@ -53,7 +54,7 @@ def _error(exc):
 
 @ensure_csrf_cookie
 def home(request):
-    return redirect("portal:aplicativo_app")
+    return render(request, "portal/challenge.html", {"active": "challenge", "scenarios": SCENARIOS})
 
 
 @ensure_csrf_cookie
