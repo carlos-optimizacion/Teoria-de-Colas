@@ -47,7 +47,7 @@ class GameRun(models.Model):
 
     class Meta:
         ordering=["-created_at"]
-        indexes=[models.Index(fields=["scenario","-score"])]
+        indexes=[models.Index(fields=["scenario","-score"],name="portal_game_scenari_1e2a04_idx")]
 
 class SavedScenario(models.Model):
     user=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="saved_queue_scenarios")
