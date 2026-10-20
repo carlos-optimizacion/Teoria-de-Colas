@@ -15,7 +15,15 @@ function stop(){
 }
 function setup(){
   stop();last=null;baseline=null;actions=[];step=0;
-  const c=scenarios[el("challenge-scenario").value];
+  const scenarioKey=el("challenge-scenario").value;
+  const c=scenarios[scenarioKey];
+  const artBase=el("scene-shell").dataset.assetsBase;
+  el("c-scene-art").src=artBase+scenarioKey+".svg";
+  el("scenario-preview-image").src=artBase+scenarioKey+".svg";
+  el("scene-status-text").textContent="Escenario "+c.sector+" · listo";
+  el("scene-shell").dataset.sector=scenarioKey;
+  el("scene-moving-actors").replaceChildren();
+  el("scene-arrivals").textContent="0";
   el("challenge-brief").innerHTML='<div><b>Modelo:</b> '+c.model+'</div><div><b>Presupuesto:</b> '+money(c.budget)+'</div><div><b>Objetivo:</b> '+percentage(c.sla_target)+' de admitidos con espera ≤ '+c.sla_min+' minutos</div><div><b>Llegadas:</b> cada '+c.arrival_min+' min</div><div><b>Servicio:</b> '+c.service_min+' min</div><div><b>Evento:</b> '+c.incident+'</div>';
   el("challenge-staff").innerHTML=Array.from({length:8},(_,i)=>'<label class="hourrow" for="hour-'+i+'">Hora '+(i+1)+' <input id="hour-'+i+'" class="challenge-server" type="number" min="1" max="'+c.max_servers+'" step="1" value="'+Math.min(c.max_servers,4)+'"></label>').join("");
   el("challenge-intervene-count").max=c.max_servers;
@@ -32,6 +40,8 @@ function setup(){
   el("c-queue-people").textContent="Sin clientes";el("c-server-list").replaceChildren();
   el("c-progress-label").textContent="Evento 0/0";el("c-arrival-label").textContent="0 llegadas";
   el("c-blocked").textContent="0 bloqueados";
+  el("scene-moving-actors").replaceChildren();
+  el("scene-arrivals").textContent="0";
   if(window.Plotly)Plotly.purge(el("challenge-plot"));
 }
 function payload(){
@@ -78,6 +88,40 @@ function showAnalysis(d){
   el("challenge-actions").textContent=actions.length?"Intervenciones: "+actions.map(x=>"min "+x.minute+" → "+x.servers+" servidores").join(" · "):"Aún no se han tomado decisiones durante la jornada.";
 }
 function clock(t){const whole=Math.max(0,Math.floor(t));return String(Math.floor(whole/60)).padStart(2,"0")+":"+String(whole%60).padStart(2,"0");}
+function renderSceneActors(frame){
+  const stage=el("scene-moving-actors");
+  stage.replaceChildren();
+  // El posicionamiento ilustra únicamente clientes realmente presentes en el evento.
+  // Ningún avatar altera cálculos, servidores ni eventos del backend.
+  (frame.queue_ids||[]).slice(0,12).forEach((id,index)=>{
+    const actor=document.createElement("span");
+    actor.className="scene-avatar scene-avatar-wait";
+    actor.textContent=String(id);
+    actor.style.left=(9+(index%6)*6.1)+"%";
+    actor.style.top=(72+Math.floor(index/6)*10)+"%";
+    actor.title="Cliente "+id+": en espera";
+    stage.appendChild(actor);
+  });
+  (frame.servers||[]).forEach((id,index)=>{
+    if(id==null || index>=12)return;
+    const actor=document.createElement("span");
+    actor.className="scene-avatar scene-avatar-serving";
+    actor.textContent=String(id);
+    actor.style.left=(41.2+(index%4)*17.6)+"%";
+    actor.style.top=(53+Math.floor(index/4)*10)+"%";
+    actor.title="Cliente "+id+": en atención en puesto "+(index+1);
+    stage.appendChild(actor);
+  });
+  el("scene-arrivals").textContent=frame.arrivals;
+  el("scene-status-text").textContent=
+      frame.kind==="blocked"?"Atención: se ha rechazado un cliente":
+      frame.kind==="incident"?"Incidente operativo en ejecución":
+      frame.kind==="decision"?"Nueva decisión de dotación aplicada":
+      frame.kind==="end"?"Jornada finalizada":
+      frame.kind==="start"?"Escenario listo para operar":
+      "Simulación en curso · "+frame.active+" servidores disponibles";
+  el("scene-shell").dataset.event=frame.kind;
+}
 function renderFrame(){
   if(!last||!last.events.length)return;
   const f=last.events[Math.min(step,last.events.length-1)];
@@ -96,6 +140,7 @@ function renderFrame(){
   }).join("");
   const messages={start:"Comienza la jornada.",arrival:"El cliente "+f.client+" ingresa al sistema.",blocked:"Cliente "+f.client+" rechazado por capacidad completa.",departure:"Finaliza la atención del cliente "+f.client+".",shift:"Cambio programado de dotación.",decision:"Decisión gerencial aplicada: "+f.active+" servidores disponibles.",incident:"Evento de indisponibilidad de un servidor.",end:"Fin de la jornada."};
   el("challenge-event").textContent=messages[f.kind]||"Evento operativo.";
+  renderSceneActors(f);
 }
 function seekTime(t){
   const frames=last.events;
