@@ -70,4 +70,6 @@ class ChallengeEngineTests(SimpleTestCase):
         self.assertEqual(response.status_code,200)
         self.assertContains(response,'id="challenge-config"')
         self.assertContains(response,'id="challenge-scrub"')
+        self.assertContains(response,'id="classic-lab"')
+        self.assertContains(response,'js/classic-lab.js')
         self.assertContains(response,'M/M/s/K')
