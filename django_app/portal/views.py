@@ -205,3 +205,34 @@ def simulator_api(request):
 
 # Alias compatible con la primera fase del PR.
 queue_api = model_api
+
+
+@ensure_csrf_cookie
+def exercises(request):
+    items=[
+        {"title":"Banco: dimensionar ventanillas","model":"M/M/s","prompt":"Compara 2, 3 y 4 servidores y justifica el menor costo que cumpla el SLA.","url":"portal:mms"},
+        {"title":"Supermercado: capacidad limitada","model":"M/M/s/K","prompt":"Evalúa bloqueo y tasa efectiva cuando el sistema tiene aforo limitado.","url":"portal:mmsk"},
+        {"title":"Call center: pérdida sin espera","model":"Erlang B","prompt":"Calcula probabilidad de bloqueo sin sala de espera.","url":"portal:erlangb"},
+        {"title":"Servicio variable","model":"M/G/1","prompt":"Analiza el efecto del coeficiente de variación sobre Wq.","url":"portal:mg1"},
+        {"title":"Proceso determinista","model":"D/D/1","prompt":"Construye la secuencia de llegada, inicio, salida y espera.","url":"portal:dd1"},
+    ]
+    return render(request,"portal/exercises.html",{"active":"exercises","items":items})
+
+@ensure_csrf_cookie
+def glossary(request):
+    terms=[
+        ("λ (lambda)","Tasa promedio de llegadas por unidad de tiempo."),
+        ("μ (mu)","Tasa promedio de servicio de un servidor."),
+        ("ρ (rho)","Utilización de la capacidad; en M/M/s, λ/(sμ)."),
+        ("Lq","Número promedio de clientes en cola."),
+        ("L","Número promedio de clientes en el sistema."),
+        ("Wq","Tiempo promedio de espera antes de iniciar servicio."),
+        ("W","Tiempo promedio total en el sistema."),
+        ("SLA","Meta probabilística o temporal de nivel de servicio."),
+        ("Bloqueo","Cliente que no ingresa por falta de capacidad."),
+        ("Abandono","Cliente admitido que se retira antes de ser atendido."),
+        ("Erlang C","Modelo de espera para M/M/s con capacidad de cola ilimitada."),
+        ("Erlang B","Modelo de pérdidas sin cola de espera."),
+        ("Ley de Little","Relación L=λW, bajo condiciones de estabilidad pertinentes."),
+    ]
+    return render(request,"portal/glossary.html",{"active":"glossary","terms":terms})
