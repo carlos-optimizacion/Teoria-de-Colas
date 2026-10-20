@@ -50,16 +50,18 @@ function payload(){
     scenario:el("challenge-scenario").value,
     staffing:[...document.querySelectorAll(".challenge-server")].map(e=>Number(e.value)),
     replications:Number(el("challenge-reps").value),
+    patience_min:Number(el("challenge-patience").value),
+    priority_share:Number(el("challenge-priority").value),
     seed:2026,
     actions:actions.map(x=>({...x}))
   };
 }
 const kpis=[["Puntuación","score"],["SLA","sla"],["Costo total","total_cost"],["Espera al iniciar","avg_wait"],
-  ["Cola media","avg_queue"],["Utilización","utilization"],["Bloqueados","blocked"],["Pendientes al cierre","unserved_at_close"]];
+  ["Cola media","avg_queue"],["Utilización","utilization"],["Bloqueados","blocked"],["Abandonos","abandoned"],["Pendientes al cierre","unserved_at_close"]];
 function showKpis(d){
   const m=d.metrics;
   el("challenge-kpis").innerHTML=kpis.map(([label,key])=>{
-    const value=key==="score"?d.score+" / 100":key==="sla"||key==="utilization"?percentage(m[key]):key==="total_cost"?money(m[key]):key==="avg_wait"?decimal(m[key])+" min":decimal(m[key],key==="blocked"||key==="unserved_at_close"?1:2);
+    const value=key==="score"?d.score+" / 100":key==="sla"||key==="utilization"?percentage(m[key]):key==="total_cost"?money(m[key]):key==="avg_wait"?decimal(m[key])+" min":decimal(m[key],key==="blocked"||key==="abandoned"||key==="unserved_at_close"?1:2);
     const node=document.createElement("div");
     node.className="arena-kpi";
     node.innerHTML="<small>"+label+"</small><b>"+value+"</b>";
@@ -124,7 +126,7 @@ function renderFrame(){
       const active=i<f.active,occupied=cid!=null;
       return '<div class="arena-server '+(!active?'is-off':occupied?'is-busy':"")+'"><strong>P'+(i+1)+'</strong>'+(occupied?person(cid):'<span>'+(active?'Libre':'Cierre pendiente')+'</span>')+'</div>';
     }).join("");
-  const messages={start:"Comienza la jornada.",arrival:"El cliente "+f.client+" ingresa al sistema.",blocked:"Cliente "+f.client+" rechazado por capacidad completa.",departure:"Finaliza la atención del cliente "+f.client+".",shift:"Cambio programado de dotación.",decision:"Decisión gerencial aplicada: "+f.active+" servidores disponibles.",incident:"Evento de indisponibilidad de un servidor.",end:"Fin de la jornada."};
+  const messages={start:"Comienza la jornada.",arrival:"El cliente "+f.client+" ingresa al sistema.",blocked:"Cliente "+f.client+" rechazado por capacidad completa.",departure:"Finaliza la atención del cliente "+f.client+".",shift:"Cambio programado de dotación.",decision:"Decisión gerencial aplicada: "+f.active+" servidores disponibles.",incident:"Evento de indisponibilidad de un servidor.",abandon:"El cliente "+f.client+" abandona la cola por superar su paciencia.",end:"Fin de la jornada."};
   el("challenge-event").textContent=messages[f.kind]||"Evento operativo.";
   renderSceneActors(f);
 }
