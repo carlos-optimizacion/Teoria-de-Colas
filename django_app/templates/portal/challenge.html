@@ -13,6 +13,16 @@
     <div class="arena-headline"><span>5</span> misiones gerenciales <strong>8</strong> rutas de modelos <small>Un único aplicativo · cálculo reproducible</small><a class="arena-headline-link" href="{% url 'portal:simulator' %}">Simulación clásica ↗</a></div>
   </section>
 
+  <section class="sector-gallery" aria-labelledby="scenarios-title">
+    <div class="arena-section-title"><div><span class="arena-eyebrow">ELIGE TU MISIÓN</span><h2 id="scenarios-title">Cinco escenarios operativos ilustrados</h2><p>Explora el espacio de atención, decide la capacidad y analiza cómo cambia el desempeño.</p></div></div>
+    <div class="sector-gallery-grid">
+      <button class="sector-card" type="button" data-sector="banco"><img src="{% static 'img/scenarios/banco.svg' %}" alt="Ilustración de ventanillas bancarias" width="1200" height="500"><span><b>Banco</b><small>Gestión de ventanillas</small></span></button>
+      <button class="sector-card" type="button" data-sector="hospital"><img src="{% static 'img/scenarios/hospital.svg' %}" alt="Ilustración de puestos hospitalarios" width="1200" height="500"><span><b>Hospital</b><small>Atención ambulatoria</small></span></button>
+      <button class="sector-card" type="button" data-sector="supermercado"><img src="{% static 'img/scenarios/supermercado.svg' %}" alt="Ilustración de cajas de supermercado" width="1200" height="500"><span><b>Supermercado</b><small>Cajas y clientes</small></span></button>
+      <button class="sector-card" type="button" data-sector="fabrica"><img src="{% static 'img/scenarios/fabrica.svg' %}" alt="Ilustración de puestos de inspección" width="1200" height="500"><span><b>Fábrica</b><small>Control de calidad</small></span></button>
+      <button class="sector-card" type="button" data-sector="logistica"><img src="{% static 'img/scenarios/logistica.svg' %}" alt="Ilustración de andenes logísticos" width="1200" height="500"><span><b>Logística</b><small>Andenes de despacho</small></span></button>
+    </div>
+  </section>
   <section class="arena-section" id="classic-models">
     <div class="arena-section-title"><div><span class="arena-eyebrow">RUTA ACADÉMICA</span><h2>Simulaciones y modelos existentes</h2><p>Accede a los cálculos originales. El laboratorio animado M/M/s sigue disponible independientemente de la arena.</p></div><a class="arena-mini-link" href="{% url 'portal:simulator' %}">Abrir simulador M/M/s ↗</a></div>
     <div class="arena-model-grid">
