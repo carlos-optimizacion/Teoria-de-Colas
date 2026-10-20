@@ -128,3 +128,36 @@
 @media(max-width:1050px){.sector-gallery-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:600px){.sector-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sector-card b{font-size:12px}.sector-card span{padding:8px 10px}}
 @media(prefers-reduced-motion:reduce){.sector-card{transition:none}}
+
+
+/* Data-bound flexible floor plan. Its number of counters follows the event frame,
+   not the four background illustration counters. A draining occupied counter remains
+   visible and marked 'CIERRE PENDIENTE' until its client completes service. */
+.scene-art-wrap:has(.dynamic-facility){min-height:370px;aspect-ratio:auto;}
+.scene-art-wrap:has(.dynamic-facility)>.scene-art{position:absolute;inset:0;opacity:.22;filter:saturate(.75);z-index:0}
+.dynamic-facility{position:relative;z-index:1;display:grid;grid-template-columns:minmax(170px,.85fr) minmax(0,2.15fr);gap:15px;min-height:370px;width:100%;padding:65px 16px 18px;background:linear-gradient(130deg,#eff8f7dc,#e3eff5e3);border-radius:12px}
+.dynamic-queue,.dynamic-service{position:relative;min-width:0;background:#ffffffd9;border:1px solid #c4dce4;border-radius:14px;padding:13px;box-shadow:0 4px 14px #2c62811c}
+.dynamic-queue{background:#f4fafdeb}
+.dynamic-zone-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#29546a;font-weight:900;font-size:11px;letter-spacing:.06em}
+.dynamic-zone-count{background:#dcecf4;color:#145b7b;border-radius:999px;min-width:28px;text-align:center;padding:4px 7px}
+.dynamic-wait-places{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;align-content:start;margin-top:22px;min-height:160px}
+.dynamic-wait-place{aspect-ratio:1;border-radius:12px;border:1px dashed #9ac6d8;background:#deeff5}
+.dynamic-wait-more{grid-column:1/-1;font-size:11px;font-weight:700;color:#376883;background:#d4e8f4;padding:7px 9px;border-radius:8px;text-align:center}
+.dynamic-station-grid{display:grid;grid-template-columns:repeat(var(--scene-columns,4),minmax(0,1fr));gap:11px;align-content:start;margin-top:16px}
+.dynamic-station{display:flex;position:relative;flex-direction:column;align-items:center;gap:6px;min-height:104px;padding:8px 4px;background:linear-gradient(170deg,#e8f7f2,#fff);border:2px solid #93c6b5;border-radius:11px;box-shadow:0 4px 12px #34695420;transition:background .2s,border-color .2s;min-width:0}
+.dynamic-station.is-busy{background:linear-gradient(160deg,#dceff9,#f4fbff);border-color:#63aac7}
+.dynamic-station.is-closing{background:linear-gradient(160deg,#fff2df,#faf7f3);border-color:#dfa25d}
+.dynamic-station-number{font-size:10px;font-weight:900;white-space:nowrap;color:#174a69}
+.dynamic-station-icon{font-size:23px;line-height:1.1;color:#487b99;opacity:.8}
+.dynamic-station-state{font-size:8px;font-weight:900;letter-spacing:.035em;color:#2c7455;text-align:center}
+.dynamic-station.is-busy .dynamic-station-state{color:#226f93}
+.dynamic-station.is-closing .dynamic-station-state{color:#ad6625}
+.dynamic-station-target{position:absolute;width:31px;height:31px;bottom:18px;left:50%;transform:translate(-50%,50%)}
+.dynamic-client-layer{position:absolute;inset:0;pointer-events:none;z-index:2}
+.dynamic-facility .scene-avatar{position:absolute;top:0;left:0;transform:translate(-50%,-50%);border-radius:50%;font-weight:850;width:29px;height:29px;border:2px solid white;display:grid;place-items:center;box-shadow:0 4px 10px #16425744;color:#163a51;transition:top .26s ease,left .26s ease,background .2s ease;animation:none}
+.dynamic-facility .scene-avatar-wait{background:#9cd5f5}
+.dynamic-facility .scene-avatar-serving{background:#85e3b1}
+.scene-art-wrap:has(.dynamic-facility)>.scene-status,.scene-art-wrap:has(.dynamic-facility)>.scene-event-count{z-index:4}
+@media(max-width:760px){.dynamic-facility{grid-template-columns:minmax(0,.9fr) minmax(0,2fr);gap:7px;padding:52px 6px 9px;min-height:390px}.dynamic-queue,.dynamic-service{padding:8px 5px}.dynamic-station-grid{grid-template-columns:repeat(min(3,var(--scene-columns,4)),minmax(0,1fr));gap:5px}.dynamic-station{min-height:83px;padding:5px 2px}.dynamic-station-number{font-size:8px}.dynamic-station-icon{font-size:17px}.dynamic-station-state{font-size:7px}.dynamic-wait-places{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.dynamic-zone-heading{font-size:8px}.dynamic-zone-count{padding:3px 5px}.dynamic-facility .scene-avatar{width:24px;height:24px;font-size:8px}}
+@media(max-width:390px){.dynamic-facility{min-height:420px}.dynamic-station-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){.dynamic-facility .scene-avatar,.dynamic-station{transition:none}}
