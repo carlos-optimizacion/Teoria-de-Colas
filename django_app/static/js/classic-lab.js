@@ -22,6 +22,7 @@ async function run(){
     const response=await fetch("/api/model/",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","X-CSRFToken":csrf()},body:JSON.stringify(payload)});
     const d=await response.json();
     if(!response.ok||!d.ok)throw Error(d.error||"No se pudo calcular el modelo.");
+    if(d.progress){const level=document.getElementById("top-user-level"),xp=document.getElementById("top-user-xp"),coins=document.getElementById("top-user-coins");if(level)level.textContent=d.progress.level;if(xp)xp.textContent=d.progress.xp;if(coins)coins.textContent=d.progress.coins;}
     const a=d.analytic;
     const meets=!!a.stable && a.wq_min!=null && a.wq_min<=10;
     get("lab-result").textContent=(meets?"★ Mini-reto logrado: estable y Wq ≤ 10 minutos. ":a.stable?"Sistema estable, pero todavía no se cumple la meta de espera. ":"Sistema inestable para este modelo. ")
