@@ -12,6 +12,10 @@ with sync_playwright() as playwright:
     page.goto("http://127.0.0.1:8000/aplicativo-app/",wait_until="domcontentloaded")
     page.locator("#challenge-scenario").wait_for(state="visible")
     assert page.locator(".arena-model").count()==8
+    assert page.locator(".sector-card").count()==5
+    page.locator(".sector-card[data-sector='hospital']").click()
+    assert page.locator("#challenge-scenario").input_value()=="hospital"
+    assert page.locator(".sector-card[data-sector='hospital']").get_attribute("aria-pressed")=="true"
     assert page.locator("#classic-lab").is_visible()
     assert page.locator("#c-scene-art").evaluate("(img)=>img.complete && img.naturalWidth>0")
     page.screenshot(path=str(OUT/"01-aplicativo-app.png"),full_page=True)
