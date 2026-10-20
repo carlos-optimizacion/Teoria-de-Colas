@@ -117,3 +117,15 @@ class ChallengeEngineTests(TestCase):
         self.assertNotEqual(costly["metrics"]["arrivals"],standard["metrics"]["arrivals"])
         with self.assertRaises(ValueError):
             evaluate_game({**base,"capacity":0})
+
+    def test_supported_service_distributions_are_reproducible(self):
+        base={"scenario":"banco","staffing":[3]*8,"replications":2,"seed":912}
+        for distribution in ("exponential","deterministic","gamma","lognormal"):
+            with self.subTest(distribution=distribution):
+                p={**base,"service_distribution":distribution,"service_cv":.8}
+                a=evaluate_game(p);b=evaluate_game(p)
+                self.assertEqual(a,b)
+                self.assertEqual(a["options"]["service_distribution"],distribution)
+                self.assertGreaterEqual(a["metrics"]["total_cost"],0)
+        with self.assertRaises(ValueError):
+            evaluate_game({**base,"service_distribution":"weibull"})
