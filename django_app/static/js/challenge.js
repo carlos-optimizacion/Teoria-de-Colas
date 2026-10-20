@@ -42,7 +42,7 @@ function setup(){
   el("c-queue-people").textContent="Sin clientes";el("c-server-list").replaceChildren();
   el("c-progress-label").textContent="Evento 0/0";el("c-arrival-label").textContent="0 llegadas";
   el("c-blocked").textContent="0 bloqueados";
-  el("scene-arrivals").textContent="0";
+  for(const [id,value] of Object.entries({"live-arrivals":"0","live-completed":"0","live-waiting":"0","live-capacity":"0 / 0","live-rejected":"0"}))el(id).textContent=value;
   if(window.Plotly)Plotly.purge(el("challenge-plot"));
 }
 function payload(){
@@ -108,6 +108,11 @@ function renderFrame(){
   el("c-queue").textContent=f.queue;el("c-busy").textContent=f.busy;
   el("c-completed").textContent=f.completed;el("c-arrivals").textContent=f.arrivals+" clientes recibidos";
   el("c-blocked").textContent=f.blocked+" bloqueados";
+  el("live-arrivals").textContent=String(f.arrivals);
+  el("live-completed").textContent=String(f.completed);
+  el("live-waiting").textContent=String(f.queue);
+  el("live-capacity").textContent=f.busy+" / "+f.active;
+  el("live-rejected").textContent=String(f.blocked);
   el("c-progress-label").textContent="Evento "+step+"/"+(last.events.length-1);
   el("c-arrival-label").textContent=f.arrivals+" llegadas";
   el("challenge-scrub").value=step;
