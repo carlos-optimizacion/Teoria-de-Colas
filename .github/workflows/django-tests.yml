@@ -33,6 +33,8 @@ jobs:
       - name: Django system check
         working-directory: django_app
         run: python manage.py check
+      - name: Challenge JavaScript syntax
+        run: node --check django_app/static/js/challenge.js
       - name: Django tests
         working-directory: django_app
         run: python manage.py test
