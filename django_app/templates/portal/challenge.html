@@ -83,7 +83,7 @@
       </aside>
       <div class="arena-main">
         <div class="arena-card">
-          <div class="arena-card-top"><h3><span>03</span> Panel de desempeño</h3><span id="challenge-badge" class="arena-tag">Sin evaluar</span></div>
+          <div class="arena-card-top"><h3><span>03</span> Resultados proyectados al cierre</h3><span id="challenge-badge" class="arena-tag">Sin evaluar</span></div>
           <div id="challenge-status" class="arena-status" role="status">Prepara una misión y pulsa «Evaluar y simular jornada».</div>
           <div class="arena-kpis" id="challenge-kpis"></div>
           <div id="challenge-achievements" class="arena-achievements"></div>
@@ -112,6 +112,13 @@
               <div class="scene-moving-actors" id="scene-moving-actors" aria-hidden="true"></div>
             </div>
             <div class="scene-legend"><span><i class="dot dot-wait"></i> En espera</span><span><i class="dot dot-busy"></i> En servicio</span><span><i class="dot dot-finished"></i> Finalizados</span><span><i class="dot dot-blocked"></i> Rechazados</span></div>
+          </div>
+          <div class="scene-live-kpis" aria-label="Indicadores de la jornada hasta este instante">
+            <div><small>Llegadas</small><b id="live-arrivals">0</b></div>
+            <div><small>Atenciones finalizadas</small><b id="live-completed">0</b></div>
+            <div><small>Esperando</small><b id="live-waiting">0</b></div>
+            <div><small>Puestos ocupados / activos</small><b id="live-capacity">0 / 0</b></div>
+            <div><small>Rechazados</small><b id="live-rejected">0</b></div>
           </div>
           <div class="arena-live-flow">
             <div class="arena-flow-cell"><div class="arena-flow-head">1 · Cola <b id="c-queue">0</b></div><div class="arena-customers" id="c-queue-people"><i>Sin clientes</i></div></div>
