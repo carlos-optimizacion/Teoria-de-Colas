@@ -160,10 +160,11 @@ def _run(config, staffing, actions, seed, options=None):
         max_queue = max(max_queue, len(waiting))
         current_busy = sum(x is not None for x in servers)
         if len(frames) < 3000:
-            frames.append({"t": round(t,3), "kind": label, "client": cid if kind in ("arrival", "departure") else None,
+            frames.append({"t": round(t,3), "kind": label, "client": cid if kind in ("arrival", "departure", "abandon") else None,
                 "queue": len(waiting), "queue_ids": [x[2] for x in waiting[:20]],
                 "busy": current_busy, "servers": list(servers), "active": active,
-                "arrivals": arrivals_processed, "completed": finished, "blocked": rejected, "abandoned": abandoned})
+                "arrivals": arrivals_processed, "completed": finished, "blocked": rejected, "abandoned": abandoned,
+                "priority_ids":[x[2] for x in waiting if x[0]==0][:20] + [x for x in servers if x is not None and class_priority.get(x)==0]})
         if len(series) < 3000:
             series.append({"t": round(t,3), "queue": len(waiting), "busy": current_busy})
     dt = max(0., horizon-last)
