@@ -13,13 +13,14 @@
 <body>
 <div class="app-shell">
   <aside class="sidebar">
-    <div class="brand"><div class="brand-mark">DL</div><div><b>Decision Lab</b><span>Aplicativo unificado · Teoría de colas</span></div></div>
+    <div class="brand"><div class="brand-mark">DL</div><div><b>Decision Lab 2.0</b><span>Teoría de Colas en la Práctica</span></div></div>
     <nav class="side-nav" aria-label="Navegación principal">
       <div class="nav-section">EXPLORAR</div>
-      <a class="nav-link {% if active == 'home' %}active{% endif %}" href="{% url 'portal:home' %}"><span class="num">⌂</span><span>Inicio</span></a>
-      <a class="nav-link {% if active == 'challenge' %}active{% endif %}" href="{% url 'portal:aplicativo_app' %}"><span class="num">◆</span><span>Aplicativo App</span><span class="nav-mini">2.0</span></a>
-      <a class="nav-link {% if active == 'simulator' %}active{% endif %}" href="{% url 'portal:simulator' %}"><span class="num">▶</span><span>Simulación animada</span></a>
-      <a class="nav-link {% if active == 'comparator' %}active{% endif %}" href="{% url 'portal:comparator' %}"><span class="num">⇄</span><span>Comparador</span></a>
+      <a class="nav-link {% if active == 'challenge' %}active{% endif %}" href="{% url 'portal:aplicativo_app' %}"><span class="num">⌂</span><span>Inicio</span></a>
+      <a class="nav-link" href="{% url 'portal:aplicativo_app' %}#classic-models"><span class="num">▧</span><span>Modelos Matemáticos</span></a>
+      <a class="nav-link {% if active == 'simulator' %}active{% endif %}" href="{% url 'portal:simulator' %}"><span class="num">◈</span><span>Simulación Visual</span></a>
+      <a class="nav-link {% if active == 'challenge' %}active{% endif %}" href="{% url 'portal:aplicativo_app' %}#mission-panel"><span class="num">🏆</span><span>Desafíos (Challenge)</span></a>
+            <a class="nav-link {% if active == 'comparator' %}active{% endif %}" href="{% url 'portal:comparator' %}"><span class="num">⇄</span><span>Comparador</span></a>
       <a class="nav-link {% if active == 'economics' %}active{% endif %}" href="{% url 'portal:economics' %}"><span class="num">▥</span><span>Análisis económico</span></a>
       <a class="nav-link {% if active == 'reports' %}active{% endif %}" href="{% url 'portal:reports' %}"><span class="num">▤</span><span>Reportes</span></a>
       <div class="nav-section">USUARIO</div>
@@ -54,6 +55,15 @@
   </aside>
   <main class="main-content">
     <header class="topbar product-topbar"><div><span class="top-kicker">DECISION LAB 2.0 · TEORÍA DE COLAS</span><strong>{% block header %}Decision Lab{% endblock %}</strong></div>
+<nav class="product-tabs" aria-label="Secciones principales">
+  <a href="{% url 'portal:aplicativo_app' %}">⌂ <span>Inicio</span></a>
+  <a href="{% url 'portal:aplicativo_app' %}#classic-models">▥ <span>Modelos</span></a>
+  <a href="{% url 'portal:simulator' %}">◈ <span>Simulación</span></a>
+  <a href="{% url 'portal:aplicativo_app' %}#mission-panel">🏆 <span>Challenge</span></a>
+  <a href="{% url 'portal:comparator' %}">⇄ <span>Comparador</span></a>
+  <a href="{% url 'portal:economics' %}">▥ <span>Análisis Económico</span></a>
+  <a href="{% url 'portal:reports' %}">▤ <span>Reportes</span></a>
+</nav>
 <div class="top-status user-status">
   {% if product_user.authenticated %}
   <a class="user-pill" href="{% url 'portal:progress' %}"><span class="user-avatar">{{ product_user.name|first|upper }}</span><span><b>{{ product_user.name }}</b><small>Nivel {{ product_user.level }} · {{ product_user.xp }} XP</small></span></a>
