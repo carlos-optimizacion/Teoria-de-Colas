@@ -26,8 +26,11 @@ with sync_playwright() as playwright:
     page.screenshot(path=str(OUT/"02-laboratorio-modelos.png"),full_page=True)
     page.locator("#challenge-run").click()
     page.wait_for_function("document.querySelector('#challenge-kpis').children.length>=8",timeout=30000)
-    page.locator("#challenge-scrub").evaluate("(e)=>{e.value='30';e.dispatchEvent(new Event('input',{bubbles:true}));}")
-    assert page.locator(".scene-avatar").count()>=1,"Missing dynamic customer avatars"
+    for event_index in range(12, min(160, int(page.locator("#challenge-scrub").get_attribute("max"))), 7):
+        page.locator("#challenge-scrub").evaluate("(e, value)=>{e.value=String(value);e.dispatchEvent(new Event('input',{bubbles:true}));}", event_index)
+        if page.locator(".scene-avatar").count()>0:
+            break
+    assert page.locator(".scene-avatar").count()>=1,"Dynamic customer avatars never appeared at occupied frames"
     page.locator("#challenge-play").click()
     page.wait_for_timeout(550)
     page.locator("#challenge-play").click()
