@@ -75,7 +75,14 @@ with sync_playwright() as playwright:
     page.locator("#simulator-form").locator("button[type=submit]").click()
     page.wait_for_function("document.querySelectorAll('#legacy-dynamic-scene .dynamic-station').length === 5",timeout=30000)
     page.locator("#legacy-dynamic-scene").screenshot(path=str(OUT/"simulador-clasico-dinamico-5-puestos.png"))
-    page.goto("http://127.0.0.1:8000/escenarios-guardados/",wait_until="domcontentloaded")
+    page.goto("http://127.0.0.1:8000/simular/red-de-colas/",wait_until="domcontentloaded")
+    page.locator("#net-add").click()
+    assert page.locator(".network-stage").count()==3
+    page.locator("#network-form button[type=submit]").click()
+    page.wait_for_function("document.querySelectorAll('#network-stage-results article').length===3",timeout=30000)
+    assert "Cuello de botella" in page.locator("#network-status").inner_text()
+    page.screenshot(path=str(OUT/"06-red-colas-multietapa.png"),full_page=True)
+        page.goto("http://127.0.0.1:8000/escenarios-guardados/",wait_until="domcontentloaded")
     assert page.get_by_text("Estrategia navegador").count()==1
     page.goto("http://127.0.0.1:8000/reportes/",wait_until="domcontentloaded")
     assert page.locator(".data-table tbody tr").count()>=1
