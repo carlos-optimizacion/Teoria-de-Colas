@@ -1,9 +1,16 @@
 from django.urls import path
-from . import views, challenge_views
+from . import views, challenge_views, product_views
 
 app_name = "portal"
 
 urlpatterns = [
+    path('accounts/signup/', product_views.signup, name='signup'),
+    path('progreso/', product_views.progress, name='progress'),
+    path('clasificacion/', product_views.leaderboard, name='leaderboard'),
+    path('reportes/', product_views.reports, name='reports'),
+    path('reportes/<int:run_id>/', product_views.run_report, name='run_report'),
+    path('reportes/<int:run_id>/<str:fmt>/', product_views.run_export, name='run_export'),
+    path('api/scenario/save/', product_views.save_scenario, name='save_scenario'),
     path('challenge/', challenge_views.challenge, name='challenge'),
     path('aplicativo-app/', challenge_views.challenge, name='aplicativo_app'),
     path('api/challenge/', challenge_views.challenge_api, name='challenge_api'),
