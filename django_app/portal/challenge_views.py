@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 from .challenge_engine import SCENARIOS, evaluate_game
-from .models import GameRun, UserProgress
+from .models import GameRun, SavedScenario, UserProgress
 
 def _leaderboard(limit=5):
     best={}
@@ -16,10 +16,17 @@ def _leaderboard(limit=5):
 @ensure_csrf_cookie
 def challenge(request):
     progress=None
+    initial_payload=None
     if request.user.is_authenticated:
         progress,_=UserProgress.objects.get_or_create(user=request.user)
+        saved_id=request.GET.get("saved")
+        if saved_id:
+            try:
+                initial_payload=SavedScenario.objects.get(user=request.user,id=int(saved_id)).payload
+            except (SavedScenario.DoesNotExist,ValueError,TypeError):
+                initial_payload=None
     return render(request,"portal/challenge.html",{
-        "active":"challenge","scenarios":SCENARIOS,"progress":progress,"leaders":_leaderboard(),
+        "active":"challenge","scenarios":SCENARIOS,"progress":progress,"leaders":_leaderboard(),"initial_payload":initial_payload,
     })
 
 @require_POST
