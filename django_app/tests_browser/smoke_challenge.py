@@ -16,7 +16,7 @@ with sync_playwright() as playwright:
     page.locator(".sector-card[data-sector='hospital']").click()
     assert page.locator("#challenge-scenario").input_value()=="hospital"
     assert page.locator(".sector-card[data-sector='hospital']").get_attribute("aria-pressed")=="true"
-    assert page.locator("#classic-lab").is_visible()
+    assert page.locator("#classic-lab").count()==1
     assert page.locator("#c-scene-art").evaluate("(img)=>img.complete && img.naturalWidth>0")
     page.screenshot(path=str(OUT/"01-aplicativo-app.png"),full_page=True)
     for key in ("banco","hospital","supermercado","fabrica","logistica"):
@@ -25,6 +25,8 @@ with sync_playwright() as playwright:
         assert page.locator("#c-scene-art").get_attribute("src").endswith(key+".svg")
         page.locator("#scene-shell").screenshot(path=str(OUT/("escena-"+key+".png")))
     page.locator("#challenge-scenario").select_option("banco")
+    page.locator(".target-academic-lab > summary").click()
+    page.locator("#classic-lab").wait_for(state="visible")
     page.locator("#lab-run").click()
     page.wait_for_function("document.querySelector('#lab-kpis').children.length>=8",timeout=30000)
     page.screenshot(path=str(OUT/"02-laboratorio-modelos.png"),full_page=True)
