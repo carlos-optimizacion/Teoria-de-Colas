@@ -182,6 +182,7 @@ async function run({keepTime=false}={}){
     last={...d,payload:req};
     const reportLink=document.getElementById("challenge-report-link");
     if(reportLink && d.run_id){reportLink.href="/reportes/"+d.run_id+"/";reportLink.hidden=false;}
+    if(d.progress){const level=document.getElementById("top-user-level"),xp=document.getElementById("top-user-xp"),coins=document.getElementById("top-user-coins");if(level)level.textContent=d.progress.level;if(xp)xp.textContent=d.progress.xp;if(coins)coins.textContent=d.progress.coins;}
     const saveButton=document.getElementById("challenge-save-scenario");if(saveButton)saveButton.disabled=false;
     showKpis(d);showAnalysis(d);showChart(d);
     for(const id of ["challenge-play","challenge-restart","challenge-scrub","challenge-intervene","challenge-export"])el(id).disabled=false;
