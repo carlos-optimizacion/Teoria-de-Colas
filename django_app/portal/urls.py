@@ -5,6 +5,7 @@ app_name = "portal"
 
 urlpatterns = [
     path('challenge/', challenge_views.challenge, name='challenge'),
+    path('aplicativo-app/', challenge_views.challenge, name='aplicativo_app'),
     path('api/challenge/', challenge_views.challenge_api, name='challenge_api'),
     path("", views.home, name="home"),
     path("fundamentos/", views.fundamentals, name="fundamentals"),
