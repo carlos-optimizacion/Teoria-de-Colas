@@ -169,3 +169,12 @@
 .scene-live-kpis b{display:block;font-size:18px;color:#155371;margin-top:3px}
 @media(max-width:800px){.scene-live-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:450px){.scene-live-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Distinct scenic header: retains sector illustration at full contrast while
+   the editable floor beneath uses only exact event-derived station geometry. */
+.scene-art-wrap:has(.dynamic-facility){display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.scene-art-wrap:has(.dynamic-facility)>.scene-art{position:relative;inset:auto;opacity:1;filter:none;display:block;width:100%;height:140px;flex:0 0 140px;object-fit:cover;object-position:center}
+.scene-art-wrap:has(.dynamic-facility)>.dynamic-facility{flex:1;min-height:350px}
+.scene-art-wrap:has(.dynamic-facility)>.scene-status,.scene-art-wrap:has(.dynamic-facility)>.scene-event-count{top:12px}
+@media(max-width:760px){.scene-art-wrap:has(.dynamic-facility)>.scene-art{height:104px;flex-basis:104px}.scene-art-wrap:has(.dynamic-facility)>.dynamic-facility{min-height:390px}}
