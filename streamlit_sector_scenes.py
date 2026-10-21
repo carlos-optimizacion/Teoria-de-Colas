@@ -65,6 +65,17 @@ SECTOR_UI = {
     },
 }
 
+def _unit_visual(key, state):
+    if key=="banco":
+        return '<div class="bank-window"><span>VENTANILLA</span><i></i></div>'
+    if key=="hospital":
+        return '<div class="hospital-box"><span>BOX</span><i>+</i></div>'
+    if key=="supermercado":
+        return '<div class="checkout-lane"><i></i><span>CAJA</span></div>'
+    if key=="fabrica":
+        return '<div class="inspection-station"><i>⌁</i><span>QC</span></div>'
+    return '<div class="loading-dock"><i></i><span>ANDÉN</span></div>'
+
 def _people(ids, kind):
     if not ids:
         return '<span class="empty-state">Sin elementos en espera</span>'
@@ -87,7 +98,9 @@ def render_sector_scene(scenario_key, frame, status):
         elif cid is not None:
             state="busy";label="ATENDIENDO";body=f'<span class="sector-person serving"><i>●</i><em>{escape(str(cid))}</em></span>'
         else:
-            state="free";label="LIBRE";body=f'<span class="sector-unit-symbol">{ui["unit_icon"]}</span>'
+            state="free";label="LIBRE";body=_unit_visual(scenario_key,state)
+        if cid is not None:
+            body=_unit_visual(scenario_key,state)+body
         stations.append(
             f'<div class="sector-unit {scenario_key} {state}" data-configured="{str(item["configured"]).lower()}">'
             f'<span class="sector-unit-name">{escape(ui["unit_singular"].title())} {n}</span>{body}<small>{label}</small></div>'
