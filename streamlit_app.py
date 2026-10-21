@@ -242,7 +242,7 @@ def run_challenge_ui():
             "arrival_min":cfg["arrival_min"],"service_min":cfg["service_min"],"capacity":cfg["capacity"],
             "staff_hour":cfg["staff_hour"],"wait_hour":cfg["wait_hour"],"sla_min":cfg["sla_min"],
             "sla_target":cfg["sla_target"],"patience_min":0,"priority_share":0,
-            "service_distribution":"exponential","service_cv":1,"actions":[]
+            "service_distribution":"exponential","service_cv":1,"actions":[],"incident":cfg["incident"]
         }
         st.markdown(f"""<div class="workflow-head"><span>CONFIGURACIÓN DEL ESCENARIO</span><h2>{ui['title']} · ingresar datos primero</h2>
         <p>La simulación no se mostrará hasta que guardes estos parámetros y pulses <b>Abrir simulación</b>.</p></div>""",unsafe_allow_html=True)
@@ -265,6 +265,14 @@ def run_challenge_ui():
                 distributions=["exponential","deterministic","gamma","lognormal"]
                 dist=a3.selectbox("Distribución del servicio",distributions,index=distributions.index(draft.get("service_distribution","exponential")))
                 cv=a4.number_input("CV del servicio",.05,4.0,float(draft.get("service_cv",1)),.05)
+            incident_labels={"demanda":"Pico de demanda (+65%)","ausencia":"Ausencia temporal de un servidor",
+                             "averia":"Avería temporal","none":"Sin incidentes (motor central)"}
+            choices=list(dict.fromkeys([cfg["incident"],"none"]))
+            incident=st.selectbox("Incidente del desafío",choices,
+                format_func=lambda x:incident_labels[x],
+                index=choices.index(draft.get("incident",cfg["incident"])) if draft.get("incident",cfg["incident"]) in choices else 0,
+                help="Sin incidentes, servicio exponencial y sin abandono ni prioridad: se utiliza queue_v3. "
+                     "Las extensiones del desafío conservan el motor especializado.")
             reps=st.slider("Réplicas estadísticas",1,50,int(draft["replications"]))
             save_config=st.form_submit_button("Guardar y validar configuración",type="primary",use_container_width=True)
 
@@ -273,7 +281,7 @@ def run_challenge_ui():
                      "arrival_min":float(arrival),"service_min":float(service),"capacity":int(capacity),
                      "staff_hour":float(staff_cost),"wait_hour":float(wait_cost),"sla_min":float(sla_min),
                      "sla_target":float(sla_target),"patience_min":float(patience),"priority_share":float(priority),
-                     "service_distribution":dist,"service_cv":float(cv),"actions":[]}
+                     "service_distribution":dist,"service_cv":float(cv),"actions":[],"incident":incident}
             result=evaluate_game(payload)
             visible=configured_units(result["events"][0])
             if visible != int(servers):
@@ -321,6 +329,8 @@ def run_challenge_ui():
 
     result=st.session_state.result
     m=result["metrics"]
+    st.caption("Motor: **"+("Central queue_v3" if result.get("engine")=="queue_v3"
+               else "Desafíos con reglas avanzadas")+"** · "+result["method"])
     workflow_stepper(st.session_state.sim_phase)
 
     top_a,top_b=st.columns([1,4])
