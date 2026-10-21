@@ -100,6 +100,8 @@ const stages=payload.stages, frames=payload.frames,n=stages.length;
 const scene=new THREE.Scene();scene.background=new THREE.Color(0xd4e8f1);
 const camera=new THREE.PerspectiveCamera(42,1,.1,220);
 camera.position.set(0,n>5?24:18,n>5?24:20);camera.lookAt(0,0,0);
+// Acercamiento inicial adaptativo: con pocas etapas, utilizar el lienzo disponible.
+camera.zoom=n<=3?1.65:n<=5?1.35:1.0;camera.updateProjectionMatrix();
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
