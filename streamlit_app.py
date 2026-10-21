@@ -18,6 +18,8 @@ from queue_core import (
 )
 from streamlit_visual_logic import station_descriptors
 from streamlit_sector_scenes import SECTOR_UI, render_sector_scene, configured_units
+from bank_three_scene import bank_scene_html
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Decision Lab 2.0",page_icon="◈",layout="wide",initial_sidebar_state="expanded")
 
@@ -326,7 +328,10 @@ def run_challenge_ui():
         frame0=result["events"][0]
         st.markdown(f"""<div class="workflow-head preview"><span>ESCENA CONSTRUIDA · RELOJ EN 0</span><h2>{ui['title']} · verificar antes de iniciar</h2>
         <p>La escena física se generó con los datos guardados. Nada se mueve todavía.</p></div>""",unsafe_allow_html=True)
-        st.markdown(render_sector_scene(key,frame0,"ready"),unsafe_allow_html=True)
+        if key=="banco":
+            components.html(bank_scene_html([frame0],result["config"],preview=True),height=745,scrolling=False)
+        else:
+            st.markdown(render_sector_scene(key,frame0,"ready"),unsafe_allow_html=True)
         expected=int(result["staffing"][0]);visible=configured_units(frame0)
         metric_cards([
             (ui["service"],f"{visible}/{expected}","ok" if visible==expected else "warn"),
@@ -344,60 +349,68 @@ def run_challenge_ui():
             st.rerun()
         return
 
-    # EJECUCIÓN
-    @st.fragment(run_every=0.65)
-    def simulation_player():
-        result_now=st.session_state.result
-        frames=result_now["events"]
-        idx=min(st.session_state.frame,len(frames)-1)
-        status=st.session_state.sim_status
-        if status=="running":
-            step=max(1,int(st.session_state.sim_speed))
-            if idx < len(frames)-1:
-                idx=min(len(frames)-1,idx+step)
-                st.session_state.frame=idx
-            if idx>=len(frames)-1 or frames[idx].get("kind")=="end":
-                st.session_state.sim_status="finished"
-                st.session_state.sim_phase="finished"
-                status="finished"
-        frame=frames[idx]
-        pct=100*idx/max(1,len(frames)-1)
-        active=int(frame.get("active",0));visible=configured_units(frame)
+    # El Banco usa un único reproductor 3D persistente fuera de fragmentos:
+    # el motor Python genera la trayectoria y el navegador anima sus eventos.
+    # Evita la recreación del canvas cada 650 ms (parpadeo y desincronización).
+    if key=="banco":
+        components.html(bank_scene_html(result["events"],result["config"]),height=745,scrolling=False)
+        st.caption("Controles de reproducción, pausa, avance y velocidad integrados en el banco 3D. Los indicadores siguientes son resultados finales de la trayectoria precalculada en Python.")
+    else:
+        # EJECUCIÓN
+        @st.fragment(run_every=0.65)
+        def simulation_player():
+            result_now=st.session_state.result
+            frames=result_now["events"]
+            idx=min(st.session_state.frame,len(frames)-1)
+            status=st.session_state.sim_status
+            if status=="running":
+                step=max(1,int(st.session_state.sim_speed))
+                if idx < len(frames)-1:
+                    idx=min(len(frames)-1,idx+step)
+                    st.session_state.frame=idx
+                if idx>=len(frames)-1 or frames[idx].get("kind")=="end":
+                    st.session_state.sim_status="finished"
+                    st.session_state.sim_phase="finished"
+                    status="finished"
+            frame=frames[idx]
+            pct=100*idx/max(1,len(frames)-1)
+            active=int(frame.get("active",0));visible=configured_units(frame)
 
-        st.markdown(f"""<div class="ops-shell"><div class="ops-head">
-          <div class="ops-title"><span class="ops-icon">{ui['icon']}</span><div><h2>{ui['title']} · simulación dinámica</h2><p>{ui['arrival']} → {ui['queue']} → {ui['service']} → {ui['exit']}</p></div></div>
-          <div class="ops-time"><small>Tiempo simulado</small><b>{frame['t']:.1f} min</b><span>{pct:.0f}% de jornada</span></div>
-          <div class="ops-mini ok"><small>Completados</small><b>{frame['completed']}</b></div>
-          <div class="ops-mini info"><small>En espera</small><b>{frame['queue']}</b></div>
-          <div class="ops-mini warn"><small>Rechazados</small><b>{frame['blocked']}</b></div>
-        </div><div class="journey-progress"><i style="width:{pct:.1f}%"></i><span class="start-label">INICIO · 0 min</span><span class="end-label">FIN · {int(result_now['config']['duration'])} min</span></div></div>""",unsafe_allow_html=True)
+            st.markdown(f"""<div class="ops-shell"><div class="ops-head">
+              <div class="ops-title"><span class="ops-icon">{ui['icon']}</span><div><h2>{ui['title']} · simulación dinámica</h2><p>{ui['arrival']} → {ui['queue']} → {ui['service']} → {ui['exit']}</p></div></div>
+              <div class="ops-time"><small>Tiempo simulado</small><b>{frame['t']:.1f} min</b><span>{pct:.0f}% de jornada</span></div>
+              <div class="ops-mini ok"><small>Completados</small><b>{frame['completed']}</b></div>
+              <div class="ops-mini info"><small>En espera</small><b>{frame['queue']}</b></div>
+              <div class="ops-mini warn"><small>Rechazados</small><b>{frame['blocked']}</b></div>
+            </div><div class="journey-progress"><i style="width:{pct:.1f}%"></i><span class="start-label">INICIO · 0 min</span><span class="end-label">FIN · {int(result_now['config']['duration'])} min</span></div></div>""",unsafe_allow_html=True)
 
-        st.markdown(render_sector_scene(key,frame,status),unsafe_allow_html=True)
-        if visible < active:
-            st.error(f"Inconsistencia visual: motor={active}, escena={visible}. Se pausó la simulación.")
-            st.session_state.sim_status="paused"
+            st.markdown(render_sector_scene(key,frame,status),unsafe_allow_html=True)
+            if visible < active:
+                st.error(f"Inconsistencia visual: motor={active}, escena={visible}. Se pausó la simulación.")
+                st.session_state.sim_status="paused"
 
-        b1,b2,b3,b4,b5,b6=st.columns([1.1,1,1,1,1.1,4])
-        if status=="running":
-            if b1.button("⏸ Pausa",use_container_width=True,key="sim_pause"):
-                st.session_state.sim_status="paused";st.rerun(scope="fragment")
-        elif status=="paused":
-            if b1.button("▶ Continuar",type="primary",use_container_width=True,key="sim_continue"):
-                st.session_state.sim_status="running";st.rerun(scope="fragment")
-        else:
-            b1.button("Finalizado",disabled=True,use_container_width=True,key="sim_done")
-        if b2.button("◀ Paso",use_container_width=True,key="sim_prev",disabled=idx==0):
-            st.session_state.sim_status="paused";st.session_state.frame=max(0,idx-1);st.rerun(scope="fragment")
-        if b3.button("Paso ▶",use_container_width=True,key="sim_next",disabled=idx>=len(frames)-1):
-            st.session_state.sim_status="paused";st.session_state.frame=min(len(frames)-1,idx+1);st.rerun(scope="fragment")
-        if b4.button("↺ Inicio",use_container_width=True,key="sim_reset"):
-            st.session_state.frame=0;st.session_state.sim_status="paused";st.rerun(scope="fragment")
-        if b5.button("⏭ Fin",use_container_width=True,key="sim_end",disabled=idx>=len(frames)-1):
-            st.session_state.frame=len(frames)-1;st.session_state.sim_status="finished";st.session_state.sim_phase="finished";st.rerun(scope="fragment")
-        st.session_state.sim_speed=b6.select_slider("Velocidad",options=[1,2,4,8],value=st.session_state.sim_speed,key="sim_speed_ctl",format_func=lambda x:f"{x}×")
-        st.caption(event_text(frame))
+            b1,b2,b3,b4,b5,b6=st.columns([1.1,1,1,1,1.1,4])
+            if status=="running":
+                if b1.button("⏸ Pausa",use_container_width=True,key="sim_pause"):
+                    st.session_state.sim_status="paused";st.rerun(scope="fragment")
+            elif status=="paused":
+                if b1.button("▶ Continuar",type="primary",use_container_width=True,key="sim_continue"):
+                    st.session_state.sim_status="running";st.rerun(scope="fragment")
+            else:
+                b1.button("Finalizado",disabled=True,use_container_width=True,key="sim_done")
+            if b2.button("◀ Paso",use_container_width=True,key="sim_prev",disabled=idx==0):
+                st.session_state.sim_status="paused";st.session_state.frame=max(0,idx-1);st.rerun(scope="fragment")
+            if b3.button("Paso ▶",use_container_width=True,key="sim_next",disabled=idx>=len(frames)-1):
+                st.session_state.sim_status="paused";st.session_state.frame=min(len(frames)-1,idx+1);st.rerun(scope="fragment")
+            if b4.button("↺ Inicio",use_container_width=True,key="sim_reset"):
+                st.session_state.frame=0;st.session_state.sim_status="paused";st.rerun(scope="fragment")
+            if b5.button("⏭ Fin",use_container_width=True,key="sim_end",disabled=idx>=len(frames)-1):
+                st.session_state.frame=len(frames)-1;st.session_state.sim_status="finished";st.session_state.sim_phase="finished";st.rerun(scope="fragment")
+            st.session_state.sim_speed=b6.select_slider("Velocidad",options=[1,2,4,8],value=st.session_state.sim_speed,key="sim_speed_ctl",format_func=lambda x:f"{x}×")
+            st.caption(event_text(frame))
 
-    simulation_player()
+        simulation_player()
+
 
     # Panel analítico solo dentro de Simulación, nunca en Configuración.
     st.markdown('<div class="section-separator"><b>ANÁLISIS DE LA CORRIDA</b><span>Resultados derivados de los datos guardados.</span></div>',unsafe_allow_html=True)
@@ -426,6 +439,19 @@ def run_challenge_ui():
                 payload=dict(st.session_state.pending_payload);payload["actions"]=st.session_state.actions
                 st.session_state.pending_payload=payload;st.session_state.result=evaluate_game(payload)
                 st.session_state.frame=0;st.session_state.sim_status="paused";st.rerun()
+
+    if key=="banco":
+        cnew,cdownload=st.columns(2)
+        if cnew.button("↺ Nueva corrida · volver a configuración",type="primary",use_container_width=True,key="bank_new_run"):
+            st.session_state.sim_screen="config"
+            st.session_state.sim_phase="configure"
+            st.session_state.pending_payload=None
+            st.session_state.result=None
+            st.session_state.frame=0
+            st.session_state.actions=[]
+            st.session_state.sim_status="ready"
+            st.rerun()
+        cdownload.download_button("Descargar trayectoria y resultados JSON",json.dumps(result,ensure_ascii=False,indent=2),file_name="decision-lab-banco.json",mime="application/json",use_container_width=True,key="bank_json")
 
     if st.session_state.sim_phase=="finished":
         last=result["events"][-1]
