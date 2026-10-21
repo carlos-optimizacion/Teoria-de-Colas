@@ -1,0 +1,37 @@
+name: Validar skill ASTALANKA OPT
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.agents/skills/astalanka-opt-dev/**'
+      - '.github/workflows/skill-validation.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.agents/skills/astalanka-opt-dev/**'
+      - '.github/workflows/skill-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  check-skill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate skill structure and links
+        run: |
+          python -m py_compile .agents/skills/astalanka-opt-dev/scripts/validate_skill.py
+          python .agents/skills/astalanka-opt-dev/scripts/validate_skill.py
+      - name: Verify policy invariants
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          root=Path(".agents/skills/astalanka-opt-dev")
+          txt=(root/"SKILL.md").read_text(encoding="utf-8")
+          for phrase in ("Producción","Python","Render","Chromium","Simulador 3D","Desafíos gerenciales","Red de colas","Análisis y reportes"):
+              assert phrase in txt,phrase
+          print("OK: skill conserva 4 módulos y compuertas de publicación")
+          PY
