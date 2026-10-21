@@ -22,6 +22,7 @@ from streamlit_sector_scenes import SECTOR_UI, render_sector_scene, configured_u
 st.set_page_config(page_title="Decision Lab 2.0",page_icon="◈",layout="wide",initial_sidebar_state="expanded")
 
 SCENE_DIR=DJANGO_APP/"static"/"img"/"scenarios"
+SCENE_HD_DIR=DJANGO_APP/"static"/"img"/"scenarios_hd"
 MODELS=["M/M/1","M/M/s","M/M/s/K","M/M/1/c","M/M/s/c","Erlang B","M/G/1","D/D/1"]
 
 def metric_cards(items,columns=4):
@@ -142,8 +143,11 @@ def scenario_gallery():
     cols=st.columns(5)
     for col,(key,cfg) in zip(cols,SCENARIOS.items()):
         with col:
-            path=SCENE_DIR/f"{key}.svg"
-            if path.exists():st.image(str(path),use_container_width=True)
+            path=SCENE_HD_DIR/f"{key}_hd.svg"
+            if not path.exists():
+                path=SCENE_DIR/f"{key}.svg"
+            if path.exists():
+                st.image(str(path),use_container_width=True)
             if st.button(f"{cfg['sector']}\n\n{cfg['name']}",key=f"scene_{key}",use_container_width=True,type="primary" if st.session_state.scenario==key else "secondary"):
                 st.session_state.scenario=key;st.session_state.result=None;st.session_state.frame=0;st.session_state.sim_status="ready";st.session_state.sim_phase="configure";st.session_state.sim_screen="config";st.session_state.pending_payload=None;st.rerun()
 
@@ -197,8 +201,10 @@ def facility_html(frame,status):
       </div>
     </div>"""
 
-def scene_data_uri(key):
-    path=SCENE_DIR/f"{key}.svg"
+def scene_data_uri(key,hd=True):
+    path=(SCENE_HD_DIR/f"{key}_hd.svg") if hd else (SCENE_DIR/f"{key}.svg")
+    if not path.exists():
+        path=SCENE_DIR/f"{key}.svg"
     if not path.exists():
         return ""
     raw=base64.b64encode(path.read_bytes()).decode("ascii")
