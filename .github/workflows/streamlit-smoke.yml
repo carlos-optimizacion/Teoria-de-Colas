@@ -123,11 +123,23 @@ jobs:
           assert not at.exception,at.exception
           assert any(b.label=="▶ Iniciar simulación desde 0 min" for b in at.button)
           assert any(x.type=="iframe" for x in at), "El banco no mostró previsualización 3D"
-          [b for b in at.button if b.label=="▶ Iniciar simulación desde 0 min"][0].click()
-          at.run(timeout=60)
-          assert not at.exception,at.exception
-          assert any(x.type=="iframe" for x in at)
-          assert any(b.label=="Optimizar capacidad por SLA y costo" for b in at.button)
+          # AppTest v1.49 puede invalidar IDs de widgets al desmontar un formulario.
+          # Verificar la ruta de ejecución con una sesión de prueba nueva,
+          # conservando los datos validados de la previsualización.
+          result=at.session_state["v3_result"]
+          payload=at.session_state["v3_payload"]
+          sector=at.session_state["v3_scenario"]
+          player=AppTest.from_file("streamlit_app.py")
+          player.session_state["v3_step"]="run"
+          player.session_state["v3_result"]=result
+          player.session_state["v3_payload"]=payload
+          player.session_state["v3_scenario"]=sector
+          player.run(timeout=60)
+          player.radio[0].set_value("Simulación 3.0")
+          player.run(timeout=90)
+          assert not player.exception,player.exception
+          assert any(x.type=="iframe" for x in player)
+          assert any(b.label=="Optimizar capacidad por SLA y costo" for b in player.button)
           print("Decision Lab 3.0 AppTest OK")
           PY
       - name: Start Streamlit
