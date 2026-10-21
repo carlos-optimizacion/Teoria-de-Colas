@@ -10,7 +10,7 @@ DJANGO_APP=ROOT/"django_app"
 if str(DJANGO_APP) not in sys.path:
     sys.path.insert(0,str(DJANGO_APP))
 
-from portal.challenge_engine import SCENARIOS, evaluate_game
+from portal.challenge_engine import SCENARIOS, ACTIVE_SCENARIOS, evaluate_game
 from portal.network_engine import simulate_network
 from queue_core import (
     mms_from_minutes,mmsk_from_minutes,mg1_from_minutes,dd1_sequence,
@@ -134,7 +134,8 @@ def sidebar():
         st.divider()
         st.markdown(f"**{st.session_state.profile_name}** · Nivel {st.session_state.level}")
         progress_html(min(1,(st.session_state.xp%500)/500),f"{st.session_state.xp} XP · ★ {st.session_state.coins}")
-        st.caption(f"Desafíos dominados: {len(st.session_state.completed)}/5")
+        st.session_state.completed.intersection_update(ACTIVE_SCENARIOS)
+        st.caption(f"Desafíos dominados: {len(st.session_state.completed)}/{len(ACTIVE_SCENARIOS)}")
         return section
 
 def topbar():
@@ -142,8 +143,15 @@ def topbar():
     <div><b>{st.session_state.profile_name}</b> · Nivel {st.session_state.level} &nbsp; <b>★ {st.session_state.coins}</b></div></div>""",unsafe_allow_html=True)
 
 def scenario_gallery():
-    cols=st.columns(5)
-    for col,(key,cfg) in zip(cols,SCENARIOS.items()):
+    """Solo escenarios de espera discreta; producción se tratará aparte."""
+    if st.session_state.scenario not in ACTIVE_SCENARIOS:
+        st.session_state.scenario = ACTIVE_SCENARIOS[0]
+        st.session_state.result = None
+        st.session_state.sim_phase = "configure"
+        st.session_state.sim_screen = "config"
+    cols=st.columns(len(ACTIVE_SCENARIOS))
+    for col,key in zip(cols,ACTIVE_SCENARIOS):
+        cfg = SCENARIOS[key]
         with col:
             path=SCENE_DIR/f"{key}.svg"
             if path.exists():st.image(str(path),use_container_width=True)

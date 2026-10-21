@@ -17,6 +17,11 @@ SCENARIOS = {
     "logistica": dict(name="Andenes de despacho", sector="Logística", model="M/M/s/K", arrival_min=3, service_min=10, duration=480, max_servers=10, staff_hour=28, wait_hour=22, lost_cost=100, sla_min=15, sla_target=.90, budget=1800, capacity=32, incident="demanda", difficulty=3),
 }
 
+# Manufactura/producción se reserva para el futuro módulo de flujo continuo.
+# Conservamos la definición histórica para no romper archivos antiguos ni
+# escenarios de prueba, pero no se ofrece en la simulación de colas.
+ACTIVE_SCENARIOS = tuple(k for k in SCENARIOS if k != "fabrica")
+
 def _integer(value, name, lo, hi):
     try:
         n = float(value)

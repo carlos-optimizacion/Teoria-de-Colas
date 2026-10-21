@@ -119,6 +119,20 @@ document.querySelector('.brand b').textContent='DECISION LAB · '+sceneDef.title
 document.querySelector('.brand-mark').textContent=sceneDef.icon;
 document.querySelector('.brand small').textContent='Simulación de eventos discretos · '+sceneDef.service;
 document.querySelector('.zone-labels').innerHTML='<span>01 · '+sceneDef.entry+'</span><span>02 · '+sceneDef.waiting+'</span><span>03 · '+sceneDef.service+'</span><span>04 · '+sceneDef.finish+'</span>';
+const labelsBySector={
+  banco:{resource:'Ventanillas activas',queue:'Clientes esperando',done:'Atendidos',graphBusy:'Ventanillas ocupadas',graphQueue:'Clientes en cola'},
+  hospital:{resource:'Boxes activos',queue:'Pacientes esperando',done:'Pacientes atendidos',graphBusy:'Boxes ocupados',graphQueue:'Pacientes en cola'},
+  supermercado:{resource:'Cajas activas',queue:'Clientes esperando',done:'Compras completadas',graphBusy:'Cajas ocupadas',graphQueue:'Clientes en caja'},
+  fabrica:{resource:'Estaciones activas',queue:'Unidades esperando',done:'Unidades inspeccionadas',graphBusy:'Estaciones ocupadas',graphQueue:'Unidades en cola'},
+  logistica:{resource:'Andenes activos',queue:'Camiones esperando',done:'Despachos completados',graphBusy:'Andenes ocupados',graphQueue:'Camiones en espera'}
+};
+const sectorLabels=labelsBySector[sector];
+for(const [id,text] of [['stat-active',sectorLabels.resource],['stat-queue',sectorLabels.queue],['stat-served',sectorLabels.done]]){
+  document.getElementById(id).parentElement.querySelector('small').textContent=text;
+}
+document.querySelector('#graph-queue').parentElement.querySelector('b').textContent=sectorLabels.graphQueue+' · Q(t)';
+document.querySelector('#graph-busy').parentElement.querySelector('b').textContent=sectorLabels.graphBusy+' · B(t)';
+
 
 const graphTime=Math.max(1,Number(cfg.duration)||Number(frames[frames.length-1]?.t)||1);
 const maxGraphQueue=Math.max(1,...frames.map(f=>Number(f.queue||0)));
@@ -145,7 +159,7 @@ function graphUpdate(i){
 
 const $=id=>document.getElementById(id);
 $('model-foot').textContent='Modelo '+cfg.model+' · eventos y gráficos sincronizados con el motor Python.';
-$('config').innerHTML='<span>Ventanillas: <b>'+cfg.servers+'</b></span><span>Interarribo: <b>'+Number(cfg.arrival_min).toFixed(1)+' min</b></span><span>Servicio: <b>'+Number(cfg.service_min).toFixed(1)+' min</b></span><span>Capacidad total: <b>'+cfg.capacity+'</b></span>';
+$('config').innerHTML='<span>'+sceneDef.unit+': <b>'+cfg.servers+'</b></span><span>Interarribo: <b>'+Number(cfg.arrival_min).toFixed(1)+' min</b></span><span>Servicio: <b>'+Number(cfg.service_min).toFixed(1)+' min</b></span><span>Capacidad total: <b>'+cfg.capacity+'</b></span>';
 let idx=0,playing=false,speed=1,accumulator=0,last=0;
 const maxVisibleClients=42;
 $('seek').max=Math.max(0,frames.length-1);
@@ -287,6 +301,21 @@ try{
    const shadow=cyl(.31,.31,.012,mat(0x879ca5,{transparent:true,opacity:.25}),[0,.018,0],g);shadow.castShadow=false;
    return g;
  }
+ function createActor(id,color){
+   if(sector!=='logistica')return createHuman(id,color);
+   // En logística los clientes del modelo representan camiones, no personas.
+   const truck=new THREE.Group(),paint=mat(color),dark=mat(0x2c3c49);
+   box(.78,.51,1.23,paint,[0,.53,-.12],truck);
+   box(.78,.68,.54,paint,[0,.62,.73],truck);
+   box(.63,.31,.055,mat(0x89bfd5,{metalness:.18,roughness:.26}),[0,.75,1.01],truck);
+   for(const side of [-1,1])for(const z of [-.62,.68]){
+     const tire=cyl(.17,.17,.12,dark,[side*.43,.20,z],truck);
+     tire.rotation.z=Math.PI/2;
+   }
+   box(.72,.055,.10,steel,[0,.30,1.02],truck);
+   truck.scale.set(.90,.90,.90);
+   return truck;
+ }
  function layoutStations(f){
    const current=Math.max(1,Number(f.active)||1),serverList=f.servers||[];
    const desired=new Set();
@@ -319,7 +348,7 @@ try{
      let obj=people.get(id);
      if(!obj){
        const shades=[0x387bb0,0xb35f68,0x568f71,0xb78a47,0x946ea0];
-       const person=createHuman(id,shades[(Number(id)||0)%shades.length]);
+       const person=createActor(id,shades[(Number(id)||0)%shades.length]);
        person.position.set(-7.5,0,8.8);scene.add(person);
        obj={person,target:p.clone(),leaving:false,leaveAt:0};
        people.set(id,obj);
