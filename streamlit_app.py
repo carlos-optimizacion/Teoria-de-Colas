@@ -34,6 +34,16 @@ def progress_html(value,label):
     pct=max(0,min(100,float(value)*100))
     st.markdown(f'<div class="dl-progress"><div class="dl-progress-head"><span>{label}</span><b>{pct:.0f}%</b></div><div class="dl-progress-track"><i style="width:{pct:.1f}%"></i></div></div>',unsafe_allow_html=True)
 
+def workflow_stepper(phase):
+    phases=["configure","preview","simulate","finished"]
+    current=phases.index(phase) if phase in phases else 0
+    labels=["1 · Configurar","2 · Construir","3 · Simular","4 · Evaluar"]
+    items=[]
+    for i,label in enumerate(labels):
+        cls="done" if i<current else ("active" if i==current else "pending")
+        items.append(f'<div class="flow-step {cls}"><span>{i+1}</span><b>{label.split(" · ",1)[1]}</b></div>')
+    st.markdown('<div class="workflow-stepper">'+"<i>→</i>".join(items)+'</div>',unsafe_allow_html=True)
+
 def css():
     st.markdown("""
     <style>
@@ -58,6 +68,7 @@ def css():
     .client{display:inline-grid;place-items:center;width:31px;height:31px;border-radius:50%;background:#A9D9F6;border:2px solid white;box-shadow:0 3px 7px #315D7440;font-size:.65rem;font-weight:900;color:#104669}
     .client.serving{background:#9AE3BC}.station{display:flex;flex-direction:column;gap:4px;align-items:center;min-width:96px;padding:8px;border-radius:10px;border:2px solid #94CAB7;background:#ECF8F2;font-size:.68rem}.station.busy{background:#E5F3FC;border-color:#7CB9D8}.station.closed{background:#F6F0EA;border-color:#D7A96C}
     .panel{background:white;border:1px solid #DFE8EF;border-radius:14px;padding:14px;margin-bottom:10px}
+    .workflow-stepper{display:grid;grid-template-columns:1fr 22px 1fr 22px 1fr 22px 1fr;align-items:center;margin:8px 0 12px}.workflow-stepper>i{text-align:center;color:#91a7b5;font-style:normal;font-weight:900}.flow-step{display:flex;align-items:center;gap:8px;background:white;border:1px solid #dae6ed;border-radius:11px;padding:9px 11px;color:#718492}.flow-step span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#e8eff3;font-size:.65rem;font-weight:900}.flow-step b{font-size:.7rem}.flow-step.active{border-color:#2b8dc2;box-shadow:0 0 0 3px #cfe9f666;color:#145b80}.flow-step.active span{background:#2187bd;color:white}.flow-step.done{background:#edf8f2;border-color:#b9dec9;color:#26744f}.flow-step.done span{background:#39a46d;color:white}
     .workflow-head{background:white;border:1px solid #dbe7ee;border-radius:16px;padding:18px 20px;margin:8px 0 14px;box-shadow:0 7px 20px #173d5b0e}.workflow-head span{font-size:.6rem;letter-spacing:.12em;font-weight:900;color:#2b7ba8}.workflow-head h2{margin:3px 0 4px;color:#123f62}.workflow-head p{margin:0;color:#6b8192;font-size:.78rem}.workflow-head.preview{border-left:5px solid #2595c6}.config-help{background:#edf6fb;border:1px solid #d4e7f1;border-radius:12px;padding:13px 15px;margin-top:12px}.config-help b,.config-help span,.config-help small{display:block}.config-help b{color:#164d6b}.config-help span{color:#337290;font-size:.76rem;margin:4px 0}.config-help small{color:#7b8d98}
     .sector-scene{border:1px solid #d5e3ea;border-radius:15px;overflow:hidden;background:#e9f2f5;margin:10px 0 12px;box-shadow:0 10px 26px #113d5b12}.sector-scene-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;color:white}.sector-scene-head>div:first-child{display:grid;grid-template-columns:auto 1fr;column-gap:9px;align-items:center}.sector-big-icon{font-size:1.6rem;grid-row:1/3}.sector-scene-head b{font-size:.95rem}.sector-scene-head small{font-size:.62rem;opacity:.85}.sector-capacity{text-align:center;min-width:125px;background:#ffffff18;border:1px solid #ffffff2b;border-radius:10px;padding:6px 10px}.sector-capacity small,.sector-capacity strong,.sector-capacity span{display:block}.sector-capacity small{font-size:.5rem;letter-spacing:.08em}.sector-capacity strong{font-size:1.35rem;line-height:1}.sector-capacity span{font-size:.6rem;margin-top:2px}
     .sector-flow{display:grid;grid-template-columns:1fr 36px 1.35fr 36px 2.4fr 36px 1fr;gap:4px;align-items:stretch;padding:13px;background:linear-gradient(180deg,#f7fbfd,#edf4f7)}.sector-zone{position:relative;background:white;border:1px solid #d9e5eb;border-radius:12px;padding:11px;text-align:center;min-height:190px}.sector-zone>b,.sector-zone>small{display:block}.sector-zone>b{font-size:.76rem;color:#173f60}.sector-zone>small{font-size:.61rem;color:#708391;margin:3px 0 9px}.zone-kicker{position:absolute;left:8px;top:7px;font-size:.52rem;font-weight:900;color:#9badb8}.sector-arrow{display:grid;place-items:center;font-size:1.65rem;color:#7593a6;font-weight:900}.sector-slot{height:72px;display:grid;place-items:center;margin-top:17px}.sector-people-row{display:flex;flex-wrap:wrap;justify-content:center;align-content:start;gap:7px;min-height:108px}.sector-person{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:34px;height:43px}.sector-person i{display:grid;place-items:center;width:17px;height:17px;border-radius:50%;background:#327cae;color:#327cae;font-style:normal;font-size:.7rem;box-shadow:0 14px 0 3px #327cae}.sector-person em{transform:translateY(-8px);font-style:normal;font-size:.5rem;font-weight:900;color:white;z-index:2}.sector-person-fabrica i{border-radius:4px;background:#705aa6;color:white;box-shadow:0 14px 0 3px #705aa6}.sector-person-logistica i{border-radius:3px;background:#596f7f;color:white;box-shadow:0 14px 0 3px #596f7f}.sector-person.serving i{background:#23945e;color:#23945e;box-shadow:0 14px 0 3px #23945e}.sector-units{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px}.sector-unit{min-height:92px;border:2px solid #9bc7d9;border-radius:10px;padding:7px;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#f4fafc}.sector-unit-name{font-size:.63rem;font-weight:900;color:#164b69}.sector-unit small{font-size:.52rem;font-weight:900;margin-top:5px}.sector-unit.free{border-color:#79be97;background:#edf9f2}.sector-unit.busy{border-color:#4c9ac2;background:#e7f4fb}.sector-unit.closing{border-color:#d19b5f;background:#fff4e7}.sector-unit-symbol{font-size:1.35rem;color:#4b7890;margin:6px 0}
@@ -193,6 +204,7 @@ def run_challenge_ui():
     cfg=SCENARIOS[key]
     ui=SECTOR_UI[key]
     scenario_gallery()
+    workflow_stepper(st.session_state.sim_phase)
 
     # 1) CONFIGURAR — no simulation is created before the user confirms inputs.
     if st.session_state.sim_phase=="configure":
