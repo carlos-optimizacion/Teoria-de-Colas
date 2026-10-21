@@ -187,26 +187,19 @@ def run():
         state.v3_step="configure";state.v3_result=None;state.v3_optimization=None;st.rerun()
     config3d={"arrival_min":raw["arrival_mean"],"service_min":raw["service_mean"],
               "capacity":result["capacity"] if result["capacity"] is not None else "Sin límite",
-              "duration":result["horizon"],"model":model}
+              "duration":result["horizon"],"model":model,"sector":sector}
     if state.v3_step=="preview":
         st.subheader("2 · Vista previa: entorno construido sin movimiento")
         first=result["events"][0]
-        if sector=="banco":
-            components.html(bank_scene_html([first],config3d,preview=True),height=745,scrolling=False)
-        else:
-            st.markdown(render_sector_scene(sector,first,"ready"),unsafe_allow_html=True)
-            st.caption("Este sector conserva su vista 2D. El motor multimodelo es común; la escena 3D específica está pendiente.")
+        components.html(bank_scene_html([first],config3d,preview=True),height=835,scrolling=False)
+        st.caption("Vista previa 3D específica del sector. Los elementos de atención coinciden con la configuración guardada.")
         if st.button("▶ Iniciar simulación desde 0 min",type="primary",use_container_width=True):
             state.v3_step="run";st.rerun()
         return
 
     st.subheader("3 · Simulación y monitoreo")
-    if sector=="banco":
-        components.html(bank_scene_html(result["events"],config3d),height=850,scrolling=False)
-        st.caption("El reproductor 3D y sus indicadores temporales utilizan una única trayectoria de eventos de Python.")
-    else:
-        st.markdown(render_sector_scene(sector,result["events"][-1],"finished"),unsafe_allow_html=True)
-        st.caption("Vista final 2D del sector. Los gráficos representan la trayectoria de la primera réplica.")
+    components.html(bank_scene_html(result["events"],config3d),height=890,scrolling=False)
+    st.caption("Escena 3D del sector seleccionado: reproducción temporal y gráficos del mismo flujo de eventos de Python.")
     st.markdown("**Monitoreo temporal de la primera réplica**")
     metric=st.selectbox("Gráfico",["queue","busy","arrivals","completed","avg_wait","utilization"],
                         format_func=lambda x:{"queue":"Cola Q(t)","busy":"Ocupación B(t)",
