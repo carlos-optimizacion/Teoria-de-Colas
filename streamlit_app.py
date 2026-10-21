@@ -22,7 +22,8 @@ from streamlit_sector_scenes import SECTOR_UI, render_sector_scene, configured_u
 from bank_three_scene import bank_scene_html
 import streamlit.components.v1 as components
 from streamlit_v3 import run as run_decision_lab_v3
-from experiment_registry_v3 import comparison_rows, comparable
+from experiment_registry_v3 import comparison_rows, comparable, recommend_comparison
+from comparison_xlsx_v3 import comparison_xlsx
 
 st.set_page_config(page_title="Decision Lab 3.0",page_icon="◈",layout="wide",initial_sidebar_state="expanded")
 
@@ -627,21 +628,32 @@ def analytics_hub():
             table=pd.DataFrame(comparison_rows(selected)).set_index("ID")
             st.bar_chart(table[["Wq (min)","Lq (clientes)"]])
             st.bar_chart(table[["SLA (%)","Utilización (%)"]])
-            valid,reason=comparable(selected)
-            if not valid:
-                st.warning(reason)
+            decision=recommend_comparison(selected)
+            if not decision["valid"]:
+                st.warning(decision["reason"])
+            elif decision["recommended"] is None:
+                st.warning(f"Ninguna corrida supera el SLA objetivo de {decision['target']*100:.1f}% "
+                           "bajo los supuestos comunes. No hay recomendación factible.")
             else:
-                st.info(reason+" Las diferencias en distribuciones, réplicas y costos deben explicarse.")
-                cheapest=min(selected,key=lambda x:x["metrics"]["total_cost"])
-                st.write(f"**Menor costo total observado:** {cheapest['id']} · "
-                         f"S/ {cheapest['metrics']['total_cost']:,.2f}. "
-                         "No implica óptimo ni garantía estadística.")
+                st.info(decision["reason"])
+                st.success(f"**Menor costo con SLA cumplido:** {decision['recommended']} · "
+                           f"S/ {decision['cost']:,.2f} · SLA {decision['sla']*100:.1f}% "
+                           f"(meta: {decision['target']*100:.1f}%).")
+                st.caption(decision["caveat"])
         csv=pd.DataFrame(comparison_rows(runs)).to_csv(index=False).encode("utf-8-sig")
         st.download_button("Descargar comparación CSV",csv,
                            file_name="astalanka-opt-comparacion.csv",mime="text/csv")
         st.download_button("Descargar registro JSON",
                            json.dumps(runs,ensure_ascii=False,indent=2),
                            file_name="astalanka-opt-experimentos.json",mime="application/json")
+        try:
+            report_bytes=comparison_xlsx(selected if selected else runs)
+        except (ValueError,KeyError) as exc:
+            st.error(f"No se pudo crear el Excel comparativo: {exc}")
+        else:
+            st.download_button("Comparación Excel con trazabilidad",report_bytes,
+                file_name="astalanka-opt-comparacion.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     elif mode=="Informe del simulador":
         result=st.session_state.get("v3_result")
         if result is None:
