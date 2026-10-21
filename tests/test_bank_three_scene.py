@@ -97,7 +97,7 @@ def test_four_operational_environments_are_distinct_and_share_python_events(sect
     assert encoded_payload(html)["config"]["sector"]==sector
     assert encoded_payload(html)["frames"][-1]["arrivals"]==1
     assert "/*__ENVIRONMENT__*/" not in html
-    assert "stage.dataset.environment" in html
+    assert "$('stage').dataset.environment" in html
     assert profile in html
     assert "stage.dataset.stationType" in html
     if sector=="logistica":
