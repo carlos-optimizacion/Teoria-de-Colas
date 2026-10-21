@@ -87,7 +87,7 @@ jobs:
           assert "Guardar y validar configuración" not in labels, labels
           preview_text="\n".join(m.value for m in at.markdown)
           print("PREVIEW MARKDOWN DIAGNOSTIC:", repr(preview_text[-5500:]))
-          print("PREVIEW ELEMENT TYPES:", [x.type for x in at])
+          print("PREVIEW MARKDOWN COUNT:", len(at.markdown))
           assert "BANCO 3D" in preview_text, "No se mostró el encabezado Banco 3D"
           assert "sector-scene sector-banco" not in preview_text, "Regresión: se mostró la vista antigua 2D"
           start=[b for b in at.button if b.label=="▶ Iniciar simulación desde 0 min"][0]
