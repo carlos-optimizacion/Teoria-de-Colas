@@ -99,11 +99,67 @@ def comparison_rows(items: list[dict]) -> list[dict]:
 
 
 def comparable(items: list[dict]) -> tuple[bool, str]:
-    """Prohíbe recomendaciones monetarias entre horizontes distintos."""
-    if len(items) < 2:
-        return False, "Selecciona por lo menos dos corridas."
-    if len({x["horizon_min"] for x in items}) > 1:
-        return False, "Horizontes diferentes: los costos totales no son directamente comparables."
-    if len({x["sector"] for x in items}) > 1:
-        return False, "Sectores diferentes: no se debe recomendar una dotación comparando sus costos."
-    return True, "Escenarios con sector y horizonte comparables; revisa los demás supuestos."
+    """Guardas de comparabilidad gerencial de experimentos independientes.
+
+    Comparar tablas es libre, pero calcular una recomendación de menor costo
+    exige el mismo problema base. Dotación y capacidad son variables de decisión.
+    """
+    if len(items)<2:
+        return False,"Selecciona por lo menos dos corridas."
+    same={
+        "sector":"sectores","horizon_min":"horizontes","model":"modelos",
+        "mode":"modalidades","source":"motores",
+    }
+    for key,label in same.items():
+        if len({x.get(key) for x in items})>1:
+            return False,f"Comparación no homogénea: {label} distintos."
+    fields={
+        "arrival_mean":"demanda de llegada","service_mean":"tiempo medio de atención",
+        "arrival_dist":"distribución de llegada","service_dist":"distribución del servicio",
+        "arrival_cv":"variabilidad de llegada","service_cv":"variabilidad del servicio",
+        "sla_min":"umbral SLA","sla_target":"meta SLA",
+        "server_hour":"costo del servidor","wait_hour":"costo de espera",
+        "lost_cost":"penalidad por pérdida",
+    }
+    for key,label in fields.items():
+        vals=[x.get("parameters",{}).get(key) for x in items]
+        if len({repr(v) for v in vals})>1:
+            return False,f"Supuestos incompatibles: {label} diferentes."
+    # Prohibir mezclar datos históricos originados en poblaciones distintas.
+    provenance=[x.get("parameters",{}).get("empirical_quality",{}).get("source_sha256")
+                for x in items]
+    if len({str(x) for x in provenance})>1:
+        return False,"Fuentes históricas diferentes: la comparación exige explicar sus poblaciones."
+    return True,"Problema base comparable: sector, modelo, demanda, servicio, SLA y costos coinciden."
+
+
+def recommend_comparison(items: list[dict]) -> dict:
+    """Mejor costo observado SOLO entre corridas que satisfacen el SLA del caso."""
+    valid,reason=comparable(items)
+    if not valid:
+        return {"valid":False,"reason":reason,"target":None,"feasible":[],
+                "recommended":None}
+    target=items[0].get("parameters",{}).get("sla_target",.90)
+    if target is None:
+        target=.90
+    target=float(target)
+    if not 0<=target<=1:
+        raise ValueError("Meta SLA fuera de rango")
+    available=[]
+    for item in items:
+        m=item["metrics"]
+        cost=float(m["total_cost"]);sla=float(m["sla"])
+        if not (math.isfinite(cost) and math.isfinite(sla) and cost>=0 and 0<=sla<=1):
+            raise ValueError("Métricas de costo o SLA inválidas")
+        if sla>=target:
+            available.append(item)
+    winner=min(available,key=lambda item:(item["metrics"]["total_cost"],item["id"])) if available else None
+    return {
+        "valid":True,"reason":reason,"target":target,
+        "feasible":[x["id"] for x in available],
+        "recommended":winner["id"] if winner else None,
+        "cost":winner["metrics"]["total_cost"] if winner else None,
+        "sla":winner["metrics"]["sla"] if winner else None,
+        "caveat":"Mínimo costo observado ENTRE las corridas y restricciones evaluadas; "
+                 "no se demuestra óptimo global ni significancia estadística."
+    }
