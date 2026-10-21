@@ -74,6 +74,10 @@ jobs:
           if at.exception:
               raise AssertionError(at.exception)
           assert len(at.radio) >= 1
+          at.radio[0].set_value("Challenge")
+          at.run(timeout=30)
+          if at.exception:
+              raise AssertionError(at.exception)
           labels=[b.label for b in at.button]
           assert "Abrir simulación ▶" not in labels
           assert "▶ Iniciar simulación desde 0 min" not in labels
@@ -113,7 +117,7 @@ jobs:
           from streamlit.testing.v1 import AppTest
           at=AppTest.from_file("streamlit_app.py")
           at.run(timeout=45)
-          at.radio[0].set_value("Simulación 3.0")
+          at.radio[0].set_value("Simulación")
           at.run(timeout=45)
           assert not at.exception,at.exception
           assert any(b.label=="Guardar y validar configuración" for b in at.button)
@@ -135,7 +139,7 @@ jobs:
           player.session_state["v3_payload"]=payload
           player.session_state["v3_scenario"]=sector
           player.run(timeout=60)
-          player.radio[0].set_value("Simulación 3.0")
+          player.radio[0].set_value("Simulación")
           player.run(timeout=90)
           assert not player.exception,player.exception
           assert any(x.type=="iframe" for x in player)
