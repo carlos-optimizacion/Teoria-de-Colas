@@ -91,7 +91,7 @@ def render_sector_scene(scenario_key, frame, status):
     departure_client=frame.get("client") if frame.get("kind")=="departure" else None
     incoming=f'<span class="sector-person moving-in"><i>●</i><em>{arrival_client}</em></span>' if arrival_client else '<span class="empty-state">—</span>'
     outgoing=f'<span class="sector-person moving-out"><i>●</i><em>{departure_client}</em></span>' if departure_client else '<span class="empty-state">—</span>'
-    return dedent(f"""
+    html=dedent(f"""
     <div class="sector-scene sector-{scenario_key}">
       <div class="sector-scene-head">
         <div><span class="sector-big-icon">{ui["icon"]}</span><b>{ui["title"]}</b><small>{status_label}</small></div>
@@ -110,7 +110,8 @@ def render_sector_scene(scenario_key, frame, status):
         </div>
       </div>
     </div>
-    """).strip()
+    """)
+    return "\n".join(line.lstrip() for line in html.splitlines() if line.strip())
 
 def configured_units(frame):
     return sum(1 for x in station_descriptors(frame) if x["configured"])
