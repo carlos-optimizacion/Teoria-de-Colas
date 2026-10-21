@@ -89,60 +89,125 @@ def run():
                 except ValueError as exc:
                     st.error(str(exc))
 
+        # Guided input: essential operational decisions visible first.
+        # Model-specific distributions, capacity and costs are shown only when relevant.
+        explain={
+            "D/D/1":"Una ventanilla. Las llegadas y la duración de atención son fijas.",
+            "D/D/c":"Llegadas espaciadas regularmente y atención de duración fija.",
+            "M/M/1":"Una ventanilla, llegadas Poisson y atención exponencial.",
+            "M/M/c":"Varias ventanillas, llegadas Poisson y atención exponencial.",
+            "M/M/1/K":"Una ventanilla y capacidad limitada; las llegadas adicionales se rechazan.",
+            "M/M/c/K":"Varias ventanillas y capacidad total limitada (cola + servicio).",
+            "M/M/c/c (Erlang B)":"Sin sala de espera: si todos los puestos están ocupados se rechaza la llegada.",
+            "M/G/1":"Una ventanilla: llegadas Poisson y duración de atención con distribución a elegir.",
+            "M/G/c":"Varias ventanillas: llegadas Poisson y servicio con distribución a elegir.",
+            "G/G/1":"Una ventanilla: procesos de llegadas y servicio generales.",
+            "G/G/c":"Varias ventanillas: procesos de llegadas y servicio generales.",
+        }
+        st.caption("**Modelo seleccionado:** "+explain.get(model,model))
+        st.markdown("**Paso 2 · Define la demanda, los recursos y la duración**")
         with st.form("v3_configuration"):
-            st.markdown("**Parámetros operativos**")
-            a,b,c=st.columns(3)
-            customers=a.number_input("Clientes esperados por intervalo",min_value=1,max_value=10000,value=15,step=1,
-                                     help="En D/D/c se espacian de forma constante; en un modelo M es una tasa media.")
-            interval=b.number_input("Intervalo de llegada (min)",min_value=.1,max_value=10080.,value=60.,step=5.)
-            servers=c.number_input("Ventanillas / servidores",min_value=1,max_value=1 if single else min(40,int(cfg["max_servers"])),
-                                   value=1 if single else min(4,int(cfg["max_servers"])),step=1)
-            d,e,f=st.columns(3)
-            service=d.number_input("Tiempo de atención (min/cliente)",min_value=.005,max_value=10080.,
-                                   value=float(cfg["service_min"]),step=.5,
-                                   help="D/D: fijo. Estocástico: media del servicio.")
-            horizon=e.number_input("Tiempo de simulación (min)",min_value=1,max_value=10080,value=480,step=30)
-            reps=f.number_input("Réplicas estadísticas",min_value=1,max_value=300,
-                                value=1 if mode=="deterministic" else 30,step=1,
-                                help="Las réplicas D/D idénticas se computan una vez.")
-            seed=st.number_input("Semilla aleatoria",min_value=1,max_value=999999999,value=2026)
+            customers=15
+            interval=60.
+            service=float(cfg["service_min"])
+            if mode!="empirical":
+                way=st.radio("¿Cómo prefieres describir las llegadas?",
+                             ["Cantidad de clientes por intervalo","Tiempo entre llegadas"],
+                             horizontal=True,help="Son dos formas alternativas de expresar la misma demanda media.")
+                if way=="Cantidad de clientes por intervalo":
+                    p1,p2=st.columns(2)
+                    customers=p1.number_input(
+                        "Clientes que llegan" if mode=="deterministic" else "Clientes esperados (en promedio)",
+                        min_value=1,max_value=10000,value=15,step=1,
+                        help="Determinística: cantidad programada. Estocástica: cantidad media, no un valor garantizado.")
+                    interval=p2.number_input("Durante cuántos minutos",min_value=.1,max_value=10080.,
+                                              value=60.,step=5.)
+                    avg_gap=interval/customers
+                else:
+                    avg_gap=st.number_input(
+                        "Tiempo entre llegadas (min)"
+                        if mode=="deterministic" else "Tiempo medio entre llegadas (min)",
+                        min_value=.005,max_value=10080.,value=4.,step=.5,
+                        help="Determinística: el intervalo siempre es igual; estocástica: es un promedio.")
+                st.caption(f"**Demanda configurada:** un cliente cada {avg_gap:.2f} min "
+                           +("(exactamente)" if mode=="deterministic" else "(en promedio)"))
+            else:
+                avg_gap=float(sample_data["avg_interarrival"]) if sample_data and sample_data["valid"] else float(cfg["arrival_min"])
+                service=float(sample_data["avg_service"]) if sample_data and sample_data["valid"] else float(cfg["service_min"])
+                st.caption("Los intervalos entre llegadas y los tiempos de atención se calcularán desde el Excel. "
+                           "No tienes que introducirlos ni elegir una distribución manualmente.")
+                if sample_data and sample_data["valid"]:
+                    st.metric("Interarribo observado (promedio)",f"{avg_gap:.2f} min")
+                    st.metric("Servicio observado (promedio)",f"{service:.2f} min")
+            p3,p4=st.columns(2)
+            if mode=="empirical":
+                p3.caption(f"Duración media de atención leída del Excel: **{service:.2f} min**")
+            else:
+                service=p3.number_input(
+                    "Tiempo fijo de atención (min)" if mode=="deterministic" else "Tiempo medio de atención (min)",
+                    min_value=.005,max_value=10080.,value=float(cfg["service_min"]),step=.5,
+                    help="En un modelo D es exactamente este valor. En modelos estocásticos es la media.")
+            if single:
+                servers=1
+                p4.caption("**Servidores: 1** · Este modelo matemático exige un único servidor.")
+            else:
+                servers=p4.number_input(
+                    "Ventanillas / puestos de atención",min_value=1,
+                    max_value=min(40,int(cfg["max_servers"])),
+                    value=min(4,int(cfg["max_servers"])),step=1)
+            p5,p6=st.columns(2)
+            horizon=p5.number_input("Tiempo de simulación (min)",min_value=1,max_value=10080,
+                                     value=480,step=30,help="La duración virtual de cada corrida; no la velocidad del 3D.")
+            reps=p6.number_input("Número de réplicas",min_value=1,max_value=300,
+                                  value=1 if mode=="deterministic" else 30,step=1,
+                                  help="El modelo determinístico usa una sola trayectoria; los estocásticos comparan corridas.")
             capacity=int(servers)
             if finite:
-                capacity=st.number_input("Capacidad total del sistema K (cola + servicio)",
-                                         min_value=int(servers),max_value=100000,
-                                         value=int(servers) if "Erlang B" in model else max(int(servers),int(cfg["capacity"])),
-                                         disabled="Erlang B" in model)
-            arrival_dist="exponential"
-            service_dist="exponential"
+                if "Erlang B" in model:
+                    st.caption(f"**Capacidad: {servers}** (igual a los servidores; este modelo no admite cola).")
+                else:
+                    capacity=st.number_input("Capacidad máxima del sistema (K: espera + atención)",
+                                           min_value=int(servers),max_value=100000,
+                                           value=max(int(servers),int(cfg["capacity"])),
+                                           help="Se rechazan nuevas llegadas si la capacidad total está ocupada.")
+            arrival_dist="deterministic" if mode=="deterministic" else "exponential"
+            service_dist="deterministic" if mode=="deterministic" else "exponential"
             arrival_cv=service_cv=1.
-            if mode=="deterministic":
-                arrival_dist=service_dist="deterministic"
-                st.caption("D/D/c: interarribo y duración del servicio constantes. Una réplica es suficiente.")
-            elif mode=="parametric":
-                st.markdown("**Distribuciones de probabilidad**")
-                if model.startswith("G/G"):
-                    da,ca=st.columns(2)
-                    arrival_dist=da.selectbox("Distribución entre llegadas",
-                                             ["exponential","gamma","lognormal","triangular"])
-                    if arrival_dist in ("gamma","lognormal"):
-                        arrival_cv=ca.number_input("CV de interarribo",.05,5.,1.,.05)
-                if special:
-                    ds,cs=st.columns(2)
-                    service_dist=ds.selectbox("Distribución del servicio",
-                                              ["exponential","gamma","lognormal","triangular","deterministic"])
-                    if service_dist in ("gamma","lognormal"):
-                        service_cv=cs.number_input("CV del servicio",.05,5.,1.,.05)
-                st.caption("M/M: interarribos y servicios exponenciales. G: distribución seleccionada.")
-            elif mode=="empirical":
-                st.caption("Las medias, interarribos y servicios se obtendrán del Excel validado; no se generan datos ficticios para reemplazar los faltantes.")
-            st.markdown("**Objetivos gerenciales y costos**")
-            k1,k2,k3=st.columns(3)
-            sla_min=k1.number_input("Espera máxima SLA (min)",min_value=0.,max_value=10080.,value=float(cfg["sla_min"]))
-            sla_target=k2.number_input("Cumplimiento SLA objetivo (%)",min_value=0.,max_value=100.,value=float(cfg["sla_target"]*100),step=1.)
-            server_hour=k3.number_input("Costo por servidor/hora (S/)",min_value=0.,max_value=100000.,value=float(cfg["staff_hour"]),step=1.)
-            k4,k5=st.columns(2)
-            wait_hour=k4.number_input("Costo de espera por cliente-hora (S/)",min_value=0.,max_value=100000.,value=float(cfg["wait_hour"]),step=1.)
-            lost_cost=k5.number_input("Costo por cliente rechazado (S/)",min_value=0.,max_value=100000.,value=float(cfg["lost_cost"]),step=1.)
+            if mode=="parametric" and (model.startswith("G/G") or special):
+                with st.expander("Distribuciones del modelo · elegir solo cuando corresponda",expanded=True):
+                    if model.startswith("G/G"):
+                        da,ca=st.columns(2)
+                        arrival_dist=da.selectbox("Tiempo entre llegadas: distribución",
+                                                 ["exponential","gamma","lognormal","triangular"])
+                        if arrival_dist in ("gamma","lognormal"):
+                            arrival_cv=ca.number_input("CV de interarribo",.05,5.,1.,.05,
+                                                        help="Desviación estándar dividida entre la media.")
+                    if special:
+                        ds,cs=st.columns(2)
+                        service_dist=ds.selectbox("Servicio: distribución",
+                                                  ["exponential","gamma","lognormal","triangular","deterministic"])
+                        if service_dist in ("gamma","lognormal"):
+                            service_cv=cs.number_input("CV del servicio",.05,5.,1.,.05,
+                                                        help="Desviación estándar dividida entre la media.")
+            else:
+                st.caption("Las distribuciones matemáticas compatibles se configuran automáticamente.")
+            with st.expander("Opciones avanzadas · SLA, costos y reproducibilidad",expanded=False):
+                st.caption("Puedes usar los valores propuestos para explorar el modelo. "
+                           "Modifícalos si necesitas evaluar objetivos reales o costos de operación.")
+                a1,a2,a3=st.columns(3)
+                sla_min=a1.number_input("Espera máxima permitida (min)",min_value=0.,max_value=10080.,
+                                         value=float(cfg["sla_min"]),help="Umbral de espera para considerar que un cliente cumple el SLA.")
+                sla_target=a2.number_input("Clientes que deben cumplir el SLA (%)",min_value=0.,
+                                            max_value=100.,value=float(cfg["sla_target"]*100),step=1.,
+                                            help="Ejemplo: 90 significa al menos el 90 % de los clientes admitidos.")
+                seed=a3.number_input("Semilla para repetir los resultados",min_value=1,max_value=999999999,value=2026)
+                b1,b2,b3=st.columns(3)
+                server_hour=b1.number_input("Costo por servidor/hora (S/)",min_value=0.,
+                                              max_value=100000.,value=float(cfg["staff_hour"]),step=1.)
+                wait_hour=b2.number_input("Costo espera por cliente-hora (S/)",min_value=0.,
+                                           max_value=100000.,value=float(cfg["wait_hour"]),step=1.)
+                lost_cost=b3.number_input("Costo por cliente rechazado (S/)",min_value=0.,
+                                           max_value=100000.,value=float(cfg["lost_cost"]),step=1.)
             save=st.form_submit_button("Guardar y validar configuración",type="primary",use_container_width=True)
         if save:
             if mode=="empirical" and (not sample_data or not sample_data["valid"]):
@@ -150,7 +215,7 @@ def run():
                 return
             raw={"model":model,"mode":mode,"horizon":int(horizon),
                  "replications":int(reps),"seed":int(seed),"servers":int(servers),
-                 "arrival_mean":float(interval)/int(customers),"service_mean":float(service),
+                 "arrival_mean":float(avg_gap),"service_mean":float(service),
                  "sla_min":float(sla_min),"sla_target":float(sla_target)/100,
                  "server_hour":float(server_hour),"wait_hour":float(wait_hour),
                  "lost_cost":float(lost_cost),"arrival_dist":arrival_dist,
