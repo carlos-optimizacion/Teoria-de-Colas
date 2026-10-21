@@ -25,7 +25,8 @@ def evaluate_network(raw: dict) -> dict:
     first=simulate_network(raw)
     runs=[first]
     for i in range(1,reps):
-        runs.append(simulate_network({**raw,"seed":first["seed"]+1709*i}))
+        next_seed=((first["seed"]-1+1709*i)%999999999)+1
+        runs.append(simulate_network({**raw,"seed":next_seed}))
     aggregate={
         key:round(mean(r[key] for r in runs),6)
         for key in NETWORK_METRICS
