@@ -141,3 +141,21 @@ def test_full_shift_coverage_blocks_outside_service():
                                     basic=[],full=rows,turns=shifts))
     assert not parsed["valid"]
     assert any("fuera del turno" in m for m in parsed["errors"])
+
+
+
+def test_empirical_time_of_day_bins_drive_simulated_arrivals():
+    config={"MUESTREO_EMPIRICO":"EMPIRICO_FRANJAS","FRANJA_MIN":15,"HORIZONTE_SIM_MIN":90}
+    d=import_workbook(_workbook(config=config))
+    assert d["valid"],d["errors"]
+    assert d["sampling_method"]=="EMPIRICO_FRANJAS"
+    assert d["horizon"]==90 and len(d["arrival_profile"])==6
+    assert d["arrival_profile"][0]==0
+    assert d["arrival_profile"][4]>0
+    raw={"model":"G/G/c","mode":"empirical","horizon":90,"servers":2,"replications":5,
+         "arrival_samples":d["arrival_samples"],"service_samples":d["service_samples"],
+         "arrival_profile":d["arrival_profile"],"profile_bin":d["profile_bin"]}
+    result=evaluate(raw)
+    assert result["events"][-1]["t"]==90
+    assert all(frame["arrivals"]==0 for frame in result["events"] if frame["t"]<60)
+    assert result==evaluate(raw)
