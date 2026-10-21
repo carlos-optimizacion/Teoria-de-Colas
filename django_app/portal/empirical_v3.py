@@ -216,6 +216,6 @@ def import_workbook(data: bytes) -> dict:
             "arrival_samples":gaps,"service_samples":durations,
             "days":distinct_days,"captured_start":str(start),"captured_end":str(end),
             "avg_interarrival":sum(gaps)/len(gaps),"avg_service":sum(durations)/len(durations),
-            "sampling_method":method,"arrival_profile":profile,"profile_bin":bin_size,
+            "sampling_method":method,"arrival_profile":profile,"profile_bin":bin_size,"horizon":horizon,
             "note":("Tasa por franjas y simulación Poisson no homogénea" if profile
                     else "Remuestreo empírico global de interarribos; no conserva correlación temporal.")}
