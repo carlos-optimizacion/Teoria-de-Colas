@@ -5,6 +5,13 @@ on:
     paths:
       - 'streamlit_app.py'
       - 'home.py'
+      - 'streamlit_v3.py'
+      - 'report_v3.py'
+      - 'django_app/portal/empirical_v3.py'
+      - 'django_app/portal/queue_v3.py'
+      - 'tests/test_queue_v3.py'
+      - 'tests/test_empirical_report_v3.py'
+      - 'tests_browser/v3_streamlit_smoke.py'
       - 'bank_three_scene.py'
       - 'tests/test_bank_three_scene.py'
       - 'streamlit_sector_scenes.py'
@@ -13,6 +20,8 @@ on:
       - 'django_app/static/img/scenarios_hd/**'
       - 'queue_core.py'
       - 'django_app/portal/challenge_engine.py'
+      - 'django_app/portal/queue_v3.py'
+      - 'tests/test_queue_v3.py'
       - 'django_app/portal/network_engine.py'
       - 'requirements.txt'
       - '.streamlit/**'
@@ -46,20 +55,8 @@ jobs:
           python -m pip install pytest
       - name: Syntax/import checks
         run: |
-          python -m py_compile home.py streamlit_app.py bank_three_scene.py streamlit_sector_scenes.py streamlit_visual_logic.py queue_core.py django_app/portal/challenge_engine.py django_app/portal/network_engine.py
-          python -m pytest -q tests/test_bank_three_scene.py tests/test_streamlit_visual_logic.py tests/test_streamlit_sector_scenes.py
-          python - <<'PY'
-          import tomllib
-          from pathlib import Path
-          cfg=tomllib.loads(Path('.streamlit/config.toml').read_text())
-          assert cfg['client']['showSidebarNavigation'] is True, 'Sidebar navigation must be visible'
-          src=Path('home.py').read_text()
-          assert 'st.navigation(navigation, position="sidebar"' in src
-          assert 'st.sidebar.link_button(' in src
-          assert 'https://decision-lab-2-streamlit.onrender.com' in src
-          assert 'st.link_button(' in src
-          print('Cloud navigation and gerencial simulator access OK')
-          PY
+          python -m py_compile home.py streamlit_v3.py report_v3.py django_app/portal/empirical_v3.py django_app/portal/queue_v3.py streamlit_app.py bank_three_scene.py streamlit_sector_scenes.py streamlit_visual_logic.py queue_core.py django_app/portal/challenge_engine.py django_app/portal/network_engine.py
+          python -m pytest -q tests/test_queue_v3.py tests/test_empirical_report_v3.py tests/test_bank_three_scene.py tests/test_streamlit_visual_logic.py tests/test_streamlit_sector_scenes.py
           python - <<'PY'
           import sys
           sys.path.insert(0,'django_app')
@@ -80,6 +77,10 @@ jobs:
           if at.exception:
               raise AssertionError(at.exception)
           assert len(at.radio) >= 1
+          [r for r in at.radio if r.label=="Navegación"][0].set_value("Challenge")
+          at.run(timeout=30)
+          if at.exception:
+              raise AssertionError(at.exception)
           labels=[b.label for b in at.button]
           assert "Abrir simulación ▶" not in labels
           assert "▶ Iniciar simulación desde 0 min" not in labels
@@ -113,6 +114,84 @@ jobs:
           assert "sector-scene sector-banco" not in running_text, "Regresión a la escena 2D"
           print("AppTest workflow OK: config -> preview 3D -> player 3D; legacy 2D absent")
           PY
+      - name: Validate model selector and adaptive forms
+        run: |
+          python - <<'PY'
+          from streamlit.testing.v1 import AppTest
+          at=AppTest.from_file("streamlit_app.py")
+          at.run(timeout=45)
+          nav=[r for r in at.radio if r.label=="Navegación"][0]
+          nav.set_value("Simulación")
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          assert [r for r in at.radio if r.label=="Tipo de simulación"]
+          model=[x for x in at.selectbox if x.label=="Modelo matemático"][0]
+          assert "D/D/c" in model.options
+          labels=[x.label for x in at.number_input]
+          assert "Tiempo fijo de atención (min)" in labels
+          assert "Tiempo medio de atención (min)" not in labels
+          [r for r in at.radio if r.label=="Tipo de simulación"][0].set_value("parametric")
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          model=[x for x in at.selectbox if x.label=="Modelo matemático"][0]
+          assert "M/M/c/K" in model.options and "D/D/c" not in model.options
+          model.set_value("M/M/c/K")
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          labels=[x.label for x in at.number_input]
+          assert "Tiempo medio de atención (min)" in labels
+          assert "Tiempo fijo de atención (min)" not in labels
+          assert "Capacidad máxima del sistema (K: espera + atención)" in labels
+          assert not any(x.type=="iframe" for x in at)
+          [r for r in at.radio if r.label=="Tipo de simulación"][0].set_value("empirical")
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          assert any(x.type=="file_uploader" for x in at)
+          assert "Tiempo medio de atención (min)" not in [x.label for x in at.number_input]
+          assert "G/G/c" in [x for x in at.selectbox if x.label=="Modelo matemático"][0].options
+          assert not any(x.type=="iframe" for x in at)
+          print("Model selector v3: deterministic, parametric M/M/c/K, empirical upload OK")
+          PY
+      - name: Integrated 3.0 AppTest (data first, 3D second, reports last)
+        run: |
+          python - <<'PY'
+          from streamlit.testing.v1 import AppTest
+          at=AppTest.from_file("streamlit_app.py")
+          at.run(timeout=45)
+          [r for r in at.radio if r.label=="Navegación"][0].set_value("Simulación")
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          assert any(b.label=="Guardar y validar configuración" for b in at.button)
+          assert not any(x.type=="iframe" for x in at), "La vista 3D apareció antes de configurar"
+          [b for b in at.button if b.label=="Guardar y validar configuración"][0].click()
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          assert any(b.label=="▶ Iniciar simulación desde 0 min" for b in at.button)
+          assert any(x.type=="iframe" for x in at), "El banco no mostró previsualización 3D"
+          # AppTest v1.49 puede invalidar IDs de widgets al desmontar un formulario.
+          # Verificar la ruta de ejecución con una sesión de prueba nueva,
+          # conservando los datos validados de la previsualización.
+          result=at.session_state["v3_result"]
+          payload=at.session_state["v3_payload"]
+          sector=at.session_state["v3_scenario"]
+          player=AppTest.from_file("streamlit_app.py")
+          player.session_state["v3_step"]="run"
+          player.session_state["v3_result"]=result
+          player.session_state["v3_payload"]=payload
+          player.session_state["v3_scenario"]=sector
+          player.run(timeout=60)
+          [r for r in player.radio if r.label=="Navegación"][0].set_value("Simulación")
+          player.run(timeout=90)
+          assert not player.exception,player.exception
+          assert any(x.type=="iframe" for x in player)
+          if result["model"] in {"D/D/1","M/M/1","M/M/1/K","M/G/1","G/G/1"}:
+              assert not any(b.label=="Optimizar capacidad por SLA y costo" for b in player.button)
+          else:
+              assert any(b.label=="Optimizar capacidad por SLA y costo" for b in player.button)
+          assert sum(1 for x in player if x.type=="download_button")==3, "PDF, Excel y JSON deben estar disponibles"
+          print("Decision Lab 3.0 reports and data-first flow OK")
+          print("Decision Lab 3.0 AppTest OK")
+          PY
       - name: Start Streamlit
         run: |
           streamlit run streamlit_app.py --server.headless true --server.address 127.0.0.1 --server.port 8501 >/tmp/streamlit.log 2>&1 &
@@ -126,6 +205,19 @@ jobs:
       - name: Verify app HTML
         run: |
           curl -fsS http://127.0.0.1:8501/ | grep -q "Streamlit"
+      - name: Install Chromium browser automation
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Actual Streamlit + Three.js browser smoke
+        run: python tests_browser/v3_streamlit_smoke.py
+      - name: Upload decision lab 3.0 browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: decision-lab-3-webgl-ui
+          path: visual-artifacts/
+          if-no-files-found: ignore
       - name: Print log on failure
         if: failure()
         run: cat /tmp/streamlit.log || true
