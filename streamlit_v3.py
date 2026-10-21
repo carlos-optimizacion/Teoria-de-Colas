@@ -64,7 +64,7 @@ def run():
         mode=st.radio("Tipo de simulación",list(LABELS),format_func=lambda k:LABELS[k],
                       horizontal=True,key="v3_mode")
         models=OPTIONS[mode]
-        model=st.selectbox("Modelo matemático",models,key="v3_model",help="Cada modelo exige distribuciones y supuestos propios.")
+        model=st.selectbox("Modelo matemático",models,key=f"v3_model_{mode}",help="Cada modelo exige distribuciones y supuestos propios.")
         special=model.startswith("M/G") or model.startswith("G/G")
         finite="/K" in model or "Erlang B" in model
         single=model.endswith("/1") or model.endswith("/1/K")
@@ -223,6 +223,13 @@ def run():
         st.dataframe(df[["arrivals","completed","avg_wait","sla","utilization","total_cost"]],use_container_width=True)
         st.markdown("**Intervalos de confianza (aproximación normal, 95%)**")
         st.dataframe(pd.DataFrame.from_dict(result["confidence_95"],orient="index"),use_container_width=True)
+    st.markdown("**Contraste con teoría de colas**")
+    theory=result.get("theory",{})
+    if theory.get("available"):
+        st.dataframe(pd.DataFrame(theory["metrics"].items(),columns=["Indicador","Valor teórico"]),use_container_width=True)
+        st.caption(theory["condition"])
+    else:
+        st.info(theory.get("reason","No hay solución analítica exacta para el modelo elegido."))
     st.subheader("5 · Optimizador automático")
     maxval=min(40,int(SCENARIOS[sector]["max_servers"]))
     if model in {"D/D/1","M/M/1","M/M/1/K","M/G/1","G/G/1"}:
