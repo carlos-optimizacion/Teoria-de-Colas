@@ -219,7 +219,7 @@ def _game_score(metrics, cfg):
     cost_score = max(0, 1-min(1, metrics["total_cost"]/max(baseline,1e-12)))
     loss_score = 1-(metrics["blocked"]+metrics["abandoned"])/max(1, metrics["arrivals"])
     resilience = 1-metrics["unserved_at_close"]/max(1, metrics["admitted"])
-    score = round(35*cost_score+30*min(1,metrics["sla"]/cfg["sla_target"])
+    score = round(35*cost_score+30*(1 if cfg["sla_target"]==0 else min(1,metrics["sla"]/cfg["sla_target"]))
         +20*loss_score+15*resilience,1)
     if not budget or not service:
         score = min(score,69.9)
