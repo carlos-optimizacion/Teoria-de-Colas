@@ -17,6 +17,7 @@ from queue_core import (
     economic_cost,evaluate_mms_capacity,recommend_mms_capacity,erlang_b
 )
 from streamlit_visual_logic import station_descriptors
+from streamlit_sector_scenes import SECTOR_UI, render_sector_scene, configured_units
 
 st.set_page_config(page_title="Decision Lab 2.0",page_icon="◈",layout="wide",initial_sidebar_state="expanded")
 
@@ -74,7 +75,7 @@ def init_state():
     defaults={
         "scenario":"banco","result":None,"frame":0,"actions":[],"score_history":[],
         "xp":0,"coins":0,"level":1,"completed":set(),"saved":{},"profile_name":"Carlos",
-        "sim_status":"ready","sim_speed":1,
+        "sim_status":"ready","sim_speed":1,"sim_phase":"configure","pending_payload":None,
     }
     for k,v in defaults.items():
         if k not in st.session_state:
@@ -110,7 +111,7 @@ def scenario_gallery():
             path=SCENE_DIR/f"{key}.svg"
             if path.exists():st.image(str(path),use_container_width=True)
             if st.button(f"{cfg['sector']}\n\n{cfg['name']}",key=f"scene_{key}",use_container_width=True,type="primary" if st.session_state.scenario==key else "secondary"):
-                st.session_state.scenario=key;st.session_state.result=None;st.session_state.frame=0;st.session_state.sim_status="ready";st.rerun()
+                st.session_state.scenario=key;st.session_state.result=None;st.session_state.frame=0;st.session_state.sim_status="ready";st.session_state.sim_phase="configure";st.session_state.pending_payload=None;st.rerun()
 
 def event_text(frame):
     kind=frame.get("kind","")
