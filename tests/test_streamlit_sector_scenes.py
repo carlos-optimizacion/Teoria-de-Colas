@@ -37,3 +37,12 @@ def test_sector_flow_labels_match_real_process():
         html=render_sector_scene(key,frame(2),"ready")
         for label in labels:
             assert label in html
+
+
+def test_rendered_scene_has_no_markdown_code_indentation():
+    for key in SECTOR_UI:
+        html=render_sector_scene(key,frame(2),"ready")
+        first_nonempty=next(line for line in html.splitlines() if line.strip())
+        assert first_nonempty.startswith("<div class=\"sector-scene"), first_nonempty
+        assert not first_nonempty.startswith("    ")
+        assert "<div class=\"scene-decor" in html
