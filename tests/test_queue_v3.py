@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[1] / "django_app"))
 import pytest
-from portal.queue_v3 import validate, evaluate, optimize, optimize_shifts, simulate_one
+from portal.queue_v3 import validate, evaluate, optimize, optimize_shifts, replay_replica, simulate_one
 
 
 BASE = {"model":"D/D/c","mode":"deterministic","horizon":60,"servers":2,
@@ -110,3 +110,16 @@ def test_shift_optimizer_bounded_and_reproducible():
     assert len(a["schedule"])==2
     assert all(1<=c<=3 for c in a["schedule"])
     assert a["cost"]<=150
+
+
+def test_selected_replica_same_seed_trace_and_metrics():
+    cfg={"model":"M/M/c","mode":"parametric","servers":3,"horizon":60,
+         "arrival_mean":3,"service_mean":4,"replications":4,"seed":40}
+    r=evaluate(cfg)
+    first=replay_replica(cfg,1)
+    assert first["events"]==r["events"]
+    third=replay_replica(cfg,3)
+    assert third==replay_replica(cfg,3)
+    assert third["events"]!=first["events"]
+    with pytest.raises(ValueError):
+        replay_replica(cfg,5)
