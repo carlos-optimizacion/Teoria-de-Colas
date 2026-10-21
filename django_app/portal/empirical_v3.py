@@ -189,8 +189,33 @@ def import_workbook(data: bytes) -> dict:
     if len(gaps)<2 or len(durations)<2:
         return {"valid":False,"errors":["Muestra insuficiente: mínimo dos interarribos positivos y dos servicios completos"],
                 "warnings":warnings,"rows":len(f),"level":level,"arrival_samples":[],"service_samples":[]}
+    method=str(settings.get("MUESTREO_EMPIRICO","EMPIRICO_GLOBAL")).strip().upper()
+    if method not in {"EMPIRICO_FRANJAS","EMPIRICO_GLOBAL"}:
+        raise ValueError("MUESTREO_EMPIRICO: solo EMPIRICO_GLOBAL y EMPIRICO_FRANJAS son compatibles con el motor actual")
+    horizon=int(settings.get("HORIZONTE_SIM_MIN",480))
+    bin_size=int(settings.get("FRANJA_MIN",15))
+    if not 1<=horizon<=10080 or not 5<=bin_size<=120:
+        raise ValueError("HORIZONTE_SIM_MIN o FRANJA_MIN fuera de rango")
+    profile=[]
+    if method=="EMPIRICO_FRANJAS":
+        from datetime import datetime, timedelta
+        observed_days=max(1,distinct_days)
+        chunks=math.ceil(horizon/bin_size)
+        profile=[0.0]*chunks
+        daily_start=start.time()
+        for t in values:
+            baseline=pd.Timestamp.combine(t.date(),daily_start)
+            offset=(t-baseline).total_seconds()/60
+            if 0<=offset<horizon:
+                profile[min(chunks-1,int(offset//bin_size))]+=1/observed_days
+        if sum(profile)<=0:
+            raise ValueError("No existen llegadas dentro de las franjas simuladas")
+        warnings.append("Franjas: intensidad empírica media por intervalo, con llegadas Poisson no homogéneas; "
+                        "no se preservan correlaciones temporales observadas")
     return {"valid":True,"errors":[],"warnings":warnings,"rows":len(f),"level":level,
             "arrival_samples":gaps,"service_samples":durations,
             "days":distinct_days,"captured_start":str(start),"captured_end":str(end),
             "avg_interarrival":sum(gaps)/len(gaps),"avg_service":sum(durations)/len(durations),
-            "note":"Remuestreo exploratorio global. No preserva correlaciones/estacionalidad por franjas."}
+            "sampling_method":method,"arrival_profile":profile,"profile_bin":bin_size,
+            "note":("Tasa por franjas y simulación Poisson no homogénea" if profile
+                    else "Remuestreo empírico global de interarribos; no conserva correlación temporal.")}
