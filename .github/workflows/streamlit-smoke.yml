@@ -38,6 +38,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
+          python -m pip install pytest
       - name: Syntax/import checks
         run: |
           python -m py_compile streamlit_app.py streamlit_sector_scenes.py streamlit_visual_logic.py queue_core.py django_app/portal/challenge_engine.py django_app/portal/network_engine.py
