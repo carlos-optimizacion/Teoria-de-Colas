@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[1] / "django_app"))
 import pytest
-from portal.queue_v3 import validate, evaluate, optimize, simulate_one
+from portal.queue_v3 import validate, evaluate, optimize, optimize_shifts, simulate_one
 
 
 BASE = {"model":"D/D/c","mode":"deterministic","horizon":60,"servers":2,
@@ -78,3 +78,35 @@ def test_optimization_exhaustive_feasible_result():
     if out["recommended"]:
         ok=[v for v in out["alternatives"] if v["feasible_mean"]]
         assert out["recommended"]["total_cost"] == min(r["total_cost"] for r in ok)
+
+
+def test_hourly_shift_schedule_matches_events_and_cost():
+    config={"model":"D/D/c","mode":"deterministic","horizon":120,"servers":3,
+            "staffing":[3,1],"arrival_mean":3,"service_mean":4,
+            "server_hour":25,"wait_hour":0,"lost_cost":0}
+    data=evaluate(config)
+    events=data["events"]
+    assert data["staffing"]==[3,1]
+    assert events[0]["active"]==3
+    assert any(f["kind"]=="shift" and f["active"]==1 and f["t"]==60 for f in events)
+    assert data["metrics"]["staff_cost"]==100
+    assert 0<=data["metrics"]["utilization"]<=1
+
+
+def test_invalid_shift_plan_rejected():
+    with pytest.raises(ValueError,match="Dotación por franjas"):
+        validate({**BASE,"staffing":[1,2]})
+    with pytest.raises(ValueError,match="Dotación de franja"):
+        validate({**BASE,"staffing":[3]})
+
+
+def test_shift_optimizer_bounded_and_reproducible():
+    cfg={"model":"D/D/c","mode":"deterministic","horizon":120,"servers":3,
+         "arrival_mean":12,"service_mean":3,"server_hour":25,
+         "wait_hour":0,"lost_cost":0,"sla_target":.8}
+    a=optimize_shifts(cfg,3)
+    assert a==optimize_shifts(cfg,3)
+    assert a["feasible"]
+    assert len(a["schedule"])==2
+    assert all(1<=c<=3 for c in a["schedule"])
+    assert a["cost"]<=150
