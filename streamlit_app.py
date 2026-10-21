@@ -22,7 +22,7 @@ from streamlit_sector_scenes import SECTOR_UI, render_sector_scene, configured_u
 from bank_three_scene import bank_scene_html
 import streamlit.components.v1 as components
 from streamlit_v3 import run as run_decision_lab_v3
-from experiment_registry_v3 import comparison_rows, comparable
+from experiment_registry_v3 import comparison_rows, comparable, audit_export
 
 st.set_page_config(page_title="Decision Lab 3.0",page_icon="◈",layout="wide",initial_sidebar_state="expanded")
 
@@ -636,6 +636,13 @@ def analytics_hub():
                 st.write(f"**Menor costo total observado:** {cheapest['id']} · "
                          f"S/ {cheapest['metrics']['total_cost']:,.2f}. "
                          "No implica óptimo ni garantía estadística.")
+        if len(selected)>=2:
+            audited=audit_export(selected)
+            st.caption("Evaluación de comparabilidad incluida en el archivo auditable.")
+            st.download_button("Descargar comparación auditada JSON",
+                               json.dumps(audited,ensure_ascii=False,indent=2),
+                               file_name="astalanka-opt-comparacion-auditada.json",
+                               mime="application/json")
         csv=pd.DataFrame(comparison_rows(runs)).to_csv(index=False).encode("utf-8-sig")
         st.download_button("Descargar comparación CSV",csv,
                            file_name="astalanka-opt-comparacion.csv",mime="text/csv")
