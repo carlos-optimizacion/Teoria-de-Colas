@@ -12,7 +12,8 @@ from .network_engine import simulate_network
 
 NETWORK_MAX_REPS=40
 NETWORK_METRICS=("arrivals","completed","in_system_at_close","throughput_rate","avg_system")
-STAGE_METRICS=("arrived","completed","in_stage_at_close","avg_wait","avg_queue",
+STAGE_METRICS=("arrived","completed","in_stage_at_close","waiting_at_close",
+               "in_service_at_close","avg_wait","avg_queue",
                "utilization","max_queue","started")
 
 
