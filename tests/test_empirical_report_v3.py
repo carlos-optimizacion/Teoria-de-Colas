@@ -94,3 +94,11 @@ def test_report_formats_consistent():
     assert xlsx.startswith(b"PK")
     xls=pd.ExcelFile(io.BytesIO(xlsx))
     assert {"Ficha","Resultados","Replicas","Eventos","Evolucion","IC_95"}.issubset(xls.sheet_names)
+
+
+def test_report_single_server_default_ui():
+    result=evaluate({"model":"D/D/1","mode":"deterministic","horizon":480,
+                     "arrival_mean":4,"service_mean":6,"servers":1,
+                     "replications":1,"seed":2026})
+    assert report_pdf(result,None,None).startswith(b"%PDF")
+    assert report_xlsx(result,None,None).startswith(b"PK")
