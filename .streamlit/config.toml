@@ -6,6 +6,7 @@ textColor = "#17324D"
 font = "sans serif"
 
 [client]
+showSidebarNavigation = false
 showErrorDetails = false
 toolbarMode = "minimal"
 
