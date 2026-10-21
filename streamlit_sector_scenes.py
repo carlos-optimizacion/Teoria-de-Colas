@@ -92,15 +92,21 @@ def render_sector_scene(scenario_key, frame, status, background_uri=''):
     departure_client=frame.get("client") if frame.get("kind")=="departure" else None
     incoming=f'<span class="sector-person moving-in"><i>●</i><em>{arrival_client}</em></span>' if arrival_client else '<span class="empty-state">—</span>'
     outgoing=f'<span class="sector-person moving-out"><i>●</i><em>{departure_client}</em></span>' if departure_client else '<span class="empty-state">—</span>'
+    art_class=" has-art" if background_uri else ""
+    art_style=f' style="background-image:url({background_uri})"' if background_uri else ""
     html=dedent(f"""
-    <div class="sector-scene sector-{scenario_key} event-{event_kind}">
+    <div class="sector-scene sector-{scenario_key} event-{event_kind}{art_class}">
       <div class="sector-scene-head">
         <div class="sector-title"><span class="sector-big-icon">{ui["icon"]}</span><b>{ui["title"]}</b><small>{status_label}</small></div>
         <div class="live-event"><span></span><b>{escape(event_kind.upper())}</b></div>
         <div class="sector-capacity"><small>CAPACIDAD OPERATIVA</small><strong>{active}</strong><span>{count_label}</span></div>
       </div>
       <div class="sector-stage">
-        <div class="sector-art"{f' style="background-image:url({background_uri})"' if background_uri else ''}></div>
+        <div class="sector-art"{art_style}>
+          <div class="art-status"><span>{escape(status_label)}</span><b>{active} {escape(count_label)}</b></div>
+          <div class="art-queue"><small>{escape(ui["queue"])}</small><div>{_people(queue_ids,scenario_key)}</div></div>
+          <div class="art-services"><small>{escape(ui["service"])}</small><div class="art-service-grid">{''.join(stations)}</div></div>
+        </div>
         {_decor(scenario_key)}
         <div class="sector-flow">
           <div class="sector-zone arrival-zone"><span class="zone-kicker">01</span><b>{ui["arrival"]}</b><small>{frame.get("arrivals",0)} llegadas acumuladas</small><div class="sector-slot">{incoming}</div></div>
