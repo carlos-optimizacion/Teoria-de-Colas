@@ -311,7 +311,9 @@ def evaluate(raw: dict, *, include_runs: bool = True) -> dict:
                          "high":round(min(1,mean(vals)+margin) if k in ("sla","utilization","p_block")
                                       else mean(vals)+margin,6) if margin is not None else None,
                          "method":"IC exploratorio normal 95%; aproximación asintótica"}
-    return {"model":spec.model,"mode":spec.mode,"horizon":spec.horizon,
+    from .theory_v3 import analytic
+    theory = analytic(spec)
+    return {"theory":theory,"model":spec.model,"mode":spec.mode,"horizon":spec.horizon,
             "replications_requested":spec.replications,"replications_effective":n,
             "seed":spec.seed,"servers":spec.servers,"capacity":spec.capacity,
             "parameters":dict(raw),"metrics":metrics,"confidence_95":confidence,
