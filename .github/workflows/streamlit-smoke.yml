@@ -18,6 +18,9 @@ on:
       - 'tests/test_active_queue_sectors.py'
       - 'tests/test_challenge_bridge_v3.py'
       - 'django_app/portal/network_v3.py'
+      - 'network_three_scene.py'
+      - 'tests/test_network_3d_v3.py'
+      - 'tests_browser/v3_network_3d_smoke.py'
       - 'tests/test_network_v3.py'
       - 'tests/test_empirical_report_v3.py'
       - 'tests_browser/v3_streamlit_smoke.py'
@@ -70,8 +73,8 @@ jobs:
           python -m pip install pytest
       - name: Syntax/import checks
         run: |
-          python -m py_compile django_app/portal/network_v3.py experiment_registry_v3.py sector_scenes_v3.py home.py streamlit_v3.py report_v3.py django_app/portal/empirical_v3.py django_app/portal/queue_v3.py streamlit_app.py bank_three_scene.py streamlit_sector_scenes.py streamlit_visual_logic.py queue_core.py django_app/portal/challenge_engine.py django_app/portal/network_engine.py
-          python -m pytest -q tests/test_comparison_audit_v3.py tests/test_network_v3.py tests/test_challenge_bridge_v3.py tests/test_four_module_nav_v3.py tests/test_experiment_registry_v3.py tests/test_active_queue_sectors.py tests/test_queue_v3.py tests/test_empirical_report_v3.py tests/test_bank_three_scene.py tests/test_streamlit_visual_logic.py tests/test_streamlit_sector_scenes.py
+          python -m py_compile network_three_scene.py django_app/portal/network_v3.py experiment_registry_v3.py sector_scenes_v3.py home.py streamlit_v3.py report_v3.py django_app/portal/empirical_v3.py django_app/portal/queue_v3.py streamlit_app.py bank_three_scene.py streamlit_sector_scenes.py streamlit_visual_logic.py queue_core.py django_app/portal/challenge_engine.py django_app/portal/network_engine.py
+          python -m pytest -q tests/test_network_3d_v3.py tests/test_comparison_audit_v3.py tests/test_network_v3.py tests/test_challenge_bridge_v3.py tests/test_four_module_nav_v3.py tests/test_experiment_registry_v3.py tests/test_active_queue_sectors.py tests/test_queue_v3.py tests/test_empirical_report_v3.py tests/test_bank_three_scene.py tests/test_streamlit_visual_logic.py tests/test_streamlit_sector_scenes.py
           python - <<'PY'
           import sys
           sys.path.insert(0,'django_app')
@@ -125,8 +128,44 @@ jobs:
           assert result["frames"][-1]["t"]==480
           assert len(result["stages"])==3
           assert len(result["runs"])==10
+          assert any(x.type=="iframe" for x in at), "Falta previsualización de red 3D"
+          assert any(x.label=="▶ Iniciar simulación 3D de la red" for x in at.button)
+          [x for x in at.button if x.label=="▶ Iniciar simulación 3D de la red"][0].click()
+          at.run(timeout=60)
+          assert not at.exception,at.exception
+          assert any(x.type=="iframe" for x in at), "Falta reproducción de red 3D"
           assert any(x.type=="download_button" for x in at), "Falta exportación JSON"
           print("H3: Red multi-etapa, estadísticas y exportación correctas")
+          PY
+      - name: H3.1 10-process adaptive network and real event frames
+        run: |
+          python - <<'PY'
+          from streamlit.testing.v1 import AppTest
+          at=AppTest.from_file("streamlit_app.py")
+          at.run(timeout=45)
+          next(x for x in at.radio if x.label=="Navegación").set_value("Red de colas")
+          at.run(timeout=45)
+          next(x for x in at.slider if x.label=="Etapas").set_value(10)
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          assert len([x for x in at.text_input if x.label=="Nombre de etapa"])==10
+          next(x for x in at.number_input if x.label=="Horizonte (min)").set_value(120)
+          next(x for x in at.number_input if x.label=="Número de réplicas").set_value(2)
+          at.run(timeout=45)
+          next(x for x in at.button if x.label=="Simular red").click()
+          at.run(timeout=60)
+          assert not at.exception,at.exception
+          data=at.session_state["network_result"]
+          assert len(data["stages"])==10
+          assert len(data["frames"][0]["service_ids"])==10
+          assert data["frames"][-1]["t"]==120
+          assert any(x.type=="iframe" for x in at)
+          next(x for x in at.button if x.label=="▶ Iniciar simulación 3D de la red").click()
+          at.run(timeout=60)
+          assert not at.exception,at.exception
+          assert any(x.type=="iframe" for x in at)
+          assert any(x.type=="download_button" for x in at)
+          print("Network 3D: 10 processes, real frames, preview + playback + metrics + export OK")
           PY
       - name: Streamlit AppTest
         run: |
@@ -376,6 +415,7 @@ jobs:
         run: |
           python tests_browser/v3_streamlit_smoke.py
           python tests_browser/v3_active_sectors_smoke.py
+          python tests_browser/v3_network_3d_smoke.py
       - name: Upload decision lab 3.0 browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
