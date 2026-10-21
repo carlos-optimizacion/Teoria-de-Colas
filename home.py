@@ -357,6 +357,16 @@ def render_home():
         unsafe_allow_html=True,
     )
 
+    st.markdown("### ¿Buscas el simulador gerencial 3D?")
+    st.write("El modo aprendizaje y el simulador son accesos distintos. " +
+             "En el simulador puedes configurar llegadas, ventanillas, tiempo de atención " +
+             "y observar el Banco 3D.")
+    st.link_button("▶ Abrir Decision Lab · Simulador 3D",
+                   "https://decision-lab-2-streamlit.onrender.com",
+                   type="primary", use_container_width=True)
+    st.caption("La arquitectura multimodelo 3.0 sigue en validación; este enlace lleva a la versión 3D estable.")
+    st.divider()
+
     st.markdown(
         """
         <div class="metric-strip">
@@ -530,6 +540,13 @@ navigation = {
 }
 
 pg = st.navigation(navigation, position="sidebar", expanded=True)
+
+st.sidebar.markdown("### Simulación gerencial")
+st.sidebar.link_button("▶ Abrir el simulador 3D",
+                       "https://decision-lab-2-streamlit.onrender.com",
+                       use_container_width=True)
+st.sidebar.caption("Simulación 3D disponible en Render. Modo aprendizaje en esta página.")
+st.sidebar.divider()
 
 st.sidebar.markdown(
     """
