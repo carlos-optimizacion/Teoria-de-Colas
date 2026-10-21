@@ -17,7 +17,8 @@ def report_xlsx(result: dict, optimization: dict | None = None, dynamic: dict | 
     with pd.ExcelWriter(stream,engine="xlsxwriter") as writer:
         meta = {"modelo":result["model"],"modalidad":result["mode"],
                 "horizonte_min":result["horizon"],"repeticiones":result["replications_effective"],
-                "semilla":result["seed"],"servidores":result["servers"],
+                "semilla":result["seed"],"replica_visualizada":result.get("selected_replica",1),
+                "servidores":result["servers"],
                 "capacidad":result["capacity"],"fecha_exportacion_utc":datetime.now(timezone.utc).isoformat()}
         for name, obj in (
             ("Ficha",pd.DataFrame(meta.items(),columns=["Parámetro","Valor"])),
@@ -34,9 +35,22 @@ def report_xlsx(result: dict, optimization: dict | None = None, dynamic: dict | 
         event_rows=[{k:v for k,v in f.items() if k not in ("queue_ids","servers","priority_ids")} for f in result["events"]]
         pd.DataFrame(event_rows).to_excel(writer,sheet_name="Eventos",index=False)
         writer.sheets["Eventos"].freeze_panes(1,0)
-        cfg={k:json.dumps(v,ensure_ascii=False) if isinstance(v,(dict,list)) else v
-             for k,v in result["parameters"].items()}
+        cfg={}
+        for k,v in result["parameters"].items():
+            if k in ("arrival_samples","service_samples") and isinstance(v,(list,tuple)):
+                cfg[k]=f"{len(v)} observaciones; consultar pestaña Muestras"
+            elif isinstance(v,(dict,list)):
+                cfg[k]=json.dumps(v,ensure_ascii=False)
+            else:
+                cfg[k]=v
         pd.DataFrame(cfg.items(),columns=["Campo","Valor"]).to_excel(writer,sheet_name="Configuracion",index=False)
+        if "arrival_samples" in result["parameters"] or "service_samples" in result["parameters"]:
+            aa=result["parameters"].get("arrival_samples",[])
+            bb=result["parameters"].get("service_samples",[])
+            n=max(len(aa),len(bb))
+            pd.DataFrame({"interarribo_min":list(aa)+[None]*(n-len(aa)),
+                          "servicio_min":list(bb)+[None]*(n-len(bb))}).to_excel(
+                              writer,sheet_name="MuestrasEmp",index=False)
         writer.sheets["Configuracion"].set_column(0,0,30)
         writer.sheets["Configuracion"].set_column(1,1,60)
         theory=result.get("theory",{})
@@ -89,6 +103,7 @@ def report_pdf(result: dict, optimization: dict | None = None, dynamic: dict | N
     row("Modalidad",result["mode"])
     row("Horizonte",str(result["horizon"])+" min")
     row("Replicas efectivas",result["replications_effective"])
+    row("Replica reproducida",result.get("selected_replica",1))
     row("Semilla",result["seed"])
     row("Servidores",result["servers"])
     row("Capacidad total",result["capacity"] if result["capacity"] is not None else "Sin limite")
