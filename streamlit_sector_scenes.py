@@ -67,7 +67,7 @@ def _decor(key):
       <div class="truck-shape"><i></i></div><div class="dock-sign">PATIO / ANDENES</div>
     </div>"""
 
-def render_sector_scene(scenario_key, frame, status):
+def render_sector_scene(scenario_key, frame, status, background_uri=''):
     ui=SECTOR_UI[scenario_key]
     event_kind=str(frame.get("kind") or "start")
     active=max(0,int(frame.get("active",0) or 0))
@@ -100,6 +100,7 @@ def render_sector_scene(scenario_key, frame, status):
         <div class="sector-capacity"><small>CAPACIDAD OPERATIVA</small><strong>{active}</strong><span>{count_label}</span></div>
       </div>
       <div class="sector-stage">
+        <div class="sector-art"{f' style="background-image:url({background_uri})"' if background_uri else ''}></div>
         {_decor(scenario_key)}
         <div class="sector-flow">
           <div class="sector-zone arrival-zone"><span class="zone-kicker">01</span><b>{ui["arrival"]}</b><small>{frame.get("arrivals",0)} llegadas acumuladas</small><div class="sector-slot">{incoming}</div></div>
