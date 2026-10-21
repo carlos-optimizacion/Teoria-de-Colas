@@ -114,6 +114,44 @@ jobs:
           assert "sector-scene sector-banco" not in running_text, "Regresión a la escena 2D"
           print("AppTest workflow OK: config -> preview 3D -> player 3D; legacy 2D absent")
           PY
+      - name: Validate model selector and adaptive forms
+        run: |
+          python - <<'PY'
+          from streamlit.testing.v1 import AppTest
+          at=AppTest.from_file("streamlit_app.py")
+          at.run(timeout=45)
+          nav=[r for r in at.radio if r.label=="Navegación"][0]
+          nav.set_value("Simulación")
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          assert [r for r in at.radio if r.label=="Tipo de simulación"]
+          model=[x for x in at.selectbox if x.label=="Modelo matemático"][0]
+          assert "D/D/c" in model.options
+          labels=[x.label for x in at.number_input]
+          assert "Tiempo fijo de atención (min)" in labels
+          assert "Tiempo medio de atención (min)" not in labels
+          [r for r in at.radio if r.label=="Tipo de simulación"][0].set_value("parametric")
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          model=[x for x in at.selectbox if x.label=="Modelo matemático"][0]
+          assert "M/M/c/K" in model.options and "D/D/c" not in model.options
+          model.set_value("M/M/c/K")
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          labels=[x.label for x in at.number_input]
+          assert "Tiempo medio de atención (min)" in labels
+          assert "Tiempo fijo de atención (min)" not in labels
+          assert "Capacidad máxima del sistema (K: espera + atención)" in labels
+          assert not any(x.type=="iframe" for x in at)
+          [r for r in at.radio if r.label=="Tipo de simulación"][0].set_value("empirical")
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          assert any(x.type=="file_uploader" for x in at)
+          assert "Tiempo medio de atención (min)" not in [x.label for x in at.number_input]
+          assert "G/G/c" in [x for x in at.selectbox if x.label=="Modelo matemático"][0].options
+          assert not any(x.type=="iframe" for x in at)
+          print("Model selector v3: deterministic, parametric M/M/c/K, empirical upload OK")
+          PY
       - name: Integrated 3.0 AppTest (data first, 3D second, reports last)
         run: |
           python - <<'PY'
