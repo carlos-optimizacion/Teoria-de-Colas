@@ -38,7 +38,10 @@ function setupVisualQuality(THREE,renderer,scene,stage,profile='indoor'){
   function apply(mode='auto'){
     if(!['auto','high','balanced','economy'].includes(mode))mode='auto';
     const level=mode==='auto'?(compact?'balanced':'high'):mode;
-    const density=Math.min(window.devicePixelRatio||1,level==='high'?2:level==='balanced'?1.5:1);
+    const nativeDpr=Math.max(1,window.devicePixelRatio||1);
+    // Supermuestreo real en monitores estándar; no solo en pantallas Retina.
+    const density=level==='high'?Math.min(nativeDpr*1.45,2.25):
+      level==='balanced'?Math.min(nativeDpr,1.5):Math.min(nativeDpr*.75,1);
     const shadowResolution=level==='high'?2048:level==='balanced'?1024:512;
     renderer.setPixelRatio(density);
     if(sun.shadow.mapSize.x!==shadowResolution){
