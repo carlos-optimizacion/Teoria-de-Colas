@@ -47,3 +47,11 @@ def test_rendered_scene_has_no_markdown_code_indentation():
         assert not first_nonempty.startswith("    ")
         assert all(not line.startswith("    ") for line in html.splitlines() if line.strip()), html
         assert "<div class=\"scene-decor" in html
+
+
+def test_server_grid_class_tracks_capacity():
+    for key in SECTOR_UI:
+        for count in range(1,6):
+            html=render_sector_scene(key,frame(count),"ready")
+            assert f'units-{count}' in html
+            assert html.count('data-configured="true"')==count
