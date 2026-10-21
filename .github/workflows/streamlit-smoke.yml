@@ -154,6 +154,60 @@ jobs:
           assert not any(x.type=="iframe" for x in at)
           print("Model selector v3: deterministic, parametric M/M/c/K, empirical upload OK")
           PY
+      - name: Verify interactive arrival alternatives and mathematical equivalence
+        run: |
+          python - <<'PY'
+          from streamlit.testing.v1 import AppTest
+          def configure():
+              at=AppTest.from_file("streamlit_app.py")
+              at.run(timeout=45)
+              next(r for r in at.radio if r.label=="Navegación").set_value("Simulación")
+              at.run(timeout=45)
+              assert not at.exception,at.exception
+              return at
+          at=configure()
+          def demand_inputs(a):
+              return {x.label:x for x in a.number_input}
+          way=next(r for r in at.radio if r.label=="¿Cómo prefieres describir las llegadas?")
+          assert way.value=="Cantidad de clientes por intervalo"
+          assert "Clientes que llegan" in demand_inputs(at)
+          assert "Durante cuántos minutos" in demand_inputs(at)
+          assert "Tiempo entre llegadas (min)" not in demand_inputs(at)
+          demand_inputs(at)["Clientes que llegan"].set_value(15)
+          demand_inputs(at)["Durante cuántos minutos"].set_value(60.)
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          next(r for r in at.radio if r.label=="¿Cómo prefieres describir las llegadas?").set_value("Tiempo entre llegadas")
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          assert "Tiempo entre llegadas (min)" in demand_inputs(at)
+          assert "Clientes que llegan" not in demand_inputs(at)
+          assert "Durante cuántos minutos" not in demand_inputs(at)
+          demand_inputs(at)["Tiempo entre llegadas (min)"].set_value(4.)
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          next(r for r in at.radio if r.label=="¿Cómo prefieres describir las llegadas?").set_value("Cantidad de clientes por intervalo")
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          assert demand_inputs(at)["Clientes que llegan"].value==15
+          assert demand_inputs(at)["Durante cuántos minutos"].value==60.
+          [b for b in at.button if b.label=="Guardar y validar configuración"][0].click()
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          count_gap=at.session_state["v3_payload"]["arrival_mean"]
+          assert abs(count_gap-4.0)<1e-10,count_gap
+          other=configure()
+          next(r for r in other.radio if r.label=="¿Cómo prefieres describir las llegadas?").set_value("Tiempo entre llegadas")
+          other.run(timeout=45)
+          demand_inputs(other)["Tiempo entre llegadas (min)"].set_value(4.)
+          other.run(timeout=45)
+          [b for b in other.button if b.label=="Guardar y validar configuración"][0].click()
+          other.run(timeout=45)
+          assert not other.exception,other.exception
+          direct_gap=other.session_state["v3_payload"]["arrival_mean"]
+          assert abs(direct_gap-count_gap)<1e-10,(direct_gap,count_gap)
+          print("Reactivo OK: dos interfaces distintas y misma llegada media 4 min")
+          PY
       - name: Cross-module navigation and four-sector simulation regression
         run: |
           python - <<'PY'
