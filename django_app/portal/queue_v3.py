@@ -293,7 +293,14 @@ def evaluate(raw: dict, *, include_runs: bool = True) -> dict:
     spec = validate(raw)
     # D/D/c no produce incertidumbre; no repetir cálculos redundantes.
     n = 1 if spec.mode == "deterministic" else spec.replications
-    runs = [simulate_one(spec, spec.seed + i * 1709) for i in range(n)]
+    first = simulate_one(spec, spec.seed)
+    compact = lambda run: {k: run[k] for k in _METRICS}
+    runs = [compact(first)]
+    # Guardar la trayectoria completa únicamente de la réplica mostrada en 3D.
+    # Las demás réplicas contribuyen a la estadística, pero no ocupan memoria
+    # con listas de eventos y clientes innecesarias.
+    for i in range(1, n):
+        runs.append(compact(simulate_one(spec, spec.seed + i * 1709)))
     metrics = {k: round(mean(r[k] for r in runs), 6) for k in _METRICS}
     confidence = {}
     for k in ("sla","avg_wait","avg_queue","utilization","p_block","total_cost"):
@@ -308,9 +315,8 @@ def evaluate(raw: dict, *, include_runs: bool = True) -> dict:
             "replications_requested":spec.replications,"replications_effective":n,
             "seed":spec.seed,"servers":spec.servers,"capacity":spec.capacity,
             "parameters":dict(raw),"metrics":metrics,"confidence_95":confidence,
-            "events":runs[0]["events"],"series":runs[0]["series"],
-            "runs":[{k:v for k,v in run.items() if k not in ("events","series","waits")}
-                    for run in runs] if include_runs else [],
+            "events":first["events"],"series":first["series"],
+            "runs":runs if include_runs else [],
             "selected_replica":1,
             "method":"Eventos discretos, horizonte finito. La primera réplica se visualiza en Three.js."}
 
