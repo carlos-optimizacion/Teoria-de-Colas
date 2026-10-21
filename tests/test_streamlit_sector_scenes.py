@@ -45,4 +45,5 @@ def test_rendered_scene_has_no_markdown_code_indentation():
         first_nonempty=next(line for line in html.splitlines() if line.strip())
         assert first_nonempty.startswith("<div class=\"sector-scene"), first_nonempty
         assert not first_nonempty.startswith("    ")
+        assert all(not line.startswith("    ") for line in html.splitlines() if line.strip()), html
         assert "<div class=\"scene-decor" in html
