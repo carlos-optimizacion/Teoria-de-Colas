@@ -235,6 +235,15 @@ try{
      box(.55,.43,.08,mat(0x1e3647),[x+.65,1.49,z-.25],group);
      const screen=label('ECG',.48,.23,0x28a879,45);screen.position.set(x+.65,1.50,z-.18);group.add(screen);
      box(2.3,1.12,.05,glass,[x,1.6,z-.81],group);
+     // Camilla asistencial, mamparas, monitor y soporte de suero.
+     for(const dx of [-1.12,1.12])
+       box(.075,2.1,1.48,mat(0x80c9bf,{transparent:true,opacity:.39}),[x+dx,1.32,z+.10],group);
+     box(.45,.28,.06,mat(0x18394a),[x+.64,1.58,z-.12],group);
+     const ecg=label('♥ 78',.40,.20,0x4ce1ba,43);ecg.position.set(x+.64,1.59,z-.075);group.add(ecg);
+     cyl(.038,.038,1.8,steel,[x-.84,1.34,z-.73],group);
+     box(.56,.055,.05,steel,[x-.84,2.23,z-.73],group);
+     box(.22,.35,.1,glass,[x-.61,1.94,z-.73],group);
+     box(.58,.08,.76,mat(0xffffff),[x,.96,z+.18],group);
    } else if(sector==='supermercado'){
      box(2.22,.85,.95,mat(0x879fae),[x,.43,z],group);
      box(2.2,.12,.93,mat(0x2e556d),[x,.90,z],group);
@@ -242,6 +251,12 @@ try{
      box(.55,.38,.09,mat(0x253f51),[x+.60,1.40,z-.25],group);
      box(.42,.15,.35,mat(0xe9b85c),[x-.48,1.13,z],group);
      box(.31,.2,.31,mat(0x71bfb0),[x-.10,1.15,z],group);
+     // Lector de código de barras y mercancía sobre la cinta.
+     box(.12,.27,.27,mat(0x171f28),[x+.15,1.2,z+.30],group);
+     box(.44,.12,.60,mat(0x263037),[x+.76,1.04,z+.15],group);
+     box(.34,.29,.24,mat(0xd3b37c),[x-.62,1.18,z+.10],group);
+     sphere(.17,mat(0xd45e50),[x-.27,1.16,z+.12],group);
+     box(.22,.24,.24,mat(0x71b88a),[x,1.18,z+.12],group);
    } else if(sector==='fabrica'){
      box(2.23,.23,1.08,steel,[x,.78,z],group);
      for(const dx of [-.88,.88])box(.1,.67,.12,navy,[x+dx,.37,z-.30],group);
@@ -250,17 +265,34 @@ try{
      box(.39,.37,.4,mat(0xc9a65b),[x,1.03,z+.12],group);
      cyl(.065,.065,.48,mat(0xd69b41),[x+.87,1.16,z-.21],group);
    } else if(sector==='logistica'){
-     box(2.28,.2,1.3,steel,[x,.52,z],group);
-     box(2.1,.12,1.3,navy,[x,.63,z],group);
-     box(1.75,.78,.28,mat(0xb6c7d0),[x,.39,z-1.0],group);
-     for(let j=0;j<3;j++){
-       box(.55,.4,.43,mat(j%2?0xb99267:0xcfaa77),[x+(j-1)*.60,1.0,z+.13],group);
-     }
-     box(1.83,.11,.26,mat(0xe0b55d),[x,.86,z+.60],group);
-   }
-   const staff=createHuman('staff-'+i,sector==='hospital'?0x69bbbc:sector==='fabrica'?0xd2a149:0x326d9b);
-   staff.position.set(x,0,z-1.25);group.add(staff);
-   counters.set(i,{group,x,z,spot:new THREE.Vector3(x,0,z+1.0),dot});
+      // Puerta de muelle, plataforma elevada, defensas y pallets.
+      const shutter=mat(0x7a98aa,{metalness:.35,roughness:.42});
+      box(2.05,2.50,.14,mat(0x385266),[x,1.27,-9.40],group);
+      box(1.85,2.12,.13,shutter,[x,1.20,-9.27],group);
+      for(let h=.28;h<2.3;h+=.30)
+        box(1.85,.033,.15,mat(0xb4c7d0),[x,h,-9.17],group);
+      for(const dx of [-.99,.99]){
+        box(.14,2.36,.24,mat(0x27343e),[x+dx,1.18,-9.12],group);
+        box(.11,.72,.25,mat(0xe8b83e),[x+dx,.46,-8.91],group);
+      }
+      box(2.25,.68,1.20,mat(0x657988),[x,.35,-7.2],group);
+      box(2.25,.13,1.20,mat(0xe5b449),[x,.75,-7.18],group);
+      box(2.25,.07,.09,mat(0x22282f),[x,.82,-6.62],group);
+      for(const dx of [-.52,.52]){
+        box(.80,.10,.60,wood,[x+dx,.87,-7.16],group);
+        box(.65,.48,.53,mat(dx<0?0xbe905e:0xd0a775),[x+dx,1.18,-7.16],group);
+      }
+      for(const dx of [-1.04,1.04])
+        box(.075,.01,2.1,mat(0xf0bf4a),[x+dx,-.01,-5.0],group);
+      group.userData.kind='loading-dock';
+    }
+    const staff=createHuman('staff-'+i,sector==='hospital'?0x54acaa:sector==='logistica'?0xe4aa43:sector==='supermercado'?0x328a65:0x326d9b);
+   if(sector==='logistica'){
+      staff.scale.set(.8,.8,.8);
+      const helmet=sphere(.23,mat(0xf3c24a),[0,1.82,0],staff);helmet.scale.y=.4;
+    }
+    staff.position.set(x,0,z-1.25);group.add(staff);
+   counters.set(i,{group,x,z,spot:new THREE.Vector3(x,0,sector==='logistica'?z+1.45:z+1.0),dot});
  }
  function createHuman(id,color){
    const g=new THREE.Group();const tone=[0xe6a978,0xc48b63,0xf0c3a4,0xa46f53][Math.abs(Number(id.toString().replace(/\D/g,''))||0)%4];
@@ -277,7 +309,20 @@ try{
    return g;
  }
  function createActor(id,color){
-   if(sector!=='logistica')return createHuman(id,color);
+   if(sector==='supermercado'){
+      const shopper=createHuman(id,color),cart=new THREE.Group();
+      shopper.add(cart);cart.position.set(.49,0,.66);
+      box(.76,.47,.54,mat(0x86aebe,{transparent:true,opacity:.65}),[0,.72,0],cart);
+      for(const xx of [-.34,.34])for(const zz of [-.21,.21]){
+        const wheel=cyl(.09,.09,.06,mat(0x273943),[xx,.17,zz],cart);
+        wheel.rotation.z=Math.PI/2;
+      }
+      for(const xx of [-.32,.32])cyl(.024,.024,.65,steel,[xx,.45,.24],cart);
+      box(.76,.06,.08,steel,[0,1.12,.25],cart);
+      return shopper;
+    }
+    if(sector==='hospital')return createHuman(id,0x86b4c0);
+    if(sector!=='logistica')return createHuman(id,color);
    // En logística los clientes del modelo representan camiones, no personas.
    const truck=new THREE.Group(),paint=mat(color),dark=mat(0x2c3c49);
    box(.78,.51,1.23,paint,[0,.53,-.12],truck);
@@ -305,7 +350,10 @@ try{
    const target=new Map(),q=(f.queue_ids||[]);
    // The people displayed are a literal subset of the backend queue; totals remain exact.
    q.slice(0,maxVisibleClients).forEach((id,j)=>{
-     const column=j%5, row=Math.floor(j/5),x=(column-2)*1.05,z=2.1+row*.72;
+     const column=sector==='logistica'?j%4:j%5;
+      const row=sector==='logistica'?Math.floor(j/4):Math.floor(j/5);
+      const x=sector==='logistica'?(column-1.5)*2.48:(column-2)*1.05;
+      const z=sector==='logistica'?1.05+row*2.05:2.1+row*.79;
      target.set(String(id),new THREE.Vector3(x,0,z));
    });
    (f.servers||[]).forEach((id,i)=>{
@@ -349,7 +397,7 @@ try{
    $('seek').value=idx;
    $('back').disabled=preview||idx===0;
    $('next').disabled=preview||idx===frames.length-1;
-   $('visual-limit').textContent=Number(f.queue||0)>maxVisibleClients?'Se muestran hasta '+maxVisibleClients+' clientes en espera; el contador refleja el total real.':'';
+   $('visual-limit').textContent=Number(f.queue||0)>maxVisibleClients?'Se muestran hasta '+maxVisibleClients+' '+(sector==='logistica'?'camiones':sector==='hospital'?'pacientes':'clientes')+' en espera; el contador refleja el total real.':'';
    if(idx===frames.length-1&&!preview){playing=false;$('state').textContent='JORNADA FINALIZADA';$('state').className='state finished';$('play').textContent='▶ Repetir';}
  }
  function setPlaying(p){
@@ -391,7 +439,7 @@ try{
      const rate=Math.min(1,dt*3.7),old=o.person.position;
      old.lerp(o.target,rate);
      const moving=old.distanceTo(o.target)>.07;
-     o.person.children[0].rotation.z=moving?Math.sin(ms*.011+Number(id))*.065:0;
+     if(sector!=='logistica')o.person.children[0].rotation.z=moving?Math.sin(ms*.011+Number(id))*.065:0;
      if(o.leaving && ms>o.leaveAt){scene.remove(o.person);people.delete(id);}
    }
    controls.update();renderer.render(scene,camera);
