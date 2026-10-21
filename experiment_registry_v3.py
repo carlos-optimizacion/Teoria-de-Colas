@@ -106,4 +106,27 @@ def comparable(items: list[dict]) -> tuple[bool, str]:
         return False, "Horizontes diferentes: los costos totales no son directamente comparables."
     if len({x["sector"] for x in items}) > 1:
         return False, "Sectores diferentes: no se debe recomendar una dotación comparando sus costos."
-    return True, "Escenarios con sector y horizonte comparables; revisa los demás supuestos."
+    if len({x["model"] for x in items}) > 1:
+        return False, "Modelos matemáticos diferentes: no se recomienda una dotación por comparación directa."
+    if len({x["mode"] for x in items}) > 1:
+        return False, "Modalidades diferentes: las hipótesis estocásticas no son equivalentes."
+    cost_fields=("server_hour","wait_hour","lost_cost","sla_min","sla_target")
+    for name in cost_fields:
+        if len({x.get("parameters",{}).get(name) for x in items}) > 1:
+            return False, f"Los supuestos de {name} son distintos; la comparación económica no es homogénea."
+    return True, "Mismo sector, horizonte, modelo, modalidad, costos y SLA; revisar incertidumbre estadística."
+
+
+def audit_export(items: list[dict]) -> dict:
+    """Exportación reproducible de comparaciones con trazabilidad de condiciones."""
+    selected=[_safe(item) for item in items]
+    ok,reason=comparable(selected)
+    return {
+        "schema":"astalanka-comparison-v1",
+        "source":"queue_v3",
+        "comparable_for_cost":ok,
+        "comparison_condition":reason,
+        "runs":selected,
+        "summary_rows":comparison_rows(selected),
+        "caveat":"Una diferencia observada no demuestra significancia estadística ni causalidad.",
+    }
