@@ -15,7 +15,7 @@ DJANGO = Path(__file__).resolve().parent / "django_app"
 if str(DJANGO) not in sys.path:
     sys.path.insert(0, str(DJANGO))
 
-from portal.queue_v3 import MODELS, evaluate, optimize
+from portal.queue_v3 import MODELS, evaluate, optimize, optimize_shifts
 from portal.empirical_v3 import import_workbook
 from portal.challenge_engine import SCENARIOS
 from bank_three_scene import bank_scene_html
@@ -54,6 +54,7 @@ def run():
     state.setdefault("v3_result",None)
     state.setdefault("v3_payload",None)
     state.setdefault("v3_optimization",None)
+    state.setdefault("v3_optimization_dynamic",None)
     st.caption("1. Configurar → 2. Validar → 3. Previsualizar → 4. Simular → 5. Analizar y reportar")
 
     if state.v3_step=="configure":
@@ -172,6 +173,7 @@ def run():
             state.v3_result=result
             state.v3_scenario=sector
             state.v3_optimization=None
+            state.v3_optimization_dynamic=None
             state.v3_step="preview"
             st.rerun()
         return
@@ -253,15 +255,37 @@ def run():
             else:
                 st.warning("Ninguna dotación evaluada cumple la meta de SLA medio.")
             st.caption(solution["caveat"])
+        st.markdown("**Optimización de dotación variable por franjas de 60 minutos**")
+        st.caption("La búsqueda por turnos es heurística; evalúa costo total y SLA medio con semillas comparables. "
+                   "Las atenciones en curso no se interrumpen cuando disminuye la dotación.")
+        if st.button("Optimizar turnos por franjas",key="v3_opt_shifts"):
+            if result["replications_effective"]>50 or result["horizon"]>1440:
+                st.warning("Para evitar bloqueos interactivos, evalúa turnos con hasta 50 réplicas y 1440 minutos.")
+            else:
+                with st.spinner("Evaluando dotaciones por intervalos..."):
+                    try:
+                        state.v3_optimization_dynamic=optimize_shifts(raw,int(upper))
+                    except ValueError as exc:
+                        st.error(str(exc))
+        if state.v3_optimization_dynamic:
+            opt=state.v3_optimization_dynamic
+            if opt["feasible"]:
+                schedule=[{"Franja":i+1,"Inicio":60*i,"Fin":min(result["horizon"],60*(i+1)),
+                           "Servidores":c} for i,c in enumerate(opt["schedule"])]
+                st.dataframe(pd.DataFrame(schedule),use_container_width=True)
+                st.success(f"Plan heurístico: SLA {opt['sla']*100:.2f}% · costo total S/ {opt['cost']:,.2f}.")
+                st.caption(opt["caveat"])
+            else:
+                st.warning(opt["message"])
     st.subheader("6 · Reporteador de simulación")
     p1,p2,p3=st.columns(3)
-    p1.download_button("Informe PDF",data=report_pdf(result,state.v3_optimization),
+    p1.download_button("Informe PDF",data=report_pdf(result,state.v3_optimization,state.v3_optimization_dynamic),
                        file_name="decision-lab-3-informe.pdf",mime="application/pdf",
                        use_container_width=True)
-    p2.download_button("Resultados Excel",data=report_xlsx(result,state.v3_optimization),
+    p2.download_button("Resultados Excel",data=report_xlsx(result,state.v3_optimization,state.v3_optimization_dynamic),
                        file_name="decision-lab-3-resultados.xlsx",
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                        use_container_width=True)
     p3.download_button("Experimento JSON",data=json.dumps(
-        {**result,"optimization":state.v3_optimization},ensure_ascii=False,indent=2),
+        {**result,"optimization":state.v3_optimization,"optimization_dynamic":state.v3_optimization_dynamic},ensure_ascii=False,indent=2),
         file_name="decision-lab-3-reproducible.json",mime="application/json",use_container_width=True)
