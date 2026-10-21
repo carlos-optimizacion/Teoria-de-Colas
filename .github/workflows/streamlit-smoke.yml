@@ -107,6 +107,29 @@ jobs:
           assert "sector-scene sector-banco" not in running_text, "Regresión a la escena 2D"
           print("AppTest workflow OK: config -> preview 3D -> player 3D; legacy 2D absent")
           PY
+      - name: Integrated 3.0 AppTest (data first, 3D second, reports last)
+        run: |
+          python - <<'PY'
+          from streamlit.testing.v1 import AppTest
+          at=AppTest.from_file("streamlit_app.py")
+          at.run(timeout=45)
+          at.radio[0].set_value("Simulación 3.0")
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          assert any(b.label=="Guardar y validar configuración" for b in at.button)
+          assert not any(x.type=="iframe" for x in at), "La vista 3D apareció antes de configurar"
+          [b for b in at.button if b.label=="Guardar y validar configuración"][0].click()
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          assert any(b.label=="▶ Iniciar simulación desde 0 min" for b in at.button)
+          assert any(x.type=="iframe" for x in at), "El banco no mostró previsualización 3D"
+          [b for b in at.button if b.label=="▶ Iniciar simulación desde 0 min"][0].click()
+          at.run(timeout=60)
+          assert not at.exception,at.exception
+          assert any(x.type=="iframe" for x in at)
+          assert any(b.label=="Optimizar capacidad por SLA y costo" for b in at.button)
+          print("Decision Lab 3.0 AppTest OK")
+          PY
       - name: Start Streamlit
         run: |
           streamlit run streamlit_app.py --server.headless true --server.address 127.0.0.1 --server.port 8501 >/tmp/streamlit.log 2>&1 &
