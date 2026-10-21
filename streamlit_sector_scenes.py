@@ -1,5 +1,6 @@
 """Sector-specific high-definition visual scenes for Decision Lab Streamlit."""
 from html import escape
+from textwrap import dedent
 from streamlit_visual_logic import station_descriptors
 
 SECTOR_UI = {
@@ -90,7 +91,7 @@ def render_sector_scene(scenario_key, frame, status):
     departure_client=frame.get("client") if frame.get("kind")=="departure" else None
     incoming=f'<span class="sector-person moving-in"><i>●</i><em>{arrival_client}</em></span>' if arrival_client else '<span class="empty-state">—</span>'
     outgoing=f'<span class="sector-person moving-out"><i>●</i><em>{departure_client}</em></span>' if departure_client else '<span class="empty-state">—</span>'
-    return f"""
+    return dedent(f"""
     <div class="sector-scene sector-{scenario_key}">
       <div class="sector-scene-head">
         <div><span class="sector-big-icon">{ui["icon"]}</span><b>{ui["title"]}</b><small>{status_label}</small></div>
@@ -108,7 +109,8 @@ def render_sector_scene(scenario_key, frame, status):
           <div class="sector-zone exit-zone"><span class="zone-kicker">04</span><b>{ui["exit"]}</b><small>{frame.get("completed",0)} completados</small><div class="sector-slot">{outgoing}</div></div>
         </div>
       </div>
-    </div>"""
+    </div>
+    """).strip()
 
 def configured_units(frame):
     return sum(1 for x in station_descriptors(frame) if x["configured"])
