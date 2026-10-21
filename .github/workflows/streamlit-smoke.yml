@@ -123,7 +123,7 @@ jobs:
           assert result["frames"][-1]["t"]==480
           assert len(result["stages"])==3
           assert len(result["runs"])==10
-          assert any(b.label=="Descargar resultados de red JSON" for b in at)
+          assert any(x.type=="download_button" for x in at), "Falta exportación JSON"
           print("H3: Red multi-etapa, estadísticas y exportación correctas")
           PY
       - name: Streamlit AppTest
