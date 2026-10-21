@@ -21,7 +21,7 @@ RES={"model":"M/M/c/K","mode":"parametric","horizon":120,"replications_effective
 
 def experiment(servers,cost,sla,**kwargs):
     cfg={**BASE,"servers":servers,**kwargs}
-    res={**RES,"servers":servers,"metrics":{**RES["metrics"],"total_cost":cost,"sla":sla}}
+    res={**RES,"model":cfg["model"],"servers":servers,"metrics":{**RES["metrics"],"total_cost":cost,"sla":sla}}
     return snapshot_experiment(cfg,res,"banco")
 
 
