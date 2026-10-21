@@ -15,6 +15,8 @@ on:
       - 'tests/test_queue_v3.py'
       - 'tests/test_active_queue_sectors.py'
       - 'tests/test_challenge_bridge_v3.py'
+      - 'django_app/portal/network_v3.py'
+      - 'tests/test_network_v3.py'
       - 'tests/test_empirical_report_v3.py'
       - 'tests_browser/v3_streamlit_smoke.py'
       - 'tests_browser/v3_active_sectors_smoke.py'
@@ -66,8 +68,8 @@ jobs:
           python -m pip install pytest
       - name: Syntax/import checks
         run: |
-          python -m py_compile experiment_registry_v3.py sector_scenes_v3.py home.py streamlit_v3.py report_v3.py django_app/portal/empirical_v3.py django_app/portal/queue_v3.py streamlit_app.py bank_three_scene.py streamlit_sector_scenes.py streamlit_visual_logic.py queue_core.py django_app/portal/challenge_engine.py django_app/portal/network_engine.py
-          python -m pytest -q tests/test_challenge_bridge_v3.py tests/test_four_module_nav_v3.py tests/test_experiment_registry_v3.py tests/test_active_queue_sectors.py tests/test_queue_v3.py tests/test_empirical_report_v3.py tests/test_bank_three_scene.py tests/test_streamlit_visual_logic.py tests/test_streamlit_sector_scenes.py
+          python -m py_compile django_app/portal/network_v3.py experiment_registry_v3.py sector_scenes_v3.py home.py streamlit_v3.py report_v3.py django_app/portal/empirical_v3.py django_app/portal/queue_v3.py streamlit_app.py bank_three_scene.py streamlit_sector_scenes.py streamlit_visual_logic.py queue_core.py django_app/portal/challenge_engine.py django_app/portal/network_engine.py
+          python -m pytest -q tests/test_network_v3.py tests/test_challenge_bridge_v3.py tests/test_four_module_nav_v3.py tests/test_experiment_registry_v3.py tests/test_active_queue_sectors.py tests/test_queue_v3.py tests/test_empirical_report_v3.py tests/test_bank_three_scene.py tests/test_streamlit_visual_logic.py tests/test_streamlit_sector_scenes.py
           python - <<'PY'
           import sys
           sys.path.insert(0,'django_app')
@@ -100,6 +102,29 @@ jobs:
           assert at.session_state["result"]["events"][-1]["t"]==480
           assert any(b.label=="Abrir simulación ▶" for b in at.button)
           print("H2 Challenge UI: ruta motor central y vista previa correctas")
+          PY
+      - name: H3 network replication, conservation and exports
+        run: |
+          python - <<'PY'
+          from streamlit.testing.v1 import AppTest
+          at=AppTest.from_file("streamlit_app.py")
+          at.run(timeout=45)
+          next(r for r in at.radio if r.label=="Navegación").set_value("Red de colas")
+          at.run(timeout=45)
+          assert not at.exception,at.exception
+          assert any(n.label=="Número de réplicas" for n in at.number_input)
+          assert any(b.label=="Simular red" for b in at.button)
+          next(b for b in at.button if b.label=="Simular red").click()
+          at.run(timeout=60)
+          assert not at.exception,at.exception
+          result=at.session_state["network_result"]
+          assert result["integration_contract"]=="v3",result
+          assert result["replications_effective"]==10
+          assert result["frames"][-1]["t"]==480
+          assert len(result["stages"])==3
+          assert len(result["runs"])==10
+          assert any(x.type=="download_button" for x in at), "Falta exportación JSON"
+          print("H3: Red multi-etapa, estadísticas y exportación correctas")
           PY
       - name: Streamlit AppTest
         run: |

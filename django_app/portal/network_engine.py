@@ -76,8 +76,29 @@ def simulate_network(payload):
     advance_areas(horizon)
     stage_metrics=[]
     for i,stage in enumerate(stages):
-        stage_metrics.append({**stage,"avg_wait":wait_total[i]/max(1,started[i]),"avg_queue":area_q[i]/horizon,
-            "utilization":area_busy[i]/(horizon*stage["servers"]),"max_queue":max_q[i],"started":started[i],"completed":completed_stage[i]})
+        admitted_here=len(arrivals) if i==0 else completed_stage[i-1]
+        active_here=sum(v is not None for v in servers[i])
+        waiting_here=len(queues[i])
+        remaining=admitted_here-completed_stage[i]
+        if remaining!=active_here+waiting_here:
+            raise RuntimeError(f"La etapa {i+1} no conserva las entidades")
+        stage_metrics.append({**stage,
+            "arrived":admitted_here,"completed":completed_stage[i],
+            "in_stage_at_close":remaining,"waiting_at_close":waiting_here,
+            "in_service_at_close":active_here,
+            "avg_wait":wait_total[i]/max(1,started[i]),
+            "avg_queue":area_q[i]/horizon,
+            "utilization":area_busy[i]/(horizon*stage["servers"]),
+            "max_queue":max_q[i],"started":started[i]})
+    in_system=sum(m["in_stage_at_close"] for m in stage_metrics)
+    if len(arrivals)!=completed+in_system:
+        raise RuntimeError("La red no conserva la cantidad global de entidades")
+    final={"t":float(horizon),"queues":[len(q) for q in queues],
+        "busy":[sum(v is not None for v in ss) for ss in servers],
+        "completed":completed,"kind":"end"}
+    if len(frames)>=3000: frames[-1]=final
+    else: frames.append(final)
     return {"arrival_min":arrival_min,"horizon":horizon,"arrivals":len(arrivals),"completed":completed,
         "throughput_rate":completed/(horizon/60),"avg_system":system_total/max(1,completed),
-        "in_system_at_close":len(arrivals)-completed,"stages":stage_metrics,"frames":frames,"seed":seed}
+        "in_system_at_close":in_system,"stages":stage_metrics,"frames":frames,"seed":seed,
+        "engine":"network_engine","model":"Tándem M/M/c","mode":"parametric"}
