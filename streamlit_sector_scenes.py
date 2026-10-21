@@ -94,8 +94,9 @@ def render_sector_scene(scenario_key, frame, status):
     outgoing=f'<span class="sector-person moving-out"><i>●</i><em>{departure_client}</em></span>' if departure_client else '<span class="empty-state">—</span>'
     html=dedent(f"""
     <div class="sector-scene sector-{scenario_key} event-{event_kind}">
-      <div class="sector-scene-head"><div class="live-event"><span></span><b>{escape(event_kind.upper())}</b></div>
-        <div><span class="sector-big-icon">{ui["icon"]}</span><b>{ui["title"]}</b><small>{status_label}</small></div>
+      <div class="sector-scene-head">
+        <div class="sector-title"><span class="sector-big-icon">{ui["icon"]}</span><b>{ui["title"]}</b><small>{status_label}</small></div>
+        <div class="live-event"><span></span><b>{escape(event_kind.upper())}</b></div>
         <div class="sector-capacity"><small>CAPACIDAD OPERATIVA</small><strong>{active}</strong><span>{count_label}</span></div>
       </div>
       <div class="sector-stage">
