@@ -23,6 +23,10 @@ with sync_playwright() as p:
         combo=page.get_by_role("combobox",name="Escenario operativo")
         combo.click()
         page.get_by_role("option",name=label,exact=True).click()
+        # Validar infraestructura multi-servidor, no solo la instancia D/D/1.
+        model=page.get_by_role("combobox",name="Modelo matemático")
+        model.click()
+        page.get_by_role("option",name="D/D/c",exact=True).click()
         page.get_by_role("button",name="Guardar y validar configuración").click()
         page.get_by_text("2 · Vista previa: entorno construido sin movimiento").wait_for(timeout=90000)
         inner=page.frame_locator("iframe").first
@@ -34,7 +38,7 @@ with sync_playwright() as p:
         assert stage.get_attribute("data-sector")==key
         assert stage.get_attribute("data-environment")==environment,(key,stage.get_attribute("data-environment"))
         assert stage.get_attribute("data-station-type")==station,(key,stage.get_attribute("data-station-type"))
-        assert int(stage.get_attribute("data-stations"))>=1,key
+        assert int(stage.get_attribute("data-stations"))==4,(key,stage.get_attribute("data-stations"))
         assert inner.locator("#loading").count()==0,f"Escena 3D no terminó de cargar: {key}"
         features=json.loads(stage.get_attribute("data-features"))
         if key=="banco":
