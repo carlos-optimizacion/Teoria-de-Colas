@@ -215,3 +215,19 @@ Para Streamlit Community Cloud usa:
 - Archivo principal: `streamlit_app.py`
 
 Consulta `docs/STREAMLIT_DEPLOY.md` para el procedimiento completo. La persistencia multiusuario completa permanece en Django/PostgreSQL; la versión Streamlit conserva el progreso de gamificación de forma temporal en la sesión.
+
+
+## Escenario Banco 3D — Three.js
+
+En **Simulación** selecciona **Banco** y sigue el recorrido: **Configurar → Guardar y validar → Abrir simulación → Iniciar simulación**. Solo se construye la escena después de guardar los parámetros.
+
+- La previsualización muestra exactamente las ventanillas configuradas y no reproduce eventos.
+- En ejecución, Three.js dibuja la agencia, ventanillas, cajeros, personas, recorrido, cola y salida. Cámara orbitable con ratón/táctil, zoom, controles de pausa, reproducción, paso y velocidad.
+- El motor Python (django_app/portal/challenge_engine.py) genera todos los eventos y métricas. El navegador solo reproduce esos cuadros y suaviza el movimiento; no recalcula llegadas ni servicios.
+- Se dibujan hasta 42 personas en espera por rendimiento. El contador siempre muestra el total de la cola.
+- Las intervenciones programadas reconstruyen la trayectoria desde Python; al aplicarlas se reinicia el reproductor con el nuevo resultado.
+- Requiere navegador con WebGL y acceso a cdn.jsdelivr.net para cargar Three.js y OrbitControls. La interfaz avisa si falla la carga.
+- Esta es una primera versión 3D procedimental: todavía no usa personajes o mobiliario de alta fidelidad importados desde Blender.
+- Los otros escenarios mantienen sus vistas existentes hasta la incorporación de sus módulos 3D.
+
+**Pruebas**: pytest -q tests/test_bank_three_scene.py verifica configuración, eventos, escape de datos y sintaxis JS cuando Node está disponible. La CI de Streamlit valida también la integración.
