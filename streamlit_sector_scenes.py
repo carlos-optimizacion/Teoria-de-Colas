@@ -69,6 +69,7 @@ def _decor(key):
 
 def render_sector_scene(scenario_key, frame, status):
     ui=SECTOR_UI[scenario_key]
+    event_kind=str(frame.get("kind") or "start")
     active=max(0,int(frame.get("active",0) or 0))
     busy=int(frame.get("busy",0) or 0)
     queue_ids=list(frame.get("queue_ids") or [])
@@ -92,8 +93,8 @@ def render_sector_scene(scenario_key, frame, status):
     incoming=f'<span class="sector-person moving-in"><i>●</i><em>{arrival_client}</em></span>' if arrival_client else '<span class="empty-state">—</span>'
     outgoing=f'<span class="sector-person moving-out"><i>●</i><em>{departure_client}</em></span>' if departure_client else '<span class="empty-state">—</span>'
     html=dedent(f"""
-    <div class="sector-scene sector-{scenario_key}">
-      <div class="sector-scene-head">
+    <div class="sector-scene sector-{scenario_key} event-{event_kind}">
+      <div class="sector-scene-head"><div class="live-event"><span></span><b>{escape(event_kind.upper())}</b></div>
         <div><span class="sector-big-icon">{ui["icon"]}</span><b>{ui["title"]}</b><small>{status_label}</small></div>
         <div class="sector-capacity"><small>CAPACIDAD OPERATIVA</small><strong>{active}</strong><span>{count_label}</span></div>
       </div>
