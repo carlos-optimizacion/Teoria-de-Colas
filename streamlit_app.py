@@ -12,6 +12,7 @@ if str(DJANGO_APP) not in sys.path:
 
 from portal.challenge_engine import SCENARIOS, ACTIVE_SCENARIOS, evaluate_game
 from portal.network_engine import simulate_network
+from portal.network_v3 import evaluate_network
 from queue_core import (
     mms_from_minutes,mmsk_from_minutes,mg1_from_minutes,dd1_sequence,
     economic_cost,evaluate_mms_capacity,recommend_mms_capacity,erlang_b
@@ -528,20 +529,65 @@ def economics():
 
 def network():
     st.header("Red de colas multietapa")
-    c1,c2=st.columns(2);arrival=c1.number_input("Interarribo (min)",.1,240.0,4.0,key="na");horizon=c2.number_input("Horizonte (min)",30,1440,480)
-    count=st.slider("Etapas",2,4,3);stages=[]
+    st.caption("Una sola entidad recorre de 2 a 4 etapas. Los indicadores se consolidan entre "
+               "réplicas independientes; la gráfica muestra la primera trayectoria.")
+    c1,c2,c3,c4=st.columns(4)
+    arrival=c1.number_input("Interarribo medio (min)",.1,240.0,4.0,key="na")
+    horizon=c2.number_input("Horizonte (min)",30,1440,480,key="nhorizon")
+    reps=c3.number_input("Número de réplicas",1,40,10,key="nreps")
+    seed=c4.number_input("Semilla de simulación",1,999999999,2026,key="nseed")
+    count=st.slider("Etapas",2,4,3)
+    stages=[]
     defaults=[("Recepción",5,2),("Atención",8,3),("Pago",4,2),("Entrega",6,2)]
     for i in range(count):
-        a,b,c=st.columns([1.2,1,1]);name=a.text_input("Nombre",defaults[i][0],key=f"nn{i}");sm=b.number_input("Servicio min",.1,240.0,float(defaults[i][1]),key=f"ns{i}");sv=c.number_input("Servidores",1,20,int(defaults[i][2]),key=f"nv{i}");stages.append({"name":name,"service_min":sm,"servers":sv})
+        a,b,c=st.columns([1.2,1,1])
+        name=a.text_input("Nombre de etapa",defaults[i][0],key=f"nn{i}")
+        sm=b.number_input("Servicio medio (min)",.1,240.0,float(defaults[i][1]),key=f"ns{i}")
+        sv=c.number_input("Servidores en etapa",1,20,int(defaults[i][2]),key=f"nv{i}")
+        stages.append({"name":name,"service_min":sm,"servers":sv})
     if st.button("Simular red",type="primary"):
-        r=simulate_network({"arrival_min":arrival,"horizon":horizon,"seed":2026,"stages":stages})
-        st.session_state.network_result=r
-    if "network_result" in st.session_state:
-        r=st.session_state.network_result;metric_cards([("Llegadas",r["arrivals"],"info"),("Completados",r["completed"],"ok"),("Throughput",f"{r['throughput_rate']:.2f}/h","info"),("Tiempo sistema",f"{r['avg_system']:.1f} min","gold")],4)
-        df=pd.DataFrame(r["stages"]);st.dataframe(df,use_container_width=True)
-        fig=go.Figure()
-        for i,stage in enumerate(r["stages"]):fig.add_trace(go.Scatter(x=[f["t"] for f in r["frames"]],y=[f["queues"][i] for f in r["frames"]],mode="lines",name=stage["name"],line_shape="hv"))
-        st.plotly_chart(fig,use_container_width=True)
+        try:
+            result=evaluate_network({"arrival_min":arrival,"horizon":horizon,
+                "replications":int(reps),"seed":int(seed),"stages":stages})
+        except (ValueError,RuntimeError) as exc:
+            st.error(f"Configuración de red inválida: {exc}")
+        else:
+            st.session_state.network_result=result
+    if "network_result" not in st.session_state:
+        st.info("Configura la red y pulsa Simular red para ver el flujo y las estadísticas.")
+        return
+    r=st.session_state.network_result
+    m=r["metrics"]
+    metric_cards([("Llegadas (promedio)",f"{m['arrivals']:.1f}","info"),
+                  ("Completados (promedio)",f"{m['completed']:.1f}","ok"),
+                  ("Throughput",f"{m['throughput_rate']:.2f}/h","info"),
+                  ("Tiempo sistema",f"{m['avg_system']:.1f} min","gold")],4)
+    st.caption(f"Modelo: {r['model']} · Motor: {r['engine']} · "
+               f"{r['replications_effective']} réplicas · Horizonte {r['horizon']} min.")
+    st.subheader("Conservación de flujo por etapa")
+    df=pd.DataFrame(r["stages"])
+    columns=["name","servers","arrived","completed","in_stage_at_close",
+             "waiting_at_close","in_service_at_close","avg_queue","avg_wait","utilization"]
+    st.dataframe(df[columns],hide_index=True,use_container_width=True)
+    critical=r["stages"][r["bottleneck_index"]]
+    st.info(f"Etapa con mayor utilización media: **{critical['name']}**, "
+            f"{critical['utilization']*100:.1f}%. "
+            "Es una alerta exploratoria de capacidad, no una demostración causal.")
+    st.subheader("Colas por etapa · Primera réplica")
+    fig=go.Figure()
+    for i,stage in enumerate(r["stages"]):
+        fig.add_trace(go.Scatter(x=[f["t"] for f in r["frames"]],
+            y=[f["queues"][i] for f in r["frames"]],
+            mode="lines",name=stage["name"],line_shape="hv"))
+    st.plotly_chart(fig,use_container_width=True)
+    if r["replications_effective"]>1:
+        st.subheader("Réplicas y precisión estadística")
+        st.dataframe(pd.DataFrame(r["runs"]),hide_index=True,use_container_width=True)
+        st.dataframe(pd.DataFrame(r["confidence_95"]).T,use_container_width=True)
+        st.caption("IC exploratorios normales de 95%; no representan precisión garantizada.")
+    st.download_button("Descargar resultados de red JSON",
+        json.dumps(r,ensure_ascii=False,indent=2),
+        file_name="astalanka-opt-red-colas.json",mime="application/json")
 
 def reports():
     st.header("Reportes y progreso")
@@ -646,7 +692,8 @@ elif section=="Desafíos gerenciales":
                "versión anterior; su integración plena al contrato multimodelo es el hito H2.")
     run_challenge_ui()
 elif section=="Red de colas":
-    st.caption("Modelo multietapa existente; la integración del motor central corresponde al hito H3.")
+    st.caption("Red multietapa H3: seguimiento de flujo por etapa, réplicas independientes y "
+               "contrato analítico v3. El motor de red conserva su simulación tándem especializada.")
     network()
 else:
     analytics_hub()
