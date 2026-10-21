@@ -220,8 +220,11 @@ def facility_html(frame,status):
       </div>
     </div>"""
 
-def scene_data_uri(key,hd=True):
-    path=(SCENE_HD_DIR/f"{key}_hd.svg") if hd else (SCENE_DIR/f"{key}.svg")
+def scene_data_uri(key,hd=True,ambient=False):
+    if ambient:
+        path=SCENE_HD_DIR/f"{key}_ambient.svg"
+    else:
+        path=(SCENE_HD_DIR/f"{key}_hd.svg") if hd else (SCENE_DIR/f"{key}.svg")
     if not path.exists():
         path=SCENE_DIR/f"{key}.svg"
     if not path.exists():
@@ -351,7 +354,7 @@ def run_challenge_ui():
         frame0=result["events"][0]
         st.markdown(f"""<div class="workflow-head preview"><span>ESCENA CONSTRUIDA · RELOJ EN 0</span><h2>{ui['title']} · verificar antes de iniciar</h2>
         <p>La escena física se generó con los datos guardados. Nada se mueve todavía.</p></div>""",unsafe_allow_html=True)
-        st.markdown(render_sector_scene(key,frame0,"ready"),unsafe_allow_html=True)
+        st.markdown(render_sector_scene(key,frame0,"ready",scene_data_uri(key,ambient=True)),unsafe_allow_html=True)
         expected=int(result["staffing"][0]);visible=configured_units(frame0)
         metric_cards([
             (ui["service"],f"{visible}/{expected}","ok" if visible==expected else "warn"),
@@ -397,7 +400,7 @@ def run_challenge_ui():
           <div class="ops-mini warn"><small>Rechazados</small><b>{frame['blocked']}</b></div>
         </div><div class="journey-progress"><i style="width:{pct:.1f}%"></i><span class="start-label">INICIO · 0 min</span><span class="end-label">FIN · {int(result_now['config']['duration'])} min</span></div></div>""",unsafe_allow_html=True)
 
-        st.markdown(render_sector_scene(key,frame,status),unsafe_allow_html=True)
+        st.markdown(render_sector_scene(key,frame,status,scene_data_uri(key,ambient=True)),unsafe_allow_html=True)
         if visible < active:
             st.error(f"Inconsistencia visual: motor={active}, escena={visible}. Se pausó la simulación.")
             st.session_state.sim_status="paused"
