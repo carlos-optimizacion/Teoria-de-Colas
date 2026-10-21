@@ -187,7 +187,8 @@ jobs:
               assert not at.exception, (sector,at.exception)
               assert at.session_state["v3_scenario"]==sector
               assert any(x.type=="iframe" for x in at), f"Falta previsualización 3D: {sector}"
-              assert not any(b.label=="Guardar y validar configuración" for b in at.button)
+              assert at.session_state["v3_step"]=="preview", (sector,at.session_state["v3_step"])
+              assert any(b.label=="▶ Iniciar simulación desde 0 min" for b in at.button), sector
               print("OK sector:",sector)
           PY
       - name: Integrated 3.0 AppTest (data first, 3D second, reports last)
