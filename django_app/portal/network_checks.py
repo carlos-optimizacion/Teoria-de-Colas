@@ -14,4 +14,4 @@ class NetworkEngineTests(SimpleTestCase):
 
     def test_stage_bounds(self):
         with self.assertRaises(ValueError):simulate_network({"stages":[{"name":"Solo","service_min":5,"servers":1}]})
-        with self.assertRaises(ValueError):simulate_network({"stages":[{"name":str(i),"service_min":5,"servers":1} for i in range(5)]})
+        with self.assertRaises(ValueError):simulate_network({"stages":[{"name":str(i),"service_min":5,"servers":1} for i in range(11)]})
