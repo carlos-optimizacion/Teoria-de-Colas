@@ -278,11 +278,19 @@ def run():
             else:
                 st.warning(opt["message"])
     st.subheader("6 · Reporteador de simulación")
+    try:
+        pdf_data=report_pdf(result,state.v3_optimization,state.v3_optimization_dynamic)
+        excel_data=report_xlsx(result,state.v3_optimization,state.v3_optimization_dynamic)
+    except Exception:
+        import logging
+        logging.exception("Fallo al generar el reporte Decision Lab 3.0")
+        st.error("No se pudieron generar los reportes. Consulta el diagnóstico del servidor.")
+        return
     p1,p2,p3=st.columns(3)
-    p1.download_button("Informe PDF",data=report_pdf(result,state.v3_optimization,state.v3_optimization_dynamic),
+    p1.download_button("Informe PDF",data=pdf_data,
                        file_name="decision-lab-3-informe.pdf",mime="application/pdf",
                        use_container_width=True)
-    p2.download_button("Resultados Excel",data=report_xlsx(result,state.v3_optimization,state.v3_optimization_dynamic),
+    p2.download_button("Resultados Excel",data=excel_data,
                        file_name="decision-lab-3-resultados.xlsx",
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                        use_container_width=True)
