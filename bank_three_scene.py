@@ -1,4 +1,4 @@
-"""Banco 3D: reproductor Three.js basado exclusivamente en eventos del motor Python.
+"""Reproductor Three.js multisector basado exclusivamente en eventos Python.
 
 La vista NO calcula llegadas, servicios ni resultados: reproduce las trazas
 generadas por evaluate_game. La configuración se guarda previamente en Streamlit.
@@ -6,6 +6,7 @@ generadas por evaluate_game. La configuración se guarda previamente en Streamli
 from __future__ import annotations
 
 import json
+from sector_scenes_v3 import ENVIRONMENT_JS
 
 
 def bank_scene_html(events: list[dict], config: dict, *, preview: bool = False) -> str:
@@ -15,10 +16,10 @@ def bank_scene_html(events: list[dict], config: dict, *, preview: bool = False) 
     geometry between event snapshots; it never invents clients or stations.
     """
     if not events:
-        raise ValueError("La escena bancaria necesita al menos un evento")
+        raise ValueError("El escenario 3D necesita al menos un evento")
     initial = events[0]
     if int(initial.get("active", 0)) < 1:
-        raise ValueError("La corrida debe configurar al menos una ventanilla")
+        raise ValueError("La corrida debe configurar al menos un servidor")
     data = {
         "frames": [initial] if preview else events,
         "preview": bool(preview),
@@ -35,7 +36,7 @@ def bank_scene_html(events: list[dict], config: dict, *, preview: bool = False) 
     # Prevent a JSON value ever closing the enclosing script tag.
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     payload = payload.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
-    return BANK_HTML.replace("/*__PAYLOAD__*/", "const payload = " + payload + ";")
+    return BANK_HTML.replace("/*__PAYLOAD__*/", "const payload = " + payload + ";").replace("/*__ENVIRONMENT__*/", ENVIRONMENT_JS)
 
 
 BANK_HTML = r"""<!doctype html>
@@ -161,7 +162,10 @@ const $=id=>document.getElementById(id);
 $('model-foot').textContent='Modelo '+cfg.model+' · eventos y gráficos sincronizados con el motor Python.';
 $('config').innerHTML='<span>'+sceneDef.unit+': <b>'+cfg.servers+'</b></span><span>Interarribo: <b>'+Number(cfg.arrival_min).toFixed(1)+' min</b></span><span>Servicio: <b>'+Number(cfg.service_min).toFixed(1)+' min</b></span><span>Capacidad total: <b>'+cfg.capacity+'</b></span>';
 let idx=0,playing=false,speed=1,accumulator=0,last=0;
-const maxVisibleClients=42;
+const maxVisibleClients=sector==='logistica'?16:35;
+$('stage').dataset.sector=sector;
+$('stage').dataset.environment={banco:'financial-branch',hospital:'emergency-department',
+supermercado:'grocery-checkout',logistica:'industrial-truck-yard'}[sector]||'legacy';
 $('seek').max=Math.max(0,frames.length-1);
 if(preview){$('play').disabled=true;$('state').textContent='PREVISUALIZACIÓN · SIN MOVIMIENTO';}
 window.addEventListener('unhandledrejection',()=>{$('loading').textContent='No se pudo cargar Three.js. Comprueba el acceso a cdn.jsdelivr.net.';});
@@ -170,7 +174,7 @@ try{
  const addon=await import('three/addons/controls/OrbitControls.js');
  const OrbitControls=addon.OrbitControls;
  const stage=$('stage'),scene=new THREE.Scene();
- scene.background=new THREE.Color(0xddeaf1);
+ scene.background=new THREE.Color(sector==='logistica'?0xc6dce5:sector==='hospital'?0xe2f1ef:sector==='supermercado'?0xf0e9dd:0xddeaf1);
  const camera=new THREE.PerspectiveCamera(42,1,0.1,200);
  camera.position.set(15.5,16.5,19);
  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
@@ -201,37 +205,8 @@ try{
    const tx=new THREE.CanvasTexture(can);tx.colorSpace=THREE.SRGBColorSpace;
    return new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tx,transparent:true,side:THREE.DoubleSide,depthWrite:false}));
  };
- // Architecture and signage
- box(23,.25,20,tile,[0,-.17,0]);
- box(23,3.7,.26,cream,[0,1.75,-9.8]);box(.25,3.7,20,cream,[-11.4,1.75,0]);box(.25,3.7,20,cream,[11.4,1.75,0]);
- box(23,.24,.35,navy,[0,3.63,-9.62]);box(23,.1,.35,gold,[0,3.41,-9.55]);
- box(9,1,.06,navy,[0,2.77,-9.52]);
- const bankName=label(sceneDef.title+' · DECISION LAB',8.2,.77,0xffffff,49);bankName.position.set(0,2.8,-9.46);scene.add(bankName);
- box(22.5,.016,1.9,mat(0xd8e5ed),[0,-.025,-.8]);
- for(let x=-10.5;x<=10.5;x+=1.5)box(.025,.003,19.5,mat(0xc6d8e1),[x,-.005,0]);
- for(let z=-9;z<=9;z+=1.5)box(22,.003,.025,mat(0xc6d8e1),[0,-.005,z]);
- // Glass entry facade, ticket kiosk and exit
- for(let x of [-10,-8.4,-6.8,6.8,8.4,10])box(.055,2.8,.07,steel,[x,1.5,9.65]);
- box(4,.09,.07,steel,[-7.6,2.95,9.65]);box(4,.09,.07,steel,[7.6,2.95,9.65]);
- const entryPlate=label(sceneDef.entry,2.3,.47,0x0c648d,55);entryPlate.position.set(-7.4,2.45,9.45);scene.add(entryPlate);
- const exitPlate=label(sceneDef.finish,2.1,.47,0x188167,55);exitPlate.position.set(7.5,2.45,9.45);scene.add(exitPlate);
- box(.9,1.4,.55,navy,[-8,.7,6.3]);box(.85,.16,.55,blue,[-8,1.47,6.3]);
- const ticket=label(sector==='supermercado'?'PRECIOS':sector==='fabrica'?'ORDEN':sector==='logistica'?'GUÍA':sector==='hospital'?'CITAS':'TURNOS',.84,.24,0xffffff,49);ticket.position.set(-8,1.22,6.59);scene.add(ticket);
- // Waiting room seating
- for(let x of [-8.7,-7.5,-6.3]){
-   box(.85,.12,.7,blue,[x,.47,1.8]);box(.85,.78,.11,navy,[x,.91,1.48]);
-   cyl(.065,.065,.48,steel,[x-.32,.24,2.05]);cyl(.065,.065,.48,steel,[x+.32,.24,2.05]);
- }
- // Decorative plants
- for(const x of [-10,10]){cyl(.42,.34,.58,wood,[x,.29,-7.7]);cyl(.09,.11,1.15,mat(0x38644f),[x,1.1,-7.7]);for(let d=0;d<5;d++){let leaf=sphere(.38,mat(0x4d936e),[x+Math.sin(d*2.1)*.32,1.55+Math.cos(d*3)*.18,-7.7+Math.cos(d*2.1)*.24]);leaf.scale.set(.85,1.25,.75);}}
- // Queue rails on either side; avoid crossing central service aisle
- const rail=(x,z0,z1)=>{
-   const length=Math.abs(z1-z0);for(let z=z0;z<=z1+.01;z+=2){cyl(.068,.075,1.0,steel,[x,.5,z]);sphere(.11,gold,[x,1.04,z]);}
-   const bar=cyl(.035,.035,length,blue,[x,.88,(z0+z1)/2]);bar.rotation.x=Math.PI/2;
- };
- rail(-3.55,2.0,6.0);rail(3.55,2.0,6.0);
- const floorLabel=label(sceneDef.floor,4.1,.43,0x427c9a,40);floorLabel.rotation.x=-Math.PI/2;floorLabel.position.set(0,.022,7.0);scene.add(floorLabel);
- const counters=new Map(),people=new Map();let configured=-1;
+ /*__ENVIRONMENT__*/
+  const counters=new Map(),people=new Map();let configured=-1;
  function buildCounter(i,count,clientId,draining){
    const row=i<8?0:Math.floor(i/8), col=i%8;
    const totalInRow=Math.min(8,Math.max(0,count-row*8));
