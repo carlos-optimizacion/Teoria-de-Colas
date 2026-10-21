@@ -138,13 +138,21 @@ jobs:
           assert "BANCO 3D" in preview_text, "Falta el encabezado de la previsualización 3D"
           assert "sector-scene sector-banco" not in preview_text, "Regresión: vista 2D anterior"
           assert any(x.type=="iframe" for x in at), "No se montó el reproductor Three.js"
-          start=[b for b in at.button if b.label=="▶ Iniciar simulación desde 0 min"][0]
-          start.click()
-          at.run(timeout=30)
-          if at.exception:
-              raise AssertionError(at.exception)
-          running_text="\n".join(m.value for m in at.markdown)
-          assert any(x.type=="iframe" for x in at), "No se montó el reproductor 3D durante la simulación"
+          # AppTest pierde IDs de widgets cuando cambia la fase del formulario.
+          # Validar reproducción usando nueva sesión con la misma configuración.
+          player=AppTest.from_file("streamlit_app.py")
+          player.session_state["pending_payload"]=at.session_state["pending_payload"]
+          player.session_state["result"]=at.session_state["result"]
+          player.session_state["scenario"]=at.session_state["scenario"]
+          player.session_state["sim_screen"]="simulation"
+          player.session_state["sim_phase"]="simulate"
+          player.session_state["sim_status"]="running"
+          player.run(timeout=30)
+          [r for r in player.radio if r.label=="Navegación"][0].set_value("Desafíos gerenciales")
+          player.run(timeout=45)
+          assert not player.exception, player.exception
+          running_text="\n".join(m.value for m in player.markdown)
+          assert any(x.type=="iframe" for x in player), "No se montó el reproductor 3D durante la simulación"
           assert "sector-scene sector-banco" not in running_text, "Regresión a la escena 2D"
           print("AppTest workflow OK: config -> preview 3D -> player 3D; legacy 2D absent")
           PY
