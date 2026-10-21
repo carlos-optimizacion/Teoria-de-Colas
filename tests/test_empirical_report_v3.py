@@ -22,7 +22,7 @@ FULL=["registro_id","sucursal_id","cliente_anon","llegada_ts","estado",
       "tipo_servicio","prioridad","motivo_no_atencion","fuente","observaciones"]
 
 
-def _workbook(config=None,basic=None,full=None):
+def _workbook(config=None,basic=None,full=None,turns=None):
     c={**CFG,**(config or {})}
     if basic is None:
         basic=[]
@@ -39,6 +39,10 @@ def _workbook(config=None,basic=None,full=None):
             writer,sheet_name="02_Registro_Basico",index=False,startrow=5)
         pd.DataFrame(full or [],columns=FULL).to_excel(
             writer,sheet_name="03_Registro_Completo",index=False,startrow=5)
+        if turns is not None:
+            pd.DataFrame(turns,columns=["sucursal_id","ventanilla_id","inicio_ts","fin_ts",
+                                        "estado_turno","motivo"]).to_excel(
+                writer,sheet_name="04_Turnos",index=False,startrow=5)
     return stream.getvalue()
 
 
@@ -102,3 +106,38 @@ def test_report_single_server_default_ui():
                      "replications":1,"seed":2026})
     assert report_pdf(result,None,None).startswith(b"%PDF")
     assert report_xlsx(result,None,None).startswith(b"PK")
+
+
+def test_official_full_pending_state_names_accepted():
+    start=datetime(2026,10,20,9,0)
+    rows=[]
+    for i in range(4):
+        t=start+timedelta(minutes=8*i)
+        rows.append(dict(registro_id=f"A{i}",sucursal_id="BANCO_001",cliente_anon=f"A{i}",
+                         llegada_ts=t,estado="ATENDIDO",inicio_atencion_ts=t,
+                         fin_atencion_ts=t+timedelta(minutes=5),ventanilla_id="V01"))
+    rows.append(dict(registro_id="PEND1",sucursal_id="BANCO_001",cliente_anon="PEND1",
+                     llegada_ts=start+timedelta(minutes=33),estado="EN_ESPERA_AL_CORTE"))
+    rows.append(dict(registro_id="PEND2",sucursal_id="BANCO_001",cliente_anon="PEND2",
+                     llegada_ts=start+timedelta(minutes=40),estado="EN_SERVICIO_AL_CORTE",
+                     inicio_atencion_ts=start+timedelta(minutes=41),ventanilla_id="V02"))
+    parsed=import_workbook(_workbook(config={"NIVEL_REGISTRO":"COMPLETO"},
+                                    basic=[],full=rows))
+    assert parsed["valid"],parsed["errors"]
+    assert len(parsed["service_samples"])==4
+
+
+def test_full_shift_coverage_blocks_outside_service():
+    start=datetime(2026,10,20,9,0)
+    rows=[]
+    for i in range(3):
+        t=start+timedelta(minutes=8*i)
+        rows.append(dict(registro_id=f"A{i}",sucursal_id="BANCO_001",cliente_anon=f"A{i}",
+                         llegada_ts=t,estado="ATENDIDO",inicio_atencion_ts=t,
+                         fin_atencion_ts=t+timedelta(minutes=5),ventanilla_id="V01"))
+    shifts=[dict(sucursal_id="BANCO_001",ventanilla_id="V01",
+                 inicio_ts=start,fin_ts=start+timedelta(minutes=10),estado_turno="ABIERTA")]
+    parsed=import_workbook(_workbook(config={"NIVEL_REGISTRO":"COMPLETO","INCLUYE_TURNOS":"SI"},
+                                    basic=[],full=rows,turns=shifts))
+    assert not parsed["valid"]
+    assert any("fuera del turno" in m for m in parsed["errors"])
