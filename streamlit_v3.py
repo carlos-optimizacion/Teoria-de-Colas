@@ -15,7 +15,7 @@ DJANGO = Path(__file__).resolve().parent / "django_app"
 if str(DJANGO) not in sys.path:
     sys.path.insert(0, str(DJANGO))
 
-from portal.queue_v3 import MODELS, evaluate, optimize, optimize_shifts
+from portal.queue_v3 import MODELS, evaluate, optimize, optimize_shifts, replay_replica
 from portal.empirical_v3 import import_workbook
 from portal.challenge_engine import SCENARIOS
 from bank_three_scene import bank_scene_html
@@ -200,14 +200,22 @@ def run():
         return
 
     st.subheader("3 · Simulación y monitoreo")
-    components.html(bank_scene_html(result["events"],config3d),height=890,scrolling=False)
+    index=st.selectbox("Réplica a reproducir en Three.js",list(range(1,result["replications_effective"]+1)),key="v3_replay_index")
+    visual_result=result
+    if index>1:
+        trajectory=replay_replica(raw,index)
+        visual_result=dict(result)
+        visual_result["events"]=trajectory["events"]
+        visual_result["series"]=trajectory["series"]
+        visual_result["selected_replica"]=index
+    components.html(bank_scene_html(visual_result["events"],config3d),height=890,scrolling=False)
     st.caption("Escena 3D del sector seleccionado: reproducción temporal y gráficos del mismo flujo de eventos de Python.")
     st.markdown("**Monitoreo temporal de la primera réplica**")
     metric=st.selectbox("Gráfico",["queue","busy","arrivals","completed","avg_wait","utilization"],
                         format_func=lambda x:{"queue":"Cola Q(t)","busy":"Ocupación B(t)",
                         "arrivals":"Llegadas acumuladas","completed":"Atenciones completadas",
                         "avg_wait":"Espera media acumulada","utilization":"Utilización acumulada"}[x])
-    st.plotly_chart(_plot(result,metric,{"queue":"Clientes en cola","busy":"Servidores ocupados",
+    st.plotly_chart(_plot(visual_result,metric,{"queue":"Clientes en cola","busy":"Servidores ocupados",
                   "arrivals":"Clientes","completed":"Clientes","avg_wait":"Minutos",
                   "utilization":"Proporción"}[metric]),use_container_width=True)
     st.subheader("4 · Resultados consolidados de réplicas")
@@ -279,8 +287,8 @@ def run():
                 st.warning(opt["message"])
     st.subheader("6 · Reporteador de simulación")
     try:
-        pdf_data=report_pdf(result,state.v3_optimization,state.v3_optimization_dynamic)
-        excel_data=report_xlsx(result,state.v3_optimization,state.v3_optimization_dynamic)
+        pdf_data=report_pdf(visual_result,state.v3_optimization,state.v3_optimization_dynamic)
+        excel_data=report_xlsx(visual_result,state.v3_optimization,state.v3_optimization_dynamic)
     except Exception:
         import logging
         logging.exception("Fallo al generar el reporte Decision Lab 3.0")
@@ -295,5 +303,5 @@ def run():
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                        use_container_width=True)
     p3.download_button("Experimento JSON",data=json.dumps(
-        {**result,"optimization":state.v3_optimization,"optimization_dynamic":state.v3_optimization_dynamic},ensure_ascii=False,indent=2),
+        {**visual_result,"optimization":state.v3_optimization,"optimization_dynamic":state.v3_optimization_dynamic},ensure_ascii=False,indent=2),
         file_name="decision-lab-3-reproducible.json",mime="application/json",use_container_width=True)
