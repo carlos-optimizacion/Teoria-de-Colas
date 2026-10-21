@@ -47,3 +47,14 @@ def test_rendered_scene_has_no_markdown_code_indentation():
         assert not first_nonempty.startswith("    ")
         assert all(not line.startswith("    ") for line in html.splitlines() if line.strip()), html
         assert "<div class=\"scene-decor" in html
+
+
+def test_hd_art_layer_preserves_dynamic_capacity():
+    bg="data:image/svg+xml;base64,AAAA"
+    for key in SECTOR_UI:
+        html=render_sector_scene(key,frame(3),"ready",bg)
+        assert "has-art" in html
+        assert "sector-art" in html
+        assert "art-service-grid" in html
+        assert html.count('data-configured="true"')==6  # same 3 units rendered in art + semantic flow
+        assert f"{SECTOR_UI[key]['unit_singular'].title()} 4" not in html
