@@ -132,7 +132,8 @@ jobs:
               raise AssertionError(at.exception)
           labels=[b.label for b in at.button]
           assert "▶ Iniciar simulación desde 0 min" in labels, labels
-          assert "Guardar y validar configuración" not in labels, labels
+          assert at.session_state["sim_screen"]=="simulation", "No entró en la fase de simulación"
+          assert at.session_state["pending_payload"] is not None, "Se perdió la configuración guardada"
           preview_text="\n".join(m.value for m in at.markdown)
           assert "BANCO 3D" in preview_text, "Falta el encabezado de la previsualización 3D"
           assert "sector-scene sector-banco" not in preview_text, "Regresión: vista 2D anterior"
