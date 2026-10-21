@@ -282,6 +282,7 @@ try{
  function resize(){const rect=stage.getBoundingClientRect();if(rect.width<1||rect.height<1)return;camera.aspect=rect.width/rect.height;camera.updateProjectionMatrix();renderer.setSize(rect.width,rect.height,false);}
  new ResizeObserver(resize).observe(stage);resize();
  applyFrame(0);
+ if(!preview) setPlaying(true); // El botón Iniciar de Streamlit comienza la reproducción.
  $('loading').remove();
  function animate(ms){
    requestAnimationFrame(animate);
