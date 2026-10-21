@@ -423,3 +423,15 @@ def optimize_shifts(raw: dict, maximum: int, *, target: float | None = None) -> 
             "cost":best,"sla":trial["metrics"]["sla"],"evaluations":visits+1,
             "max_servers":limit,"horizon":base.horizon,
             "caveat":"Heurística de reducción por franjas de 60 minutos; no garantiza el óptimo global."}
+
+
+
+def replay_replica(raw: dict, replica: int) -> dict:
+    """Regenerar una réplica sin modificar las medias consolidadas.
+
+    La semilla se calcula con la misma regla que evaluate; navegación repetible.
+    """
+    spec=validate(raw)
+    n=1 if spec.mode=="deterministic" else spec.replications
+    idx=_integer(replica,"Número de réplica",1,n)
+    return simulate_one(spec,spec.seed+(idx-1)*1709)
