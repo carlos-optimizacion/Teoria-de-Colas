@@ -29,6 +29,7 @@ def bank_scene_html(events: list[dict], config: dict, *, preview: bool = False) 
             "duration": config.get("duration", 0),
             "servers": int(initial["active"]),
             "model": str(config.get("model", "M/M/s/K")),
+            "sector": str(config.get("sector", "banco")),
         },
     }
     # Prevent a JSON value ever closing the enclosing script tag.
@@ -105,6 +106,20 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 <script type="module">
 /*__PAYLOAD__*/
 const frames=payload.frames, cfg=payload.config, preview=payload.preview;
+const sceneCatalog={
+ banco:{title:'BANCO',icon:'🏦',unit:'VENTANILLA',entry:'INGRESO',waiting:'SALA DE ESPERA',service:'VENTANILLAS',finish:'SALIDA',floor:'FILA DE ESPERA'},
+ hospital:{title:'HOSPITAL',icon:'🏥',unit:'BOX',entry:'ADMISIÓN',waiting:'ESPERA PACIENTES',service:'BOXES CLÍNICOS',finish:'ALTA',floor:'ESPERA DE PACIENTES'},
+ supermercado:{title:'SUPERMERCADO',icon:'🛒',unit:'CAJA',entry:'INGRESO',waiting:'COLA DE CAJAS',service:'CAJAS REGISTRADORAS',finish:'SALIDA',floor:'COLA DE COMPRAS'},
+ fabrica:{title:'FÁBRICA',icon:'🏭',unit:'ESTACIÓN',entry:'PRODUCCIÓN',waiting:'LOTE EN ESPERA',service:'INSPECCIÓN',finish:'LIBERACIÓN',floor:'COLA DE INSPECCIÓN'},
+ logistica:{title:'CENTRO LOGÍSTICO',icon:'🚚',unit:'ANDÉN',entry:'INGRESO',waiting:'ESPERA DE CARGA',service:'ANDENES',finish:'DESPACHO',floor:'COLA DE ANDENES'}
+};
+const sector=Object.prototype.hasOwnProperty.call(sceneCatalog,cfg.sector)?cfg.sector:'banco';
+const sceneDef=sceneCatalog[sector];
+document.querySelector('.brand b').textContent='DECISION LAB · '+sceneDef.title+' 3D';
+document.querySelector('.brand-mark').textContent=sceneDef.icon;
+document.querySelector('.brand small').textContent='Simulación de eventos discretos · '+sceneDef.service;
+document.querySelector('.zone-labels').innerHTML='<span>01 · '+sceneDef.entry+'</span><span>02 · '+sceneDef.waiting+'</span><span>03 · '+sceneDef.service+'</span><span>04 · '+sceneDef.finish+'</span>';
+
 const graphTime=Math.max(1,Number(cfg.duration)||Number(frames[frames.length-1]?.t)||1);
 const maxGraphQueue=Math.max(1,...frames.map(f=>Number(f.queue||0)));
 const maxGraphBusy=Math.max(1,Number(cfg.servers)||1);
@@ -177,17 +192,17 @@ try{
  box(23,3.7,.26,cream,[0,1.75,-9.8]);box(.25,3.7,20,cream,[-11.4,1.75,0]);box(.25,3.7,20,cream,[11.4,1.75,0]);
  box(23,.24,.35,navy,[0,3.63,-9.62]);box(23,.1,.35,gold,[0,3.41,-9.55]);
  box(9,1,.06,navy,[0,2.77,-9.52]);
- const bankName=label('BANCO · DECISION LAB',8.2,.77,0xffffff,49);bankName.position.set(0,2.8,-9.46);scene.add(bankName);
+ const bankName=label(sceneDef.title+' · DECISION LAB',8.2,.77,0xffffff,49);bankName.position.set(0,2.8,-9.46);scene.add(bankName);
  box(22.5,.016,1.9,mat(0xd8e5ed),[0,-.025,-.8]);
  for(let x=-10.5;x<=10.5;x+=1.5)box(.025,.003,19.5,mat(0xc6d8e1),[x,-.005,0]);
  for(let z=-9;z<=9;z+=1.5)box(22,.003,.025,mat(0xc6d8e1),[0,-.005,z]);
  // Glass entry facade, ticket kiosk and exit
  for(let x of [-10,-8.4,-6.8,6.8,8.4,10])box(.055,2.8,.07,steel,[x,1.5,9.65]);
  box(4,.09,.07,steel,[-7.6,2.95,9.65]);box(4,.09,.07,steel,[7.6,2.95,9.65]);
- const entryPlate=label('INGRESO',2.3,.47,0x0c648d,55);entryPlate.position.set(-7.4,2.45,9.45);scene.add(entryPlate);
- const exitPlate=label('SALIDA',2.1,.47,0x188167,55);exitPlate.position.set(7.5,2.45,9.45);scene.add(exitPlate);
+ const entryPlate=label(sceneDef.entry,2.3,.47,0x0c648d,55);entryPlate.position.set(-7.4,2.45,9.45);scene.add(entryPlate);
+ const exitPlate=label(sceneDef.finish,2.1,.47,0x188167,55);exitPlate.position.set(7.5,2.45,9.45);scene.add(exitPlate);
  box(.9,1.4,.55,navy,[-8,.7,6.3]);box(.85,.16,.55,blue,[-8,1.47,6.3]);
- const ticket=label('TURNOS',.84,.24,0xffffff,55);ticket.position.set(-8,1.22,6.59);scene.add(ticket);
+ const ticket=label(sector==='supermercado'?'PRECIOS':sector==='fabrica'?'ORDEN':sector==='logistica'?'GUÍA':sector==='hospital'?'CITAS':'TURNOS',.84,.24,0xffffff,49);ticket.position.set(-8,1.22,6.59);scene.add(ticket);
  // Waiting room seating
  for(let x of [-8.7,-7.5,-6.3]){
    box(.85,.12,.7,blue,[x,.47,1.8]);box(.85,.78,.11,navy,[x,.91,1.48]);
@@ -201,24 +216,61 @@ try{
    const bar=cyl(.035,.035,length,blue,[x,.88,(z0+z1)/2]);bar.rotation.x=Math.PI/2;
  };
  rail(-3.55,2.0,6.0);rail(3.55,2.0,6.0);
- const floorLabel=label('FILA DE ESPERA',4.1,.43,0x427c9a,40);floorLabel.rotation.x=-Math.PI/2;floorLabel.position.set(0,.022,7.0);scene.add(floorLabel);
+ const floorLabel=label(sceneDef.floor,4.1,.43,0x427c9a,40);floorLabel.rotation.x=-Math.PI/2;floorLabel.position.set(0,.022,7.0);scene.add(floorLabel);
  const counters=new Map(),people=new Map();let configured=-1;
  function buildCounter(i,count,clientId,draining){
    const row=i<8?0:Math.floor(i/8), col=i%8;
    const totalInRow=Math.min(8,Math.max(0,count-row*8));
    const x=(col-(totalInRow-1)/2)*2.55, z=-4.6-row*2.9;
    const group=new THREE.Group();scene.add(group);
-   box(2.18,.94,.92,wood,[x,.47,z],group);
-   box(2.2,.115,1.0,navy,[x,1.0,z],group);
-   box(2.05,1.05,.055,glass,[x,1.76,z-.26],group);
-   box(.055,1.1,.06,steel,[x-1.02,1.75,z-.25],group);box(.055,1.1,.06,steel,[x+1.02,1.75,z-.25],group);
-   box(2.12,.07,.07,steel,[x,2.30,z-.25],group);
-   const plaque=box(1.73,.43,.07,navy,[x,2.75,z-.15],group);
-   const t=label('VENTANILLA '+(i+1),1.66,.28,0xffffff,54);t.position.set(x,2.75,z-.09);group.add(t);
-   box(.62,.42,.10,mat(0x293b48),[x,1.45,z-.8],group);
-   box(.54,.08,.31,steel,[x,1.12,z-.7],group);
+   const sign=box(1.73,.43,.07,navy,[x,2.75,z-.15],group);
+   const t=label(sceneDef.unit+' '+(i+1),1.66,.28,0xffffff,54);
+   t.position.set(x,2.75,z-.09);group.add(t);
    const dot=sphere(.12,mat(0x28ac75),[x+.88,2.52,z-.10],group);
-   const staff=createHuman('staff-'+i,0x326d9b);staff.position.set(x,0,z-1.25);group.add(staff);
+   if(sector==='banco'){
+     box(2.18,.94,.92,wood,[x,.47,z],group);
+     box(2.2,.115,1.0,navy,[x,1.0,z],group);
+     box(2.05,1.05,.055,glass,[x,1.76,z-.26],group);
+     box(.055,1.1,.06,steel,[x-1.02,1.75,z-.25],group);
+     box(.055,1.1,.06,steel,[x+1.02,1.75,z-.25],group);
+     box(2.12,.07,.07,steel,[x,2.30,z-.25],group);
+     box(.62,.42,.10,mat(0x293b48),[x,1.45,z-.8],group);
+     box(.54,.08,.31,steel,[x,1.12,z-.7],group);
+   } else if(sector==='hospital'){
+     box(2.25,.18,.95,mat(0xe8eef2),[x,.74,z+.27],group);
+     box(2.25,.12,1.05,blue,[x,.88,z+.27],group);
+     for(const dx of [-.84,.84]){
+       cyl(.05,.05,.64,steel,[x+dx,.38,z+.55],group);
+       cyl(.05,.05,.64,steel,[x+dx,.38,z-.05],group);
+     }
+     box(.55,.43,.08,mat(0x1e3647),[x+.65,1.49,z-.25],group);
+     const screen=label('ECG',.48,.23,0x28a879,45);screen.position.set(x+.65,1.50,z-.18);group.add(screen);
+     box(2.3,1.12,.05,glass,[x,1.6,z-.81],group);
+   } else if(sector==='supermercado'){
+     box(2.22,.85,.95,mat(0x879fae),[x,.43,z],group);
+     box(2.2,.12,.93,mat(0x2e556d),[x,.90,z],group);
+     box(.8,.075,.85,mat(0x1f2933),[x-.48,1,z],group);
+     box(.55,.38,.09,mat(0x253f51),[x+.60,1.40,z-.25],group);
+     box(.42,.15,.35,mat(0xe9b85c),[x-.48,1.13,z],group);
+     box(.31,.2,.31,mat(0x71bfb0),[x-.10,1.15,z],group);
+   } else if(sector==='fabrica'){
+     box(2.23,.23,1.08,steel,[x,.78,z],group);
+     for(const dx of [-.88,.88])box(.1,.67,.12,navy,[x+dx,.37,z-.30],group);
+     box(.85,.67,.49,mat(0x5e7f93),[x,1.21,z-.22],group);
+     box(.54,.11,.39,mat(0x273d4b),[x,1.59,z-.22],group);
+     box(.39,.37,.4,mat(0xc9a65b),[x,1.03,z+.12],group);
+     cyl(.065,.065,.48,mat(0xd69b41),[x+.87,1.16,z-.21],group);
+   } else if(sector==='logistica'){
+     box(2.28,.2,1.3,steel,[x,.52,z],group);
+     box(2.1,.12,1.3,navy,[x,.63,z],group);
+     box(1.75,.78,.28,mat(0xb6c7d0),[x,.39,z-1.0],group);
+     for(let j=0;j<3;j++){
+       box(.55,.4,.43,mat(j%2?0xb99267:0xcfaa77),[x+(j-1)*.60,1.0,z+.13],group);
+     }
+     box(1.83,.11,.26,mat(0xe0b55d),[x,.86,z+.60],group);
+   }
+   const staff=createHuman('staff-'+i,sector==='hospital'?0x69bbbc:sector==='fabrica'?0xd2a149:0x326d9b);
+   staff.position.set(x,0,z-1.25);group.add(staff);
    counters.set(i,{group,x,z,spot:new THREE.Vector3(x,0,z+1.0),dot});
  }
  function createHuman(id,color){
@@ -288,7 +340,7 @@ try{
    $('stat-rho').textContent=(100*Number(f.utilization_so_far||0)).toFixed(1)+'%';
    graphUpdate(idx);
    $('event-count').textContent='Evento '+idx+' / '+(frames.length-1);
-   const titles={start:'Inicio de jornada',arrival:'Llegada de cliente',departure:'Atención terminada',decision:'Cambio de dotación',shift:'Cambio de turno',incident:'Incidente',end:'Fin de jornada',abandon:'Abandono'};
+   const titles={start:'Inicio de jornada',arrival:'Llegada al sistema',departure:'Servicio terminado',decision:'Cambio de dotación',shift:'Cambio de turno',incident:'Incidente',end:'Fin de jornada',abandon:'Abandono',blocked:'Rechazo por capacidad'};
    $('event-kind').textContent=titles[f.kind]||String(f.kind||'Evento');
    $('seek').value=idx;
    $('back').disabled=preview||idx===0;
