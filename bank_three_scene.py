@@ -1,4 +1,4 @@
-"""Banco 3D: reproductor Three.js basado exclusivamente en eventos del motor Python.
+"""Reproductor Three.js multisector basado exclusivamente en eventos Python.
 
 La vista NO calcula llegadas, servicios ni resultados: reproduce las trazas
 generadas por evaluate_game. La configuración se guarda previamente en Streamlit.
@@ -6,6 +6,7 @@ generadas por evaluate_game. La configuración se guarda previamente en Streamli
 from __future__ import annotations
 
 import json
+from sector_scenes_v3 import ENVIRONMENT_JS
 
 
 def bank_scene_html(events: list[dict], config: dict, *, preview: bool = False) -> str:
@@ -15,10 +16,10 @@ def bank_scene_html(events: list[dict], config: dict, *, preview: bool = False) 
     geometry between event snapshots; it never invents clients or stations.
     """
     if not events:
-        raise ValueError("La escena bancaria necesita al menos un evento")
+        raise ValueError("El escenario 3D necesita al menos un evento")
     initial = events[0]
     if int(initial.get("active", 0)) < 1:
-        raise ValueError("La corrida debe configurar al menos una ventanilla")
+        raise ValueError("La corrida debe configurar al menos un servidor")
     data = {
         "frames": [initial] if preview else events,
         "preview": bool(preview),
@@ -35,7 +36,7 @@ def bank_scene_html(events: list[dict], config: dict, *, preview: bool = False) 
     # Prevent a JSON value ever closing the enclosing script tag.
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     payload = payload.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
-    return BANK_HTML.replace("/*__PAYLOAD__*/", "const payload = " + payload + ";")
+    return BANK_HTML.replace("/*__PAYLOAD__*/", "const payload = " + payload + ";").replace("/*__ENVIRONMENT__*/", ENVIRONMENT_JS)
 
 
 BANK_HTML = r"""<!doctype html>
@@ -161,7 +162,10 @@ const $=id=>document.getElementById(id);
 $('model-foot').textContent='Modelo '+cfg.model+' · eventos y gráficos sincronizados con el motor Python.';
 $('config').innerHTML='<span>'+sceneDef.unit+': <b>'+cfg.servers+'</b></span><span>Interarribo: <b>'+Number(cfg.arrival_min).toFixed(1)+' min</b></span><span>Servicio: <b>'+Number(cfg.service_min).toFixed(1)+' min</b></span><span>Capacidad total: <b>'+cfg.capacity+'</b></span>';
 let idx=0,playing=false,speed=1,accumulator=0,last=0;
-const maxVisibleClients=42;
+const maxVisibleClients=sector==='logistica'?16:35;
+$('stage').dataset.sector=sector;
+$('stage').dataset.environment={banco:'financial-branch',hospital:'emergency-department',
+supermercado:'grocery-checkout',logistica:'industrial-truck-yard'}[sector]||'legacy';
 $('seek').max=Math.max(0,frames.length-1);
 if(preview){$('play').disabled=true;$('state').textContent='PREVISUALIZACIÓN · SIN MOVIMIENTO';}
 window.addEventListener('unhandledrejection',()=>{$('loading').textContent='No se pudo cargar Three.js. Comprueba el acceso a cdn.jsdelivr.net.';});
@@ -170,7 +174,7 @@ try{
  const addon=await import('three/addons/controls/OrbitControls.js');
  const OrbitControls=addon.OrbitControls;
  const stage=$('stage'),scene=new THREE.Scene();
- scene.background=new THREE.Color(0xddeaf1);
+ scene.background=new THREE.Color(sector==='logistica'?0xc6dce5:sector==='hospital'?0xe2f1ef:sector==='supermercado'?0xf0e9dd:0xddeaf1);
  const camera=new THREE.PerspectiveCamera(42,1,0.1,200);
  camera.position.set(15.5,16.5,19);
  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
@@ -201,46 +205,21 @@ try{
    const tx=new THREE.CanvasTexture(can);tx.colorSpace=THREE.SRGBColorSpace;
    return new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tx,transparent:true,side:THREE.DoubleSide,depthWrite:false}));
  };
- // Architecture and signage
- box(23,.25,20,tile,[0,-.17,0]);
- box(23,3.7,.26,cream,[0,1.75,-9.8]);box(.25,3.7,20,cream,[-11.4,1.75,0]);box(.25,3.7,20,cream,[11.4,1.75,0]);
- box(23,.24,.35,navy,[0,3.63,-9.62]);box(23,.1,.35,gold,[0,3.41,-9.55]);
- box(9,1,.06,navy,[0,2.77,-9.52]);
- const bankName=label(sceneDef.title+' · DECISION LAB',8.2,.77,0xffffff,49);bankName.position.set(0,2.8,-9.46);scene.add(bankName);
- box(22.5,.016,1.9,mat(0xd8e5ed),[0,-.025,-.8]);
- for(let x=-10.5;x<=10.5;x+=1.5)box(.025,.003,19.5,mat(0xc6d8e1),[x,-.005,0]);
- for(let z=-9;z<=9;z+=1.5)box(22,.003,.025,mat(0xc6d8e1),[0,-.005,z]);
- // Glass entry facade, ticket kiosk and exit
- for(let x of [-10,-8.4,-6.8,6.8,8.4,10])box(.055,2.8,.07,steel,[x,1.5,9.65]);
- box(4,.09,.07,steel,[-7.6,2.95,9.65]);box(4,.09,.07,steel,[7.6,2.95,9.65]);
- const entryPlate=label(sceneDef.entry,2.3,.47,0x0c648d,55);entryPlate.position.set(-7.4,2.45,9.45);scene.add(entryPlate);
- const exitPlate=label(sceneDef.finish,2.1,.47,0x188167,55);exitPlate.position.set(7.5,2.45,9.45);scene.add(exitPlate);
- box(.9,1.4,.55,navy,[-8,.7,6.3]);box(.85,.16,.55,blue,[-8,1.47,6.3]);
- const ticket=label(sector==='supermercado'?'PRECIOS':sector==='fabrica'?'ORDEN':sector==='logistica'?'GUÍA':sector==='hospital'?'CITAS':'TURNOS',.84,.24,0xffffff,49);ticket.position.set(-8,1.22,6.59);scene.add(ticket);
- // Waiting room seating
- for(let x of [-8.7,-7.5,-6.3]){
-   box(.85,.12,.7,blue,[x,.47,1.8]);box(.85,.78,.11,navy,[x,.91,1.48]);
-   cyl(.065,.065,.48,steel,[x-.32,.24,2.05]);cyl(.065,.065,.48,steel,[x+.32,.24,2.05]);
- }
- // Decorative plants
- for(const x of [-10,10]){cyl(.42,.34,.58,wood,[x,.29,-7.7]);cyl(.09,.11,1.15,mat(0x38644f),[x,1.1,-7.7]);for(let d=0;d<5;d++){let leaf=sphere(.38,mat(0x4d936e),[x+Math.sin(d*2.1)*.32,1.55+Math.cos(d*3)*.18,-7.7+Math.cos(d*2.1)*.24]);leaf.scale.set(.85,1.25,.75);}}
- // Queue rails on either side; avoid crossing central service aisle
- const rail=(x,z0,z1)=>{
-   const length=Math.abs(z1-z0);for(let z=z0;z<=z1+.01;z+=2){cyl(.068,.075,1.0,steel,[x,.5,z]);sphere(.11,gold,[x,1.04,z]);}
-   const bar=cyl(.035,.035,length,blue,[x,.88,(z0+z1)/2]);bar.rotation.x=Math.PI/2;
- };
- rail(-3.55,2.0,6.0);rail(3.55,2.0,6.0);
- const floorLabel=label(sceneDef.floor,4.1,.43,0x427c9a,40);floorLabel.rotation.x=-Math.PI/2;floorLabel.position.set(0,.022,7.0);scene.add(floorLabel);
- const counters=new Map(),people=new Map();let configured=-1;
+ /*__ENVIRONMENT__*/
+  const counters=new Map(),people=new Map();let configured=-1;
  function buildCounter(i,count,clientId,draining){
-   const row=i<8?0:Math.floor(i/8), col=i%8;
-   const totalInRow=Math.min(8,Math.max(0,count-row*8));
-   const x=(col-(totalInRow-1)/2)*2.55, z=-4.6-row*2.9;
+   const row=sector==='logistica'?0:Math.floor(i/8);
+   const col=sector==='logistica'?i:i%8;
+   const totalInRow=sector==='logistica'?count:Math.min(8,Math.max(0,count-row*8));
+   const spacing=sector==='logistica'?Math.min(2.48,20.6/Math.max(1,count)):2.55;
+   const x=(col-(totalInRow-1)/2)*spacing, z=-4.6-row*2.9;
    const group=new THREE.Group();scene.add(group);
-   const sign=box(1.73,.43,.07,navy,[x,2.75,z-.15],group);
+   const signZ=sector==='logistica'?-9.05:z-.15;
+   const signY=sector==='logistica'?2.80:2.75;
+   box(1.73,.43,.07,navy,[x,signY,signZ],group);
    const t=label(sceneDef.unit+' '+(i+1),1.66,.28,0xffffff,54);
-   t.position.set(x,2.75,z-.09);group.add(t);
-   const dot=sphere(.12,mat(0x28ac75),[x+.88,2.52,z-.10],group);
+   t.position.set(x,signY,signZ+.07);group.add(t);
+   const dot=sphere(.12,mat(0x28ac75),[x+.88,signY-.24,signZ+.07],group);
    if(sector==='banco'){
      box(2.18,.94,.92,wood,[x,.47,z],group);
      box(2.2,.115,1.0,navy,[x,1.0,z],group);
@@ -260,6 +239,15 @@ try{
      box(.55,.43,.08,mat(0x1e3647),[x+.65,1.49,z-.25],group);
      const screen=label('ECG',.48,.23,0x28a879,45);screen.position.set(x+.65,1.50,z-.18);group.add(screen);
      box(2.3,1.12,.05,glass,[x,1.6,z-.81],group);
+     // Camilla asistencial, mamparas, monitor y soporte de suero.
+     for(const dx of [-1.12,1.12])
+       box(.075,2.1,1.48,mat(0x80c9bf,{transparent:true,opacity:.39}),[x+dx,1.32,z+.10],group);
+     box(.45,.28,.06,mat(0x18394a),[x+.64,1.58,z-.12],group);
+     const ecg=label('♥ 78',.40,.20,0x4ce1ba,43);ecg.position.set(x+.64,1.59,z-.075);group.add(ecg);
+     cyl(.038,.038,1.8,steel,[x-.84,1.34,z-.73],group);
+     box(.56,.055,.05,steel,[x-.84,2.23,z-.73],group);
+     box(.22,.35,.1,glass,[x-.61,1.94,z-.73],group);
+     box(.58,.08,.76,mat(0xffffff),[x,.96,z+.18],group);
    } else if(sector==='supermercado'){
      box(2.22,.85,.95,mat(0x879fae),[x,.43,z],group);
      box(2.2,.12,.93,mat(0x2e556d),[x,.90,z],group);
@@ -267,6 +255,12 @@ try{
      box(.55,.38,.09,mat(0x253f51),[x+.60,1.40,z-.25],group);
      box(.42,.15,.35,mat(0xe9b85c),[x-.48,1.13,z],group);
      box(.31,.2,.31,mat(0x71bfb0),[x-.10,1.15,z],group);
+     // Lector de código de barras y mercancía sobre la cinta.
+     box(.12,.27,.27,mat(0x171f28),[x+.15,1.2,z+.30],group);
+     box(.44,.12,.60,mat(0x263037),[x+.76,1.04,z+.15],group);
+     box(.34,.29,.24,mat(0xd3b37c),[x-.62,1.18,z+.10],group);
+     sphere(.17,mat(0xd45e50),[x-.27,1.16,z+.12],group);
+     box(.22,.24,.24,mat(0x71b88a),[x,1.18,z+.12],group);
    } else if(sector==='fabrica'){
      box(2.23,.23,1.08,steel,[x,.78,z],group);
      for(const dx of [-.88,.88])box(.1,.67,.12,navy,[x+dx,.37,z-.30],group);
@@ -275,17 +269,34 @@ try{
      box(.39,.37,.4,mat(0xc9a65b),[x,1.03,z+.12],group);
      cyl(.065,.065,.48,mat(0xd69b41),[x+.87,1.16,z-.21],group);
    } else if(sector==='logistica'){
-     box(2.28,.2,1.3,steel,[x,.52,z],group);
-     box(2.1,.12,1.3,navy,[x,.63,z],group);
-     box(1.75,.78,.28,mat(0xb6c7d0),[x,.39,z-1.0],group);
-     for(let j=0;j<3;j++){
-       box(.55,.4,.43,mat(j%2?0xb99267:0xcfaa77),[x+(j-1)*.60,1.0,z+.13],group);
-     }
-     box(1.83,.11,.26,mat(0xe0b55d),[x,.86,z+.60],group);
-   }
-   const staff=createHuman('staff-'+i,sector==='hospital'?0x69bbbc:sector==='fabrica'?0xd2a149:0x326d9b);
-   staff.position.set(x,0,z-1.25);group.add(staff);
-   counters.set(i,{group,x,z,spot:new THREE.Vector3(x,0,z+1.0),dot});
+      // Puerta de muelle, plataforma elevada, defensas y pallets.
+      const shutter=mat(0x7a98aa,{metalness:.35,roughness:.42});
+      box(2.05,2.50,.14,mat(0x385266),[x,1.27,-9.40],group);
+      box(1.85,2.12,.13,shutter,[x,1.20,-9.27],group);
+      for(let h=.28;h<2.3;h+=.30)
+        box(1.85,.033,.15,mat(0xb4c7d0),[x,h,-9.17],group);
+      for(const dx of [-.99,.99]){
+        box(.14,2.36,.24,mat(0x27343e),[x+dx,1.18,-9.12],group);
+        box(.11,.72,.25,mat(0xe8b83e),[x+dx,.46,-8.91],group);
+      }
+      box(2.25,.68,1.20,mat(0x657988),[x,.35,-7.2],group);
+      box(2.25,.13,1.20,mat(0xe5b449),[x,.75,-7.18],group);
+      box(2.25,.07,.09,mat(0x22282f),[x,.82,-6.62],group);
+      for(const dx of [-.52,.52]){
+        box(.80,.10,.60,wood,[x+dx,.87,-7.16],group);
+        box(.65,.48,.53,mat(dx<0?0xbe905e:0xd0a775),[x+dx,1.18,-7.16],group);
+      }
+      for(const dx of [-1.04,1.04])
+        box(.075,.01,2.1,mat(0xf0bf4a),[x+dx,-.01,-5.0],group);
+      group.userData.kind='loading-dock';
+    }
+    const staff=createHuman('staff-'+i,sector==='hospital'?0x54acaa:sector==='logistica'?0xe4aa43:sector==='supermercado'?0x328a65:0x326d9b);
+   if(sector==='logistica'){
+      staff.scale.set(.8,.8,.8);
+      const helmet=sphere(.23,mat(0xf3c24a),[0,1.82,0],staff);helmet.scale.y=.4;
+    }
+    staff.position.set(sector==='logistica'?x-.72:x,0,sector==='logistica'?-6.55:z-1.25);group.add(staff);
+   counters.set(i,{group,x,z,spot:new THREE.Vector3(x,0,sector==='logistica'?-6.00:z+1.0),dot});
  }
  function createHuman(id,color){
    const g=new THREE.Group();const tone=[0xe6a978,0xc48b63,0xf0c3a4,0xa46f53][Math.abs(Number(id.toString().replace(/\D/g,''))||0)%4];
@@ -302,7 +313,20 @@ try{
    return g;
  }
  function createActor(id,color){
-   if(sector!=='logistica')return createHuman(id,color);
+   if(sector==='supermercado'){
+      const shopper=createHuman(id,color),cart=new THREE.Group();
+      shopper.add(cart);cart.position.set(.49,0,.66);
+      box(.76,.47,.54,mat(0x86aebe,{transparent:true,opacity:.65}),[0,.72,0],cart);
+      for(const xx of [-.34,.34])for(const zz of [-.21,.21]){
+        const wheel=cyl(.09,.09,.06,mat(0x273943),[xx,.17,zz],cart);
+        wheel.rotation.z=Math.PI/2;
+      }
+      for(const xx of [-.32,.32])cyl(.024,.024,.65,steel,[xx,.45,.24],cart);
+      box(.76,.06,.08,steel,[0,1.12,.25],cart);
+      return shopper;
+    }
+    if(sector==='hospital')return createHuman(id,0x86b4c0);
+    if(sector!=='logistica')return createHuman(id,color);
    // En logística los clientes del modelo representan camiones, no personas.
    const truck=new THREE.Group(),paint=mat(color),dark=mat(0x2c3c49);
    box(.78,.51,1.23,paint,[0,.53,-.12],truck);
@@ -325,12 +349,18 @@ try{
    if(current!==configured){configured=current;for(const c of counters.values()){scene.remove(c.group);}counters.clear();}
    for(const i of desired)if(!counters.has(i))buildCounter(i,current,serverList[i],i>=current);
    for(const [i,c] of counters)c.dot.material.color.setHex(i>=current?0xe59e53:(serverList[i]!=null?0xf1bd50:0x29b679));
+   stage.dataset.stations=String(counters.size);
+   stage.dataset.stationType={banco:'teller-window',hospital:'clinical-box',supermercado:'checkout-lane',
+     logistica:'loading-dock'}[sector]||'legacy';
  }
  function targets(f){
    const target=new Map(),q=(f.queue_ids||[]);
    // The people displayed are a literal subset of the backend queue; totals remain exact.
    q.slice(0,maxVisibleClients).forEach((id,j)=>{
-     const column=j%5, row=Math.floor(j/5),x=(column-2)*1.05,z=2.1+row*.72;
+     const column=sector==='logistica'?j%4:j%5;
+      const row=sector==='logistica'?Math.floor(j/4):Math.floor(j/5);
+      const x=sector==='logistica'?(column-1.5)*2.48:(column-2)*1.05;
+      const z=sector==='logistica'?1.05+row*2.05:2.1+row*.79;
      target.set(String(id),new THREE.Vector3(x,0,z));
    });
    (f.servers||[]).forEach((id,i)=>{
@@ -374,7 +404,7 @@ try{
    $('seek').value=idx;
    $('back').disabled=preview||idx===0;
    $('next').disabled=preview||idx===frames.length-1;
-   $('visual-limit').textContent=Number(f.queue||0)>maxVisibleClients?'Se muestran hasta '+maxVisibleClients+' clientes en espera; el contador refleja el total real.':'';
+   $('visual-limit').textContent=Number(f.queue||0)>maxVisibleClients?'Se muestran hasta '+maxVisibleClients+' '+(sector==='logistica'?'camiones':sector==='hospital'?'pacientes':'clientes')+' en espera; el contador refleja el total real.':'';
    if(idx===frames.length-1&&!preview){playing=false;$('state').textContent='JORNADA FINALIZADA';$('state').className='state finished';$('play').textContent='▶ Repetir';}
  }
  function setPlaying(p){
@@ -416,7 +446,7 @@ try{
      const rate=Math.min(1,dt*3.7),old=o.person.position;
      old.lerp(o.target,rate);
      const moving=old.distanceTo(o.target)>.07;
-     o.person.children[0].rotation.z=moving?Math.sin(ms*.011+Number(id))*.065:0;
+     if(sector!=='logistica')o.person.children[0].rotation.z=moving?Math.sin(ms*.011+Number(id))*.065:0;
      if(o.leaving && ms>o.leaveAt){scene.remove(o.person);people.delete(id);}
    }
    controls.update();renderer.render(scene,camera);
