@@ -158,12 +158,20 @@ def run():
             if finite:
                 raw["capacity"]=int(capacity)
             if mode=="empirical":
+                if sample_data.get("arrival_profile") and int(horizon)!=sample_data.get("horizon"):
+                    st.error("Para el muestreo por franjas el horizonte debe coincidir con HORIZONTE_SIM_MIN de la plantilla Excel.")
+                    return
                 raw["arrival_samples"]=sample_data["arrival_samples"]
                 raw["service_samples"]=sample_data["service_samples"]
+                if sample_data.get("arrival_profile"):
+                    raw["arrival_profile"]=sample_data["arrival_profile"]
+                    raw["profile_bin"]=sample_data["profile_bin"]
                 raw["arrival_mean"]=sample_data["avg_interarrival"]
                 raw["service_mean"]=sample_data["avg_service"]
                 raw["empirical_quality"]={"rows":sample_data["rows"],"level":sample_data["level"],
-                                          "warnings":sample_data["warnings"],"days":sample_data["days"]}
+                                          "warnings":sample_data["warnings"],"days":sample_data["days"],
+                                          "sampling_method":sample_data.get("sampling_method"),
+                                          "source_sha256":__import__("hashlib").sha256(file.getvalue()).hexdigest()}
             try:
                 result=evaluate(raw)
             except (ValueError,RuntimeError) as exc:
