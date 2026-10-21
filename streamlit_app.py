@@ -20,6 +20,7 @@ from queue_core import (
 from streamlit_visual_logic import station_descriptors
 from streamlit_sector_scenes import SECTOR_UI, render_sector_scene, configured_units
 from bank_three_scene import bank_scene_html
+from network_three_scene import network_scene_html
 import streamlit.components.v1 as components
 from streamlit_v3 import run as run_decision_lab_v3
 from experiment_registry_v3 import comparison_rows, comparable, audit_export
@@ -529,16 +530,18 @@ def economics():
 
 def network():
     st.header("Red de colas multietapa")
-    st.caption("Una sola entidad recorre de 2 a 4 etapas. Los indicadores se consolidan entre "
+    st.caption("Una sola entidad recorre de 2 a 10 etapas. Los indicadores se consolidan entre "
                "réplicas independientes; la gráfica muestra la primera trayectoria.")
     c1,c2,c3,c4=st.columns(4)
     arrival=c1.number_input("Interarribo medio (min)",.1,240.0,4.0,key="na")
     horizon=c2.number_input("Horizonte (min)",30,1440,480,key="nhorizon")
     reps=c3.number_input("Número de réplicas",1,40,10,key="nreps")
     seed=c4.number_input("Semilla de simulación",1,999999999,2026,key="nseed")
-    count=st.slider("Etapas",2,4,3)
+    count=st.slider("Etapas",2,10,3)
     stages=[]
-    defaults=[("Recepción",5,2),("Atención",8,3),("Pago",4,2),("Entrega",6,2)]
+    defaults=[("Ingreso",5,2),("Registro",6,2),("Validación",7,2),("Atención",8,3),
+              ("Evaluación",6,2),("Verificación",5,2),("Autorización",7,2),
+              ("Procesamiento",8,3),("Entrega",5,2),("Salida",4,2)]
     for i in range(count):
         a,b,c=st.columns([1.2,1,1])
         name=a.text_input("Nombre de etapa",defaults[i][0],key=f"nn{i}")
@@ -553,10 +556,29 @@ def network():
             st.error(f"Configuración de red inválida: {exc}")
         else:
             st.session_state.network_result=result
+            st.session_state.network_step="preview"
+            st.rerun()
     if "network_result" not in st.session_state:
         st.info("Configura la red y pulsa Simular red para ver el flujo y las estadísticas.")
         return
     r=st.session_state.network_result
+    if any("queue_ids" not in f for f in r["frames"]):
+        st.warning("Esta simulación fue creada con una versión anterior; vuelve a pulsar Simular red.")
+        return
+    st.caption("Visualización de la primera réplica. Cada nodo muestra sus métricas temporales; "
+               "las estadísticas al final agregan todas las réplicas.")
+    if st.session_state.get("network_step","preview")=="preview":
+        st.subheader("2 · Vista previa 3D de la red · Sin movimiento")
+        components.html(network_scene_html(r,preview=True),height=860,scrolling=False)
+        if st.button("▶ Iniciar simulación 3D de la red",type="primary",use_container_width=True):
+            st.session_state.network_step="run"
+            st.rerun()
+        return
+    st.subheader("3 · Red de procesos en movimiento")
+    components.html(network_scene_html(r),height=890,scrolling=False)
+    if st.button("← Volver a vista previa",key="network_back_to_preview"):
+        st.session_state.network_step="preview"
+        st.rerun()
     m=r["metrics"]
     metric_cards([("Llegadas (promedio)",f"{m['arrivals']:.1f}","info"),
                   ("Completados (promedio)",f"{m['completed']:.1f}","ok"),
@@ -564,7 +586,7 @@ def network():
                   ("Tiempo sistema",f"{m['avg_system']:.1f} min","gold")],4)
     st.caption(f"Modelo: {r['model']} · Motor: {r['engine']} · "
                f"{r['replications_effective']} réplicas · Horizonte {r['horizon']} min.")
-    st.subheader("Conservación de flujo por etapa")
+    st.subheader("4 · Conservación de flujo e indicadores por etapa")
     df=pd.DataFrame(r["stages"])
     columns=["name","servers","arrived","completed","in_stage_at_close",
              "waiting_at_close","in_service_at_close","avg_queue","avg_wait","utilization"]
@@ -573,7 +595,7 @@ def network():
     st.info(f"Etapa con mayor utilización media: **{critical['name']}**, "
             f"{critical['utilization']*100:.1f}%. "
             "Es una alerta exploratoria de capacidad, no una demostración causal.")
-    st.subheader("Colas por etapa · Primera réplica")
+    st.subheader("5 · Colas por etapa · Primera réplica")
     fig=go.Figure()
     for i,stage in enumerate(r["stages"]):
         fig.add_trace(go.Scatter(x=[f["t"] for f in r["frames"]],
