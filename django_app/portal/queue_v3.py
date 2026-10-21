@@ -93,6 +93,8 @@ class Specification:
     services_emp: tuple[float, ...]
     exact_arrivals: tuple[float, ...]
     staffing: tuple[int, ...]
+    arrival_profile: tuple[float, ...]
+    profile_bin: int
 
 
 def validate(raw: dict) -> Specification:
@@ -161,6 +163,13 @@ def validate(raw: dict) -> Specification:
     if not isinstance(plan,(list,tuple)) or len(plan)!=periods:
         raise ValueError(f"Dotación por franjas: se requieren {periods} bloques de hasta 60 minutos")
     staffing=tuple(_integer(v,"Dotación de franja",1,servers) for v in plan)
+    profile_bin=_integer(raw.get("profile_bin",15),"Duración de franja",5,120)
+    profile_raw=raw.get("arrival_profile",[])
+    if not isinstance(profile_raw,(tuple,list)):
+        raise ValueError("El perfil de franjas debe ser una lista")
+    profile=tuple(_number(v,"Llegadas por franja",0,100000) for v in profile_raw)
+    if profile and (mode!="empirical" or len(profile)!=math.ceil(horizon/profile_bin)):
+        raise ValueError("Perfil empírico incompatible con modalidad, horizonte o duración de franja")
     if len(ae) > 100000 or len(se) > 100000 or len(exact) > MAX_EVENTS // 2:
         raise ValueError("Demasiados datos para una ejecución interactiva")
     return Specification(model, mode, horizon, replications, seed, servers, capacity,
@@ -170,7 +179,7 @@ def validate(raw: dict) -> Specification:
                          _number(raw.get("server_hour", 25), "Costo servidor/hora", 0, 100000),
                          _number(raw.get("wait_hour", 10), "Costo espera/hora", 0, 100000),
                          _number(raw.get("lost_cost", 50), "Costo por rechazo", 0, 100000),
-                         ae, se, exact, staffing)
+                         ae, se, exact, staffing, profile, profile_bin)
 
 
 def _arrivals(spec: Specification, seed: int) -> list[float]:
@@ -178,6 +187,20 @@ def _arrivals(spec: Specification, seed: int) -> list[float]:
         return list(spec.exact_arrivals)
     rng = random.Random(seed)
     result: list[float] = []
+    if spec.arrival_profile:
+        # Perfil de intensidad media por intervalo, proceso Poisson no homogéneo.
+        for i,mean_count in enumerate(spec.arrival_profile):
+            if mean_count<=0:continue
+            t=i*spec.profile_bin
+            stop=min(spec.horizon,(i+1)*spec.profile_bin)
+            rate=mean_count/spec.profile_bin
+            while True:
+                t+=rng.expovariate(rate)
+                if t>=stop:break
+                result.append(t)
+                if len(result)>MAX_EVENTS//2:
+                    raise ValueError("Perfil empírico supera la capacidad de visualización")
+        return result
     t = 0.0
     while True:
         gap = _sample(rng, spec.arrival_dist, spec.arrival_mean, spec.arrival_cv, spec.arrivals_emp)
