@@ -79,3 +79,37 @@ def test_browser_module_javascript_syntax():
         input=match.group(1), text=True, capture_output=True, timeout=20,
     )
     assert process.returncode == 0, process.stderr
+
+
+
+@pytest.mark.parametrize("sector,profile", [
+    ("banco","financial-branch"),
+    ("hospital","emergency-department"),
+    ("supermercado","grocery-checkout"),
+    ("logistica","industrial-truck-yard"),
+])
+def test_four_operational_environments_are_distinct_and_share_python_events(sector,profile):
+    initial=make_frame(4,servers=[None]*4)
+    future={**initial,"t":5,"kind":"arrival","client":1,"queue":1,"queue_ids":[1],"arrivals":1}
+    html=bank_scene_html([initial,future],{
+        "sector":sector,"arrival_min":4,"service_min":6,"duration":60,"model":"M/M/c",
+    })
+    assert encoded_payload(html)["config"]["sector"]==sector
+    assert encoded_payload(html)["frames"][-1]["arrivals"]==1
+    assert "/*__ENVIRONMENT__*/" not in html
+    assert "stage.dataset.environment" in html
+    assert profile in html
+    assert "stage.dataset.stationType" in html
+    if sector=="logistica":
+        assert "PATIO LOG" in html
+        assert "fork" in html
+        assert "const maxVisibleClients=sector==='logistica'?16:35" in html
+    if sector=="hospital":
+        assert "TRIAJE" in html
+    if sector=="supermercado":
+        assert "PROMOCIONES" in html
+    if shutil.which("node"):
+        script=re.search(r'<script type="module">(.*?)</script>',html,re.S).group(1)
+        check=subprocess.run(["node","--input-type=module","--check"],input=script,
+                             text=True,capture_output=True,timeout=20)
+        assert check.returncode==0,check.stderr
