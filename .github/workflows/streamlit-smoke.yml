@@ -91,7 +91,7 @@ jobs:
           choice=next(x for x in at.selectbox if x.label=="Incidente del desafío")
           assert "Sin incidentes (motor central)" in choice.options, choice.options
           assert "Pico de demanda (+65%)" in choice.options, choice.options
-          choice.set_value("Sin incidentes (motor central)")
+          choice.set_value("none")
           at.run(timeout=40)
           next(b for b in at.button if b.label=="Guardar y validar configuración").click()
           at.run(timeout=60)
