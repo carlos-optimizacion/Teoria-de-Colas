@@ -209,78 +209,133 @@ def run_challenge_ui():
     cfg=SCENARIOS[key]
     ui=SECTOR_UI[key]
     scenario_gallery()
-    workflow_stepper(st.session_state.sim_phase)
 
-    # 1) CONFIGURAR — no simulation is created before the user confirms inputs.
-    if st.session_state.sim_phase=="configure":
-        st.markdown(f"""<div class="workflow-head"><span>PASO 1 DE 4</span><h2>Configurar {ui['title']}</h2>
-        <p>Ingresa primero los datos operativos. La escena se construirá después usando exactamente estos valores.</p></div>""",unsafe_allow_html=True)
-        with st.form("build_scenario_form",clear_on_submit=False):
+    # ---------------------------
+    # PANTALLA A: CONFIGURACIÓN
+    # ---------------------------
+    if st.session_state.sim_screen=="config":
+        phase="preview" if st.session_state.pending_payload else "configure"
+        workflow_stepper(phase)
+        draft=st.session_state.pending_payload or {
+            "scenario":key,"staffing":[min(4,int(cfg["max_servers"]))]*8,"replications":10,"seed":2026,
+            "arrival_min":cfg["arrival_min"],"service_min":cfg["service_min"],"capacity":cfg["capacity"],
+            "staff_hour":cfg["staff_hour"],"wait_hour":cfg["wait_hour"],"sla_min":cfg["sla_min"],
+            "sla_target":cfg["sla_target"],"patience_min":0,"priority_share":0,
+            "service_distribution":"exponential","service_cv":1,"actions":[]
+        }
+        st.markdown(f"""<div class="workflow-head"><span>CONFIGURACIÓN DEL ESCENARIO</span><h2>{ui['title']} · ingresar datos primero</h2>
+        <p>La simulación no se mostrará hasta que guardes estos parámetros y pulses <b>Abrir simulación</b>.</p></div>""",unsafe_allow_html=True)
+
+        with st.form("strict_config_form",clear_on_submit=False):
             c1,c2,c3,c4=st.columns(4)
-            arrival=c1.number_input("Interarribo promedio (min)",.1,240.0,float(cfg["arrival_min"]),.1)
-            service=c2.number_input("Servicio promedio (min)",.1,240.0,float(cfg["service_min"]),.1)
-            servers=c3.number_input(f"Número de {ui['unit_plural']}",1,int(cfg["max_servers"]),min(4,int(cfg["max_servers"])),1)
-            capacity=c4.number_input("Capacidad total del sistema",1,1000,int(cfg["capacity"]),1)
+            arrival=c1.number_input("Interarribo promedio (min)",.1,240.0,float(draft["arrival_min"]),.1)
+            service=c2.number_input("Servicio promedio (min)",.1,240.0,float(draft["service_min"]),.1)
+            servers=c3.number_input(f"Número de {ui['unit_plural']}",1,int(cfg["max_servers"]),int(draft["staffing"][0]),1)
+            capacity=c4.number_input("Capacidad total",1,1000,int(draft["capacity"]),1)
             c5,c6,c7,c8=st.columns(4)
-            staff_cost=c5.number_input("Costo servidor / hora",0.0,10000.0,float(cfg["staff_hour"]),1.0)
-            wait_cost=c6.number_input("Costo espera / cliente-h",0.0,10000.0,float(cfg["wait_hour"]),1.0)
-            sla_min=c7.number_input("Meta: espera ≤ min",.1,240.0,float(cfg["sla_min"]),.5)
-            sla_target=c8.number_input("SLA objetivo",0.0,1.0,float(cfg["sla_target"]),.01)
+            staff_cost=c5.number_input("Costo servidor / hora",0.0,10000.0,float(draft["staff_hour"]),1.0)
+            wait_cost=c6.number_input("Costo espera / cliente-h",0.0,10000.0,float(draft["wait_hour"]),1.0)
+            sla_min=c7.number_input("Espera SLA máxima (min)",.1,240.0,float(draft["sla_min"]),.5)
+            sla_target=c8.number_input("SLA objetivo",0.0,1.0,float(draft["sla_target"]),.01)
             with st.expander("Comportamiento avanzado",expanded=False):
                 a1,a2,a3,a4=st.columns(4)
-                patience=a1.number_input("Paciencia media (0 = sin abandono)",0.0,240.0,0.0,1.0)
-                priority=a2.number_input("Proporción prioritaria",0.0,1.0,0.0,.05)
-                dist=a3.selectbox("Distribución del servicio",["exponential","deterministic","gamma","lognormal"])
-                cv=a4.number_input("CV del servicio",.05,4.0,1.0,.05)
-            reps=st.slider("Réplicas estadísticas",1,50,10)
-            build=st.form_submit_button("Construir escenario",type="primary",use_container_width=True)
-        if build:
+                patience=a1.number_input("Paciencia media (0 = sin abandono)",0.0,240.0,float(draft.get("patience_min",0)),1.0)
+                priority=a2.number_input("Proporción prioritaria",0.0,1.0,float(draft.get("priority_share",0)),.05)
+                distributions=["exponential","deterministic","gamma","lognormal"]
+                dist=a3.selectbox("Distribución del servicio",distributions,index=distributions.index(draft.get("service_distribution","exponential")))
+                cv=a4.number_input("CV del servicio",.05,4.0,float(draft.get("service_cv",1)),.05)
+            reps=st.slider("Réplicas estadísticas",1,50,int(draft["replications"]))
+            save_config=st.form_submit_button("Guardar y validar configuración",type="primary",use_container_width=True)
+
+        if save_config:
             payload={"scenario":key,"staffing":[int(servers)]*8,"replications":int(reps),"seed":2026,
                      "arrival_min":float(arrival),"service_min":float(service),"capacity":int(capacity),
                      "staff_hour":float(staff_cost),"wait_hour":float(wait_cost),"sla_min":float(sla_min),
                      "sla_target":float(sla_target),"patience_min":float(patience),"priority_share":float(priority),
                      "service_distribution":dist,"service_cv":float(cv),"actions":[]}
-            st.session_state.pending_payload=payload
-            st.session_state.result=evaluate_game(payload)
-            st.session_state.frame=0
-            st.session_state.sim_status="ready"
-            st.session_state.sim_phase="preview"
-            st.rerun()
-        st.markdown(f"""<div class="config-help"><b>Secuencia del escenario</b><span>{ui['arrival']} → {ui['queue']} → {ui['service']} → {ui['exit']}</span>
-        <small>La simulación aún no está ejecutándose.</small></div>""",unsafe_allow_html=True)
+            result=evaluate_game(payload)
+            visible=configured_units(result["events"][0])
+            if visible != int(servers):
+                st.error(f"No se guardó: configuraste {int(servers)} {ui['unit_plural']} pero la validación visual produjo {visible}.")
+            else:
+                st.session_state.pending_payload=payload
+                st.session_state.result=result
+                st.session_state.frame=0
+                st.session_state.sim_status="ready"
+                st.session_state.sim_phase="preview"
+                st.success("Configuración validada. Revisa el resumen y luego abre la simulación.")
+                st.rerun()
+
+        if st.session_state.pending_payload:
+            p=st.session_state.pending_payload
+            st.markdown('<div class="config-summary-title"><b>Configuración guardada</b><span>Estos datos serán los únicos que gobernarán la simulación.</span></div>',unsafe_allow_html=True)
+            metric_cards([
+                (ui["unit_plural"].title(),p["staffing"][0],"ok"),
+                ("Interarribo",f"{p['arrival_min']:.1f} min","info"),
+                ("Servicio",f"{p['service_min']:.1f} min","info"),
+                ("Capacidad",p["capacity"],"gold"),
+                ("SLA objetivo",f"{p['sla_target']*100:.0f}%","ok"),
+                ("Réplicas",p["replications"],"info")
+            ],6)
+            st.markdown(f"""<div class="config-help"><b>Flujo que se construirá</b>
+            <span>{ui['arrival']} → {ui['queue']} → {ui['service']} → {ui['exit']}</span>
+            <small>No hay simulación corriendo todavía.</small></div>""",unsafe_allow_html=True)
+            o1,o2=st.columns([1.2,3])
+            if o1.button("Abrir simulación ▶",type="primary",use_container_width=True,key="open_simulation"):
+                st.session_state.sim_screen="simulation"
+                st.session_state.sim_phase="preview"
+                st.session_state.frame=0
+                st.session_state.sim_status="ready"
+                st.rerun()
+            o2.info("Si cambias cualquier dato arriba, vuelve a guardar antes de abrir la simulación.")
         return
 
-    result=st.session_state.result
-    if result is None:
-        st.session_state.sim_phase="configure";st.rerun()
-    m=result["metrics"]
-    frame0=result["events"][0]
+    # ---------------------------
+    # PANTALLA B: SIMULACIÓN
+    # ---------------------------
+    if not st.session_state.pending_payload:
+        st.session_state.sim_screen="config";st.session_state.sim_phase="configure";st.rerun()
+    if st.session_state.result is None:
+        st.session_state.result=evaluate_game(st.session_state.pending_payload)
 
-    # 2) PREVISUALIZAR — exact physical scene before starting time.
+    result=st.session_state.result
+    m=result["metrics"]
+    workflow_stepper(st.session_state.sim_phase)
+
+    top_a,top_b=st.columns([1,4])
+    if top_a.button("← Volver a configuración",use_container_width=True,key="back_to_config"):
+        st.session_state.sim_screen="config"
+        st.session_state.sim_phase="preview"
+        st.session_state.sim_status="ready"
+        st.session_state.frame=0
+        st.rerun()
+    top_b.markdown(f"""<div class="simulation-lock"><b>Simulación bloqueada a la configuración guardada</b>
+    <span>{result['staffing'][0]} {ui['unit_plural']} · llegada {result['config']['arrival_min']:.1f} min · servicio {result['config']['service_min']:.1f} min · capacidad {result['config']['capacity']}</span></div>""",unsafe_allow_html=True)
+
+    # PREVISUALIZACIÓN
     if st.session_state.sim_phase=="preview":
-        st.markdown(f"""<div class="workflow-head preview"><span>PASO 2 DE 4</span><h2>Escenario construido: {ui['title']}</h2>
-        <p>Comprueba que la escena representa lo que configuraste. El reloj sigue en 0.</p></div>""",unsafe_allow_html=True)
+        frame0=result["events"][0]
+        st.markdown(f"""<div class="workflow-head preview"><span>ESCENA CONSTRUIDA · RELOJ EN 0</span><h2>{ui['title']} · verificar antes de iniciar</h2>
+        <p>La escena física se generó con los datos guardados. Nada se mueve todavía.</p></div>""",unsafe_allow_html=True)
         st.markdown(render_sector_scene(key,frame0,"ready"),unsafe_allow_html=True)
-        expected=int(result["staffing"][0])
-        visible=configured_units(frame0)
+        expected=int(result["staffing"][0]);visible=configured_units(frame0)
         metric_cards([
-            (ui["service"],f"{visible} de {expected}","ok" if visible==expected else "warn"),
+            (ui["service"],f"{visible}/{expected}","ok" if visible==expected else "warn"),
             ("Interarribo",f"{result['config']['arrival_min']:.1f} min","info"),
             ("Servicio",f"{result['config']['service_min']:.1f} min","info"),
             ("Capacidad",result["config"]["capacity"],"gold")
         ],4)
         if visible!=expected:
-            st.error(f"Validación visual fallida: configuraste {expected} {ui['unit_plural']} pero se renderizaron {visible}. No se permite iniciar.")
+            st.error("La escena no coincide con la configuración; el inicio queda bloqueado.")
             return
-        p1,p2,p3=st.columns([1.2,1.2,3])
-        if p1.button("← Editar parámetros",use_container_width=True):
-            st.session_state.sim_phase="configure";st.session_state.result=None;st.session_state.pending_payload=None;st.rerun()
-        if p2.button("▶ Iniciar simulación",type="primary",use_container_width=True):
-            st.session_state.frame=0;st.session_state.sim_status="running";st.session_state.sim_phase="simulate";st.rerun()
-        p3.info("La simulación comenzará desde 0 min con esta configuración.")
+        if st.button("▶ Iniciar simulación desde 0 min",type="primary",use_container_width=True,key="start_from_preview"):
+            st.session_state.frame=0
+            st.session_state.sim_status="running"
+            st.session_state.sim_phase="simulate"
+            st.rerun()
         return
 
-    # 3) SIMULAR — dynamic sector-specific scene.
+    # EJECUCIÓN
     @st.fragment(run_every=0.65)
     def simulation_player():
         result_now=st.session_state.result
@@ -298,22 +353,21 @@ def run_challenge_ui():
                 status="finished"
         frame=frames[idx]
         pct=100*idx/max(1,len(frames)-1)
-        active=int(frame.get("active",0))
-        visible=configured_units(frame)
-        st.markdown(f"""<div class="ops-shell">
-          <div class="ops-head">
-            <div class="ops-title"><span class="ops-icon">{ui['icon']}</span><div><h2>{ui['title']} · simulación dinámica</h2><p>{ui['arrival']} → {ui['queue']} → {ui['service']} → {ui['exit']}</p></div></div>
-            <div class="ops-time"><small>Tiempo simulado</small><b>{frame['t']:.1f} min</b><span>{pct:.0f}% de jornada</span></div>
-            <div class="ops-mini ok"><small>Completados</small><b>{frame['completed']}</b></div>
-            <div class="ops-mini info"><small>En espera</small><b>{frame['queue']}</b></div>
-            <div class="ops-mini warn"><small>Rechazados</small><b>{frame['blocked']}</b></div>
-          </div>
-          <div class="journey-progress"><i style="width:{pct:.1f}%"></i><span class="start-label">INICIO · 0 min</span><span class="end-label">FIN · {int(result_now['config']['duration'])} min</span></div>
-        </div>""",unsafe_allow_html=True)
+        active=int(frame.get("active",0));visible=configured_units(frame)
+
+        st.markdown(f"""<div class="ops-shell"><div class="ops-head">
+          <div class="ops-title"><span class="ops-icon">{ui['icon']}</span><div><h2>{ui['title']} · simulación dinámica</h2><p>{ui['arrival']} → {ui['queue']} → {ui['service']} → {ui['exit']}</p></div></div>
+          <div class="ops-time"><small>Tiempo simulado</small><b>{frame['t']:.1f} min</b><span>{pct:.0f}% de jornada</span></div>
+          <div class="ops-mini ok"><small>Completados</small><b>{frame['completed']}</b></div>
+          <div class="ops-mini info"><small>En espera</small><b>{frame['queue']}</b></div>
+          <div class="ops-mini warn"><small>Rechazados</small><b>{frame['blocked']}</b></div>
+        </div><div class="journey-progress"><i style="width:{pct:.1f}%"></i><span class="start-label">INICIO · 0 min</span><span class="end-label">FIN · {int(result_now['config']['duration'])} min</span></div></div>""",unsafe_allow_html=True)
+
         st.markdown(render_sector_scene(key,frame,status),unsafe_allow_html=True)
         if visible < active:
-            st.error(f"Inconsistencia visual: motor={active} activos, escena={visible}. La simulación se ha detenido.")
+            st.error(f"Inconsistencia visual: motor={active}, escena={visible}. Se pausó la simulación.")
             st.session_state.sim_status="paused"
+
         b1,b2,b3,b4,b5,b6=st.columns([1.1,1,1,1,1.1,4])
         if status=="running":
             if b1.button("⏸ Pausa",use_container_width=True,key="sim_pause"):
@@ -336,30 +390,18 @@ def run_challenge_ui():
 
     simulation_player()
 
-    # 4) ANALIZAR / INTERVENIR
-    st.markdown('<div class="section-separator"><b>CONTROL Y ANÁLISIS</b><span>Los resultados corresponden a la configuración construida.</span></div>',unsafe_allow_html=True)
-    left,center,right=st.columns([1,1,1.2],gap="medium")
+    # Panel analítico solo dentro de Simulación, nunca en Configuración.
+    st.markdown('<div class="section-separator"><b>ANÁLISIS DE LA CORRIDA</b><span>Resultados derivados de los datos guardados.</span></div>',unsafe_allow_html=True)
+    left,right=st.columns([1,1.25],gap="medium")
     with left:
-        st.markdown('<div class="panel-title"><b>Configuración activa</b><span>Variables que gobiernan esta corrida.</span></div>',unsafe_allow_html=True)
-        metric_cards([
-            (ui["unit_plural"].title(),result["staffing"][0],"ok"),
-            ("Interarribo",f"{result['config']['arrival_min']:.1f} min","info"),
-            ("Servicio",f"{result['config']['service_min']:.1f} min","info"),
-            ("Capacidad",result["config"]["capacity"],"gold")
-        ],2)
-        if st.button("Editar y reconstruir",use_container_width=True,key="edit_rebuild"):
-            st.session_state.sim_phase="configure";st.session_state.result=None;st.session_state.pending_payload=None;st.session_state.actions=[];st.rerun()
-    with center:
-        st.markdown('<div class="panel-title"><b>Resultado proyectado</b><span>Promedio de las réplicas estadísticas.</span></div>',unsafe_allow_html=True)
         metric_cards([("Wq",f"{m['avg_wait']:.1f} min","info"),("SLA",f"{m['sla']*100:.1f}%","ok"),
                       ("Lq",f"{m['avg_queue']:.2f}","gold"),("ρ",f"{m['utilization']*100:.1f}%","info"),
                       ("Costo",f"S/ {m['total_cost']:.0f}","warn"),("Score",f"{result['score']}/100","gold")],3)
     with right:
-        st.markdown('<div class="panel-title"><b>Evolución temporal</b><span>Cola y recursos ocupados.</span></div>',unsafe_allow_html=True)
         fig=go.Figure()
         fig.add_trace(go.Scatter(x=[x["t"] for x in result["series"]],y=[x["queue"] for x in result["series"]],mode="lines",name="Cola",line_shape="hv"))
         fig.add_trace(go.Scatter(x=[x["t"] for x in result["series"]],y=[x["busy"] for x in result["series"]],mode="lines",name="Ocupados",line_shape="hv"))
-        fig.update_layout(template="plotly_white",height=270,margin=dict(t=18,l=38,r=10,b=35),xaxis_title="Tiempo (min)",yaxis_title="Cantidad",legend=dict(orientation="h",y=1.12))
+        fig.update_layout(template="plotly_white",height=260,margin=dict(t=15,l=38,r=10,b=35),xaxis_title="Tiempo (min)",yaxis_title="Cantidad",legend=dict(orientation="h",y=1.12))
         st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 
     if st.session_state.sim_phase!="finished":
@@ -368,23 +410,21 @@ def run_challenge_ui():
             i1,i2,i3=st.columns([1,1,2])
             new_servers=i1.number_input(f"Nuevas {ui['unit_plural']}",1,int(cfg["max_servers"]),int(frame["active"]),1,key="intervention_servers")
             minute=i2.number_input("Desde minuto",1,int(result["config"]["duration"])-1,max(1,int(frame["t"])+1),1,key="intervention_minute")
-            if i3.button("Aplicar decisión y reconstruir trayectoria",use_container_width=True,key="apply_intervention"):
+            if i3.button("Aplicar decisión y reiniciar trayectoria",use_container_width=True,key="apply_intervention"):
                 actions=[a for a in st.session_state.actions if a["minute"]!=int(minute)]
                 actions.append({"minute":int(minute),"servers":int(new_servers)})
                 st.session_state.actions=sorted(actions,key=lambda x:x["minute"])
-                payload=dict(st.session_state.pending_payload or {})
-                payload["actions"]=st.session_state.actions
-                st.session_state.pending_payload=payload
-                st.session_state.result=evaluate_game(payload)
+                payload=dict(st.session_state.pending_payload);payload["actions"]=st.session_state.actions
+                st.session_state.pending_payload=payload;st.session_state.result=evaluate_game(payload)
                 st.session_state.frame=0;st.session_state.sim_status="paused";st.rerun()
 
     if st.session_state.sim_phase=="finished":
         last=result["events"][-1]
-        st.markdown(f"""<div class="finish-card"><div><span>PASO 4 DE 4 · JORNADA FINALIZADA</span><h3>{ui['title']} · evaluación final</h3></div>
+        st.markdown(f"""<div class="finish-card"><div><span>JORNADA FINALIZADA</span><h3>{ui['title']} · evaluación final</h3></div>
         <div class="finish-grid"><div><small>Completados</small><b>{last['completed']}</b></div><div><small>SLA</small><b>{m['sla']*100:.1f}%</b></div><div><small>Costo</small><b>S/ {m['total_cost']:.0f}</b></div><div><small>Score</small><b>{result['score']}/100</b></div></div></div>""",unsafe_allow_html=True)
         f1,f2=st.columns(2)
-        if f1.button("Nueva corrida con otros datos",type="primary",use_container_width=True,key="new_run"):
-            st.session_state.sim_phase="configure";st.session_state.result=None;st.session_state.pending_payload=None;st.session_state.frame=0;st.session_state.actions=[];st.session_state.sim_status="ready";st.rerun()
+        if f1.button("Nueva corrida: volver a configuración",type="primary",use_container_width=True,key="new_run"):
+            st.session_state.sim_screen="config";st.session_state.sim_phase="configure";st.session_state.pending_payload=None;st.session_state.result=None;st.session_state.frame=0;st.session_state.actions=[];st.session_state.sim_status="ready";st.rerun()
         f2.download_button("Descargar resultado JSON",json.dumps(result,ensure_ascii=False,indent=2),file_name=f"decision-lab-{key}.json",mime="application/json",use_container_width=True)
 
 def model_lab():
