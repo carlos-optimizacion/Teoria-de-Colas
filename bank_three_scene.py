@@ -208,14 +208,18 @@ try{
  /*__ENVIRONMENT__*/
   const counters=new Map(),people=new Map();let configured=-1;
  function buildCounter(i,count,clientId,draining){
-   const row=i<8?0:Math.floor(i/8), col=i%8;
-   const totalInRow=Math.min(8,Math.max(0,count-row*8));
-   const x=(col-(totalInRow-1)/2)*2.55, z=-4.6-row*2.9;
+   const row=sector==='logistica'?0:Math.floor(i/8);
+   const col=sector==='logistica'?i:i%8;
+   const totalInRow=sector==='logistica'?count:Math.min(8,Math.max(0,count-row*8));
+   const spacing=sector==='logistica'?Math.min(2.48,20.6/Math.max(1,count)):2.55;
+   const x=(col-(totalInRow-1)/2)*spacing, z=-4.6-row*2.9;
    const group=new THREE.Group();scene.add(group);
-   const sign=box(1.73,.43,.07,navy,[x,2.75,z-.15],group);
+   const signZ=sector==='logistica'?-9.05:z-.15;
+   const signY=sector==='logistica'?2.80:2.75;
+   box(1.73,.43,.07,navy,[x,signY,signZ],group);
    const t=label(sceneDef.unit+' '+(i+1),1.66,.28,0xffffff,54);
-   t.position.set(x,2.75,z-.09);group.add(t);
-   const dot=sphere(.12,mat(0x28ac75),[x+.88,2.52,z-.10],group);
+   t.position.set(x,signY,signZ+.07);group.add(t);
+   const dot=sphere(.12,mat(0x28ac75),[x+.88,signY-.24,signZ+.07],group);
    if(sector==='banco'){
      box(2.18,.94,.92,wood,[x,.47,z],group);
      box(2.2,.115,1.0,navy,[x,1.0,z],group);
@@ -291,8 +295,8 @@ try{
       staff.scale.set(.8,.8,.8);
       const helmet=sphere(.23,mat(0xf3c24a),[0,1.82,0],staff);helmet.scale.y=.4;
     }
-    staff.position.set(x,0,z-1.25);group.add(staff);
-   counters.set(i,{group,x,z,spot:new THREE.Vector3(x,0,sector==='logistica'?z+1.45:z+1.0),dot});
+    staff.position.set(sector==='logistica'?x-.72:x,0,sector==='logistica'?-6.55:z-1.25);group.add(staff);
+   counters.set(i,{group,x,z,spot:new THREE.Vector3(x,0,sector==='logistica'?-6.00:z+1.0),dot});
  }
  function createHuman(id,color){
    const g=new THREE.Group();const tone=[0xe6a978,0xc48b63,0xf0c3a4,0xa46f53][Math.abs(Number(id.toString().replace(/\D/g,''))||0)%4];
@@ -345,6 +349,9 @@ try{
    if(current!==configured){configured=current;for(const c of counters.values()){scene.remove(c.group);}counters.clear();}
    for(const i of desired)if(!counters.has(i))buildCounter(i,current,serverList[i],i>=current);
    for(const [i,c] of counters)c.dot.material.color.setHex(i>=current?0xe59e53:(serverList[i]!=null?0xf1bd50:0x29b679));
+   stage.dataset.stations=String(counters.size);
+   stage.dataset.stationType={banco:'teller-window',hospital:'clinical-box',supermercado:'checkout-lane',
+     logistica:'loading-dock'}[sector]||'legacy';
  }
  function targets(f){
    const target=new Map(),q=(f.queue_ids||[]);
