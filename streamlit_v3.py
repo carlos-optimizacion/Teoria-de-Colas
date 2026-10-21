@@ -21,6 +21,7 @@ from portal.challenge_engine import SCENARIOS, ACTIVE_SCENARIOS
 from bank_three_scene import bank_scene_html
 from streamlit_sector_scenes import render_sector_scene, SECTOR_UI
 from report_v3 import report_pdf, report_xlsx
+from experiment_registry_v3 import snapshot_experiment, register_experiment
 
 
 LABELS = {"deterministic":"Determinística","parametric":"Estocástica paramétrica",
@@ -258,6 +259,12 @@ def run():
                 result=evaluate(raw)
             except (ValueError,RuntimeError) as exc:
                 st.error(f"El motor rechazó los parámetros: {exc}")
+                return
+            try:
+                snapshot=snapshot_experiment(raw,result,sector)
+                state["v3_registry"]=register_experiment(state.get("v3_registry",[]),snapshot)
+            except (ValueError,KeyError) as exc:
+                st.error(f"No se pudo registrar la corrida para los informes: {exc}")
                 return
             state.v3_payload=raw
             state.v3_result=result

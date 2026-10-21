@@ -21,6 +21,7 @@ from streamlit_sector_scenes import SECTOR_UI, render_sector_scene, configured_u
 from bank_three_scene import bank_scene_html
 import streamlit.components.v1 as components
 from streamlit_v3 import run as run_decision_lab_v3
+from experiment_registry_v3 import comparison_rows, comparable
 
 st.set_page_config(page_title="Decision Lab 3.0",page_icon="◈",layout="wide",initial_sidebar_state="expanded")
 
@@ -110,7 +111,7 @@ def css():
 
 def init_state():
     defaults={
-        "scenario":"banco","result":None,"frame":0,"actions":[],"score_history":[],
+        "scenario":"banco","result":None,"frame":0,"actions":[],"score_history":[],"v3_registry":[],
         "xp":0,"coins":0,"level":1,"completed":set(),"saved":{},"profile_name":"Carlos",
         "sim_status":"ready","sim_speed":1,"sim_phase":"configure","sim_screen":"config","pending_payload":None,
     }
@@ -130,7 +131,7 @@ def sidebar():
     with st.sidebar:
         st.markdown("## ◈ DECISION LAB 3.0")
         st.caption("Teoría de Colas en la Práctica")
-        section=st.radio("Navegación",["Inicio","Modelos","Simulación","Challenge","Comparador","Análisis Económico","Red Multietapa","Reportes"],label_visibility="collapsed")
+        section=st.radio("Navegación",["Simulador 3D","Desafíos gerenciales","Red de colas","Análisis y reportes"],label_visibility="collapsed")
         st.divider()
         st.markdown(f"**{st.session_state.profile_name}** · Nivel {st.session_state.level}")
         progress_html(min(1,(st.session_state.xp%500)/500),f"{st.session_state.xp} XP · ★ {st.session_state.coins}")
@@ -542,15 +543,100 @@ def reports():
     else:st.info("Todavía no hay partidas en esta sesión.")
     st.caption("En Streamlit Community Cloud el estado de sesión no es una base de datos persistente. La persistencia multiusuario completa permanece en la versión Django/PostgreSQL.")
 
+def analytics_hub():
+    """Análisis central; herramientas antiguas protegidas hasta migrar su motor."""
+    from report_v3 import report_pdf, report_xlsx
+
+    st.header("Análisis y reportes")
+    st.caption("Compara experimentos realmente ejecutados con sus parámetros y procedencia. "
+               "Los registros se conservan solo durante esta sesión de Streamlit.")
+    mode=st.radio("Espacio de análisis",
+                  ["Comparar corridas","Informe del simulador","Herramientas clásicas","Historial de desafíos"],
+                  horizontal=True,key="analysis_workspace")
+    runs=st.session_state.get("v3_registry",[])
+    if mode=="Comparar corridas":
+        if not runs:
+            st.info("Todavía no hay experimentos. Entra a Simulador 3D, guarda y valida una configuración; "
+                    "la corrida aparecerá aquí automáticamente.")
+            return
+        st.dataframe(pd.DataFrame(comparison_rows(runs)),use_container_width=True,hide_index=True)
+        by_id={r["id"]:r for r in runs}
+        choices=st.multiselect("Corridas a comparar",list(by_id),
+                               default=list(by_id)[-2:],
+                               format_func=lambda key: f"{key} · {by_id[key]['sector']} · "
+                               f"{by_id[key]['model']} · {by_id[key]['horizon_min']} min",
+                               key="comparison_runs")
+        selected=[by_id[k] for k in choices]
+        if len(selected)>=2:
+            table=pd.DataFrame(comparison_rows(selected)).set_index("ID")
+            st.bar_chart(table[["Wq (min)","Lq (clientes)"]])
+            st.bar_chart(table[["SLA (%)","Utilización (%)"]])
+            valid,reason=comparable(selected)
+            if not valid:
+                st.warning(reason)
+            else:
+                st.info(reason+" Las diferencias en distribuciones, réplicas y costos deben explicarse.")
+                cheapest=min(selected,key=lambda x:x["metrics"]["total_cost"])
+                st.write(f"**Menor costo total observado:** {cheapest['id']} · "
+                         f"S/ {cheapest['metrics']['total_cost']:,.2f}. "
+                         "No implica óptimo ni garantía estadística.")
+        csv=pd.DataFrame(comparison_rows(runs)).to_csv(index=False).encode("utf-8-sig")
+        st.download_button("Descargar comparación CSV",csv,
+                           file_name="astalanka-opt-comparacion.csv",mime="text/csv")
+        st.download_button("Descargar registro JSON",
+                           json.dumps(runs,ensure_ascii=False,indent=2),
+                           file_name="astalanka-opt-experimentos.json",mime="application/json")
+    elif mode=="Informe del simulador":
+        result=st.session_state.get("v3_result")
+        if result is None:
+            st.info("Ejecuta primero una corrida desde Simulador 3D.")
+            return
+        st.write(f"**Modelo:** {result['model']} · **Modalidad:** {result['mode']} · "
+                 f"**Horizonte:** {result['horizon']} minutos")
+        st.dataframe(pd.DataFrame(result["metrics"].items(),columns=["Indicador","Resultado"]),
+                     hide_index=True,use_container_width=True)
+        st.caption("Las medidas son consolidadas por réplica; no deben confundirse con la animación de una sola corrida.")
+        left,right=st.columns(2)
+        try:
+            data_pdf=report_pdf(result,st.session_state.get("v3_optimization"),
+                                st.session_state.get("v3_optimization_dynamic"))
+            data_xlsx=report_xlsx(result,st.session_state.get("v3_optimization"),
+                                  st.session_state.get("v3_optimization_dynamic"))
+        except Exception as exc:
+            st.error(f"El reporte no pudo generarse: {exc}")
+            return
+        left.download_button("Informe gerencial PDF",data_pdf,mime="application/pdf",
+                             file_name="astalanka-opt-informe.pdf",use_container_width=True)
+        right.download_button("Reporte técnico Excel",data_xlsx,
+                              mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                              file_name="astalanka-opt-analisis.xlsx",use_container_width=True)
+    elif mode=="Herramientas clásicas":
+        st.warning("Funciones de la versión anterior, disponibles durante la migración. "
+                   "Sus resultados son estacionarios M/M/s o auxiliares y NO se consideran "
+                   "corridas del motor central; no se mezclan automáticamente con la comparación.")
+        tool=st.selectbox("Herramienta heredada",["Modelos teóricos","Comparador M/M/s",
+                                                  "Análisis económico M/M/s"])
+        if tool=="Modelos teóricos":
+            model_lab()
+        elif tool=="Comparador M/M/s":
+            comparator()
+        else:
+            economics()
+    else:
+        reports()
+
 def home():
     run_decision_lab_v3()
 
 css();init_state();topbar();section=sidebar()
-if section=="Inicio":home()
-elif section=="Modelos":model_lab()
-elif section=="Simulación":run_decision_lab_v3()
-elif section=="Challenge":run_challenge_ui()
-elif section=="Comparador":comparator()
-elif section=="Análisis Económico":economics()
-elif section=="Red Multietapa":network()
-else:reports()
+if section=="Simulador 3D":
+    run_decision_lab_v3()
+elif section=="Desafíos gerenciales":
+    st.caption("Los desafíos mantienen actualmente el motor de incidentes y puntuación de la "
+               "versión anterior; su integración plena al contrato multimodelo es el hito H2.")
+    run_challenge_ui()
+elif section=="Red de colas":
+    st.caption("Modelo multietapa existente; la integración del motor central corresponde al hito H3.")
+    network()
+else:
+    analytics_hub()
