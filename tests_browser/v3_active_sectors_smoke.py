@@ -45,9 +45,13 @@ with sync_playwright() as p:
         assert stage.get_attribute("data-quality-mode")=="auto",key
         assert stage.get_attribute("data-visual-quality") in ("high","balanced"),key
         quality.select_option("high")
+        high_scale=float(stage.get_attribute("data-render-scale"))
+        assert high_scale>=1.3,key
         assert stage.get_attribute("data-visual-quality")=="high",key
         assert stage.get_attribute("data-shadow-resolution")=="2048",key
         quality.select_option("economy")
+        eco_scale=float(stage.get_attribute("data-render-scale"))
+        assert high_scale>eco_scale,(key,high_scale,eco_scale)
         assert stage.get_attribute("data-visual-quality")=="economy",key
         assert stage.get_attribute("data-shadow-resolution")=="512",key
         assert inner.locator("canvas").evaluate("(el)=>el.width>0&&el.height>0"),key
