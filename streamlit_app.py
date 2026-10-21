@@ -20,6 +20,7 @@ from streamlit_visual_logic import station_descriptors
 from streamlit_sector_scenes import SECTOR_UI, render_sector_scene, configured_units
 from bank_three_scene import bank_scene_html
 import streamlit.components.v1 as components
+from streamlit_v3 import run as run_decision_lab_v3
 
 st.set_page_config(page_title="Decision Lab 2.0",page_icon="◈",layout="wide",initial_sidebar_state="expanded")
 
@@ -129,7 +130,7 @@ def sidebar():
     with st.sidebar:
         st.markdown("## ◈ DECISION LAB 2.0")
         st.caption("Teoría de Colas en la Práctica")
-        section=st.radio("Navegación",["Inicio","Modelos","Simulación","Challenge","Comparador","Análisis Económico","Red Multietapa","Reportes"],label_visibility="collapsed")
+        section=st.radio("Navegación",["Inicio","Modelos","Simulación 3.0","Simulación","Challenge","Comparador","Análisis Económico","Red Multietapa","Reportes"],label_visibility="collapsed")
         st.divider()
         st.markdown(f"**{st.session_state.profile_name}** · Nivel {st.session_state.level}")
         progress_html(min(1,(st.session_state.xp%500)/500),f"{st.session_state.xp} XP · ★ {st.session_state.coins}")
@@ -538,6 +539,7 @@ def home():
 
 css();init_state();topbar();section=sidebar()
 if section=="Inicio":home()
+elif section=="Simulación 3.0":run_decision_lab_v3()
 elif section=="Modelos":model_lab()
 elif section in ("Simulación","Challenge"):run_challenge_ui()
 elif section=="Comparador":comparator()
