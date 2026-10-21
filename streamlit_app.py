@@ -22,7 +22,6 @@ from streamlit_sector_scenes import SECTOR_UI, render_sector_scene, configured_u
 st.set_page_config(page_title="Decision Lab 2.0",page_icon="◈",layout="wide",initial_sidebar_state="expanded")
 
 SCENE_DIR=DJANGO_APP/"static"/"img"/"scenarios"
-SCENE_HD_DIR=DJANGO_APP/"static"/"img"/"scenarios_hd"
 MODELS=["M/M/1","M/M/s","M/M/s/K","M/M/1/c","M/M/s/c","Erlang B","M/G/1","D/D/1"]
 
 def metric_cards(items,columns=4):
@@ -103,48 +102,7 @@ def css():
     [data-testid="stSidebarNav"]{display:none!important}
     header[data-testid="stHeader"]{background:transparent}
     @media(max-width:1200px){.process-flow{grid-template-columns:1fr 30px 1.3fr 30px 2fr 30px 1fr}.sector-flow{grid-template-columns:1fr 26px 1.2fr 26px 2fr 26px 1fr}.ops-head{grid-template-columns:1fr 140px}.ops-mini{display:none}}@media(max-width:900px){.sector-flow{grid-template-columns:1fr}.sector-arrow{transform:rotate(90deg);min-height:25px}.sector-zone{min-height:130px}.facility-grid{grid-template-columns:1fr}.dl-top{align-items:flex-start;flex-direction:column}.kpi-grid.cols-4,.kpi-grid.cols-5,.kpi-grid.cols-6{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-head{grid-template-columns:1fr}.ops-time{border-left:0;padding-left:0}.scene-banner{height:110px}}
-    
-    /* HD visual refinement layer */
-    .sector-scene{border:1px solid #cddde5;border-radius:18px;box-shadow:0 18px 45px #123e5a20, inset 0 1px 0 #fff;overflow:hidden;background:#eaf1f4}
-    .sector-scene-head{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:14px 18px;position:relative}
-    .sector-title{display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center}.sector-title .sector-big-icon{grid-row:1/3}.sector-title>b{font-size:1rem}.sector-title>small{font-size:.62rem;opacity:.88}
-    .live-event{display:flex;align-items:center;gap:7px;background:#ffffff17;border:1px solid #ffffff2e;border-radius:999px;padding:6px 10px}.live-event span{width:8px;height:8px;border-radius:50%;background:#9fd7ff;box-shadow:0 0 0 4px #9fd7ff24}.event-arrival .live-event span{background:#ffd66b}.event-departure .live-event span{background:#82e5aa}.event-abandon .live-event span{background:#ff8a8a}.event-action .live-event span{background:#c4a5ff}.event-arrival .arrival-zone,.event-departure .exit-zone,.event-abandon .queue-zone,.event-action .service-zone{box-shadow:0 0 0 3px #4ca4d72b,0 12px 30px #193d5912;transform:translateY(-2px)}
-    .sector-stage{background:linear-gradient(180deg,#f7fbfd,#e9f1f4);position:relative}.sector-stage:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(120deg,#fff8,transparent 28%,transparent 72%,#fff5);mix-blend-mode:soft-light}
-    .scene-decor{height:92px;box-shadow:inset 0 -1px 0 #ffffffaa}.sector-flow{padding:16px;gap:6px;background:linear-gradient(180deg,#f8fbfc,#e9f0f4)}
-    .sector-zone{min-height:210px;border-radius:14px;border:1px solid #d5e3e9;background:linear-gradient(180deg,#fff,#f7fafb);box-shadow:0 8px 20px #173f5b0b,inset 0 1px 0 #fff;transition:.25s ease}
-    .sector-zone>b{font-size:.8rem}.sector-zone>small{font-size:.62rem}.zone-kicker{background:#edf4f7;border-radius:999px;padding:2px 6px;left:9px;top:8px}
-    .sector-arrow{font-size:1.9rem;color:#6f8ea2;text-shadow:0 1px 0 #fff}
-    .sector-units{grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px}.sector-unit{min-height:120px;border-radius:12px;padding:9px;background:linear-gradient(180deg,#fff,#eef5f8);box-shadow:0 8px 18px #183f5914,inset 0 1px 0 #fff;transition:transform .2s ease,box-shadow .2s ease}.sector-unit:hover{transform:translateY(-2px);box-shadow:0 12px 24px #183f5922}.sector-unit.busy{box-shadow:0 0 0 3px #6fc5ee2b,0 10px 24px #17445f18}.sector-unit.free{box-shadow:0 0 0 3px #68c88d20,0 10px 24px #17445f10}.sector-unit.closing{box-shadow:0 0 0 3px #e4a85b29,0 10px 24px #6f4d2314}
-    .sector-unit-name{font-size:.66rem;letter-spacing:.02em}.sector-unit small{padding:3px 7px;border-radius:999px;background:#ffffffb8}
-    .sector-person{filter:drop-shadow(0 4px 4px #153d5b22)}.sector-person i{width:19px;height:19px;box-shadow:0 15px 0 4px #327cae}.sector-person.serving i{box-shadow:0 15px 0 4px #23945e}.sector-person-fabrica i{box-shadow:0 15px 0 4px #705aa6}.sector-person-logistica i{box-shadow:0 15px 0 4px #596f7f}
-    .bank-window,.hospital-box,.checkout-lane,.inspection-station,.loading-dock{width:72px;height:42px;filter:drop-shadow(0 4px 3px #173b5518)}.bank-window{border-width:4px;border-bottom-width:10px}.hospital-box{border-width:4px}.checkout-lane{border-width:3px}.inspection-station{border-width:3px}.loading-dock{border-width:4px}
-    .bank-decor,.hospital-decor,.market-decor,.factory-decor,.logistics-decor{background-size:cover}.bank-decor:after,.hospital-decor:after,.market-decor:after,.factory-decor:after,.logistics-decor:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#ffffff35,transparent 45%,#ffffff18);pointer-events:none}
-    .kpi-card{box-shadow:0 10px 24px #123f5b10;border-color:#d6e3ea}.ops-shell{box-shadow:0 14px 34px #143e5a18}.workflow-head{box-shadow:0 12px 30px #173d5b12}
-    @media(max-width:900px){.sector-scene-head{grid-template-columns:1fr auto}.live-event{grid-column:1/-1;justify-self:start}.sector-zone{min-height:150px}.sector-units{grid-template-columns:repeat(2,minmax(0,1fr))}}
-
-
-    /* Illustrated simulation canvas */
-    .sector-art{height:330px;background-size:cover;background-position:center;position:relative;border-bottom:1px solid #cfdde5;overflow:hidden}
-    .sector-art:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#ffffff18,transparent 35%,transparent 68%,#ffffff12);pointer-events:none}
-    .has-art .scene-decor{display:none}
-    .art-status{position:absolute;left:18px;top:16px;z-index:3;background:#0e304bc9;color:white;border:1px solid #ffffff35;border-radius:12px;padding:8px 11px;box-shadow:0 8px 20px #0b2f4922;backdrop-filter:blur(6px)}
-    .art-status span,.art-status b{display:block}.art-status span{font-size:.52rem;letter-spacing:.08em;color:#cfe5f0}.art-status b{font-size:.85rem;margin-top:2px}
-    .art-queue{position:absolute;left:34%;bottom:24px;z-index:4;min-width:205px;max-width:330px;background:#ffffffd8;border:1px solid #d5e2e8;border-radius:13px;padding:9px 10px;box-shadow:0 10px 24px #133d591a;backdrop-filter:blur(5px)}
-    .art-queue>small,.art-services>small{display:block;font-size:.54rem;font-weight:900;letter-spacing:.08em;color:#456879;margin-bottom:5px}
-    .art-queue>div{display:flex;flex-wrap:wrap;gap:5px;min-height:40px;align-items:center}
-    .art-services{position:absolute;right:2.5%;top:70px;bottom:22px;width:35%;z-index:4;background:#ffffffdf;border:1px solid #d4e1e7;border-radius:15px;padding:11px;box-shadow:0 14px 30px #153d5b20;backdrop-filter:blur(5px)}
-    .art-service-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px;align-content:start;max-height:220px;overflow:auto;padding:3px}
-    .art-services .sector-unit{min-height:92px;padding:7px}.art-services .bank-window,.art-services .hospital-box,.art-services .checkout-lane,.art-services .inspection-station,.art-services .loading-dock{width:60px;height:34px}
-    .has-art .service-zone .sector-units,.has-art .queue-zone .sector-people-row{display:none}
-    .has-art .service-zone:after{content:"Representado en la escena superior";display:block;margin-top:28px;padding:9px;border-radius:9px;background:#edf5f8;color:#68808f;font-size:.58rem}
-    .has-art .queue-zone:after{content:"Clientes visibles en la escena superior";display:block;margin-top:28px;padding:9px;border-radius:9px;background:#edf5f8;color:#68808f;font-size:.58rem}
-    .sector-banco .art-services{right:2%;width:34%}.sector-hospital .art-services{right:2%;width:39%}.sector-supermercado .art-services{right:2%;width:34%}.sector-fabrica .art-services{right:2%;width:45%}.sector-logistica .art-services{right:2%;width:36%}
-    .sector-banco .art-queue{left:33%}.sector-hospital .art-queue{left:31%}.sector-supermercado .art-queue{left:38%}.sector-fabrica .art-queue{left:29%}.sector-logistica .art-queue{left:32%}
-    .event-arrival .art-queue{box-shadow:0 0 0 4px #f2c65b66,0 12px 26px #173d5b1a}.event-departure .art-services{box-shadow:0 0 0 4px #63c88f55,0 16px 32px #153d5b20}.event-abandon .art-queue{box-shadow:0 0 0 4px #e9808055,0 12px 26px #173d5b1a}
-    @media(max-width:1050px){.sector-art{height:300px}.art-services{width:42%;right:2%}.art-queue{left:25%;max-width:260px}}
-    @media(max-width:760px){.sector-art{height:auto;min-height:370px;background-position:center top}.art-status{position:relative;left:auto;top:auto;display:inline-block;margin:10px}.art-queue,.art-services{position:relative;left:auto!important;right:auto!important;top:auto;bottom:auto;width:auto!important;max-width:none;margin:10px}.art-service-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:none}}
-
-</style>
+    </style>
     """,unsafe_allow_html=True)
 
 def init_state():
@@ -184,11 +142,8 @@ def scenario_gallery():
     cols=st.columns(5)
     for col,(key,cfg) in zip(cols,SCENARIOS.items()):
         with col:
-            path=SCENE_HD_DIR/f"{key}_hd.svg"
-            if not path.exists():
-                path=SCENE_DIR/f"{key}.svg"
-            if path.exists():
-                st.image(str(path),use_container_width=True)
+            path=SCENE_DIR/f"{key}.svg"
+            if path.exists():st.image(str(path),use_container_width=True)
             if st.button(f"{cfg['sector']}\n\n{cfg['name']}",key=f"scene_{key}",use_container_width=True,type="primary" if st.session_state.scenario==key else "secondary"):
                 st.session_state.scenario=key;st.session_state.result=None;st.session_state.frame=0;st.session_state.sim_status="ready";st.session_state.sim_phase="configure";st.session_state.sim_screen="config";st.session_state.pending_payload=None;st.rerun()
 
@@ -242,13 +197,8 @@ def facility_html(frame,status):
       </div>
     </div>"""
 
-def scene_data_uri(key,hd=True,ambient=False):
-    if ambient:
-        path=SCENE_HD_DIR/f"{key}_ambient.svg"
-    else:
-        path=(SCENE_HD_DIR/f"{key}_hd.svg") if hd else (SCENE_DIR/f"{key}.svg")
-    if not path.exists():
-        path=SCENE_DIR/f"{key}.svg"
+def scene_data_uri(key):
+    path=SCENE_DIR/f"{key}.svg"
     if not path.exists():
         return ""
     raw=base64.b64encode(path.read_bytes()).decode("ascii")
@@ -376,7 +326,7 @@ def run_challenge_ui():
         frame0=result["events"][0]
         st.markdown(f"""<div class="workflow-head preview"><span>ESCENA CONSTRUIDA · RELOJ EN 0</span><h2>{ui['title']} · verificar antes de iniciar</h2>
         <p>La escena física se generó con los datos guardados. Nada se mueve todavía.</p></div>""",unsafe_allow_html=True)
-        st.markdown(render_sector_scene(key,frame0,"ready",scene_data_uri(key,ambient=True)),unsafe_allow_html=True)
+        st.markdown(render_sector_scene(key,frame0,"ready"),unsafe_allow_html=True)
         expected=int(result["staffing"][0]);visible=configured_units(frame0)
         metric_cards([
             (ui["service"],f"{visible}/{expected}","ok" if visible==expected else "warn"),
@@ -422,7 +372,7 @@ def run_challenge_ui():
           <div class="ops-mini warn"><small>Rechazados</small><b>{frame['blocked']}</b></div>
         </div><div class="journey-progress"><i style="width:{pct:.1f}%"></i><span class="start-label">INICIO · 0 min</span><span class="end-label">FIN · {int(result_now['config']['duration'])} min</span></div></div>""",unsafe_allow_html=True)
 
-        st.markdown(render_sector_scene(key,frame,status,scene_data_uri(key,ambient=True)),unsafe_allow_html=True)
+        st.markdown(render_sector_scene(key,frame,status),unsafe_allow_html=True)
         if visible < active:
             st.error(f"Inconsistencia visual: motor={active}, escena={visible}. Se pausó la simulación.")
             st.session_state.sim_status="paused"
