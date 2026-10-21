@@ -64,16 +64,25 @@ jobs:
               raise AssertionError(at.exception)
           assert len(at.radio) >= 1
           labels=[b.label for b in at.button]
-          assert "Construir escenario" in labels, labels
-          assert "▶ Iniciar simulación" not in labels
-          [b for b in at.button if b.label=="Construir escenario"][0].click()
+          assert "Abrir simulación ▶" not in labels
+          assert "▶ Iniciar simulación desde 0 min" not in labels
+          forms=[b for b in at.button if b.label=="Guardar y validar configuración"]
+          assert forms, labels
+          forms[0].click()
           at.run(timeout=30)
           if at.exception:
               raise AssertionError(at.exception)
           labels=[b.label for b in at.button]
-          assert "▶ Iniciar simulación" in labels, labels
-          assert "Construir escenario" not in labels
-          print("AppTest workflow OK: configure -> preview")
+          assert "Abrir simulación ▶" in labels, labels
+          assert "▶ Iniciar simulación desde 0 min" not in labels, labels
+          [b for b in at.button if b.label=="Abrir simulación ▶"][0].click()
+          at.run(timeout=30)
+          if at.exception:
+              raise AssertionError(at.exception)
+          labels=[b.label for b in at.button]
+          assert "▶ Iniciar simulación desde 0 min" in labels, labels
+          assert "Guardar y validar configuración" not in labels, labels
+          print("AppTest workflow OK: strict config -> open simulation -> preview")
           PY
       - name: Start Streamlit
         run: |
