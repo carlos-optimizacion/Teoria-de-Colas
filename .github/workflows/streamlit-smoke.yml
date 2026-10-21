@@ -172,7 +172,7 @@ jobs:
                   assert not any("Manufactura" in x for x in choices)
               if section=="Simulación":
                   selection=next(x for x in app.selectbox if x.label=="Escenario operativo")
-                  assert selection.options==["banco","hospital","supermercado","logistica"],selection.options
+                  assert selection.options==["Banca","Salud","Retail","Logística"],selection.options
               print("OK módulo:", section)
           for sector in ("banco","hospital","supermercado","logistica"):
               at=AppTest.from_file("streamlit_app.py")
