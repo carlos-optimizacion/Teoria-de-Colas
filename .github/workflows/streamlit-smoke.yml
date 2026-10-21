@@ -14,6 +14,7 @@ on:
       - 'django_app/portal/queue_v3.py'
       - 'tests/test_queue_v3.py'
       - 'tests/test_active_queue_sectors.py'
+      - 'tests/test_challenge_bridge_v3.py'
       - 'tests/test_empirical_report_v3.py'
       - 'tests_browser/v3_streamlit_smoke.py'
       - 'tests_browser/v3_active_sectors_smoke.py'
@@ -66,7 +67,7 @@ jobs:
       - name: Syntax/import checks
         run: |
           python -m py_compile experiment_registry_v3.py sector_scenes_v3.py home.py streamlit_v3.py report_v3.py django_app/portal/empirical_v3.py django_app/portal/queue_v3.py streamlit_app.py bank_three_scene.py streamlit_sector_scenes.py streamlit_visual_logic.py queue_core.py django_app/portal/challenge_engine.py django_app/portal/network_engine.py
-          python -m pytest -q tests/test_four_module_nav_v3.py tests/test_experiment_registry_v3.py tests/test_active_queue_sectors.py tests/test_queue_v3.py tests/test_empirical_report_v3.py tests/test_bank_three_scene.py tests/test_streamlit_visual_logic.py tests/test_streamlit_sector_scenes.py
+          python -m pytest -q tests/test_challenge_bridge_v3.py tests/test_four_module_nav_v3.py tests/test_experiment_registry_v3.py tests/test_active_queue_sectors.py tests/test_queue_v3.py tests/test_empirical_report_v3.py tests/test_bank_three_scene.py tests/test_streamlit_visual_logic.py tests/test_streamlit_sector_scenes.py
           python - <<'PY'
           import sys
           sys.path.insert(0,'django_app')
@@ -77,6 +78,27 @@ jobs:
           n=simulate_network({'arrival_min':5,'horizon':120,'stages':[{'name':'A','service_min':4,'servers':2},{'name':'B','service_min':7,'servers':2}]})
           assert n['arrivals'] == n['completed'] + n['in_system_at_close']
           print('Engine smoke OK')
+          PY
+      - name: Challenge H2 engine switching UI
+        run: |
+          python - <<'PY'
+          from streamlit.testing.v1 import AppTest
+          at=AppTest.from_file("streamlit_app.py")
+          at.run(timeout=40)
+          next(r for r in at.radio if r.label=="Navegación").set_value("Desafíos gerenciales")
+          at.run(timeout=40)
+          assert not at.exception,at.exception
+          choice=next(x for x in at.selectbox if x.label=="Incidente del desafío")
+          assert "none" in choice.options and "demanda" in choice.options
+          choice.set_value("none")
+          at.run(timeout=40)
+          next(b for b in at.button if b.label=="Guardar y validar configuración").click()
+          at.run(timeout=60)
+          assert not at.exception,at.exception
+          assert at.session_state["result"]["engine"]=="queue_v3"
+          assert at.session_state["result"]["events"][-1]["t"]==480
+          assert any(b.label=="Abrir simulación ▶" for b in at.button)
+          print("H2 Challenge UI: ruta motor central y vista previa correctas")
           PY
       - name: Streamlit AppTest
         run: |
