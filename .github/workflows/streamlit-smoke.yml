@@ -7,6 +7,7 @@ on:
       - 'streamlit_sector_scenes.py'
       - 'streamlit_visual_logic.py'
       - 'tests/test_streamlit_sector_scenes.py'
+      - 'django_app/static/img/scenarios_hd/**'
       - 'queue_core.py'
       - 'django_app/portal/challenge_engine.py'
       - 'django_app/portal/network_engine.py'
