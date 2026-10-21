@@ -326,9 +326,11 @@ def run_challenge_ui():
     # PREVISUALIZACIÓN
     if st.session_state.sim_phase=="preview":
         frame0=result["events"][0]
-        st.markdown(f"""<div class="workflow-head preview"><span>ESCENA CONSTRUIDA · RELOJ EN 0</span><h2>{ui['title']} · verificar antes de iniciar</h2>
+        stage_title = ("BANCO 3D · THREE.JS · VERSIÓN 2026.10.21" if key=="banco" else "ESCENA CONSTRUIDA · RELOJ EN 0")
+        st.markdown(f"""<div class="workflow-head preview"><span>{stage_title}</span><h2>{ui['title']} · verificar antes de iniciar</h2>
         <p>La escena física se generó con los datos guardados. Nada se mueve todavía.</p></div>""",unsafe_allow_html=True)
         if key=="banco":
+            st.caption("**VISTA 3D INTERACTIVA** · Ventanillas y sala bancaria en Three.js. Arrastra con el ratón para girar la cámara.")
             components.html(bank_scene_html([frame0],result["config"],preview=True),height=745,scrolling=False)
         else:
             st.markdown(render_sector_scene(key,frame0,"ready"),unsafe_allow_html=True)
@@ -353,6 +355,7 @@ def run_challenge_ui():
     # el motor Python genera la trayectoria y el navegador anima sus eventos.
     # Evita la recreación del canvas cada 650 ms (parpadeo y desincronización).
     if key=="banco":
+        st.caption("**BANCO 3D · THREE.JS · VERSIÓN 2026.10.21** · El motor Python controla todas las llegadas, servicios y movimientos.")
         components.html(bank_scene_html(result["events"],result["config"]),height=745,scrolling=False)
         st.caption("Controles de reproducción, pausa, avance y velocidad integrados en el banco 3D. Los indicadores siguientes son resultados finales de la trayectoria precalculada en Python.")
     else:
