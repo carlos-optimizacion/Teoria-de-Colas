@@ -20,8 +20,9 @@ from streamlit_visual_logic import station_descriptors
 from streamlit_sector_scenes import SECTOR_UI, render_sector_scene, configured_units
 from bank_three_scene import bank_scene_html
 import streamlit.components.v1 as components
+from streamlit_v3 import run as run_decision_lab_v3
 
-st.set_page_config(page_title="Decision Lab 2.0",page_icon="◈",layout="wide",initial_sidebar_state="expanded")
+st.set_page_config(page_title="Decision Lab 3.0",page_icon="◈",layout="wide",initial_sidebar_state="expanded")
 
 SCENE_DIR=DJANGO_APP/"static"/"img"/"scenarios"
 MODELS=["M/M/1","M/M/s","M/M/s/K","M/M/1/c","M/M/s/c","Erlang B","M/G/1","D/D/1"]
@@ -127,7 +128,7 @@ def update_progress(result):
 
 def sidebar():
     with st.sidebar:
-        st.markdown("## ◈ DECISION LAB 2.0")
+        st.markdown("## ◈ DECISION LAB 3.0")
         st.caption("Teoría de Colas en la Práctica")
         section=st.radio("Navegación",["Inicio","Modelos","Simulación","Challenge","Comparador","Análisis Económico","Red Multietapa","Reportes"],label_visibility="collapsed")
         st.divider()
@@ -137,7 +138,7 @@ def sidebar():
         return section
 
 def topbar():
-    st.markdown(f"""<div class="dl-top"><div class="dl-brand">◈ DECISION LAB 2.0<small>Simulación, analítica y gamificación de sistemas de espera</small></div>
+    st.markdown(f"""<div class="dl-top"><div class="dl-brand">◈ DECISION LAB 3.0<small>Simulación, analítica y gamificación de sistemas de espera</small></div>
     <div><b>{st.session_state.profile_name}</b> · Nivel {st.session_state.level} &nbsp; <b>★ {st.session_state.coins}</b></div></div>""",unsafe_allow_html=True)
 
 def scenario_gallery():
@@ -534,12 +535,13 @@ def reports():
     st.caption("En Streamlit Community Cloud el estado de sesión no es una base de datos persistente. La persistencia multiusuario completa permanece en la versión Django/PostgreSQL.")
 
 def home():
-    run_challenge_ui()
+    run_decision_lab_v3()
 
 css();init_state();topbar();section=sidebar()
 if section=="Inicio":home()
 elif section=="Modelos":model_lab()
-elif section in ("Simulación","Challenge"):run_challenge_ui()
+elif section=="Simulación":run_decision_lab_v3()
+elif section=="Challenge":run_challenge_ui()
 elif section=="Comparador":comparator()
 elif section=="Análisis Económico":economics()
 elif section=="Red Multietapa":network()
