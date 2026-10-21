@@ -21,6 +21,7 @@ with sync_playwright() as p:
     assert not inner.locator("#loading").count()
     Path("visual-artifacts").mkdir(exist_ok=True)
     page.screenshot(path="visual-artifacts/network-3d-preview.png",full_page=True)
+    page.locator("iframe").first.screenshot(path="visual-artifacts/network-3d-preview-iframe.png")
     page.get_by_role("button",name="▶ Iniciar simulación 3D de la red").click()
     page.get_by_text("3 · Red de procesos en movimiento").wait_for(timeout=90000)
     live=page.frame_locator("iframe").first
@@ -33,5 +34,6 @@ with sync_playwright() as p:
     assert live.locator(".node .q").count()==3
     assert live.locator(".node .rho").count()==3
     page.screenshot(path="visual-artifacts/network-3d-running.png",full_page=True)
+    page.locator("iframe").first.screenshot(path="visual-artifacts/network-3d-running-iframe.png")
     print("PASS: network 3D uses Python stage occupancy, previews, animates, and shows per-stage KPIs")
     browser.close()
