@@ -22,6 +22,16 @@ st.set_page_config(page_title="Decision Lab 2.0",page_icon="◈",layout="wide",i
 SCENE_DIR=DJANGO_APP/"static"/"img"/"scenarios"
 MODELS=["M/M/1","M/M/s","M/M/s/K","M/M/1/c","M/M/s/c","Erlang B","M/G/1","D/D/1"]
 
+def metric_cards(items,columns=4):
+    cards=[]
+    for label,value,kind in items:
+        cards.append(f'<div class="kpi-card {kind}"><small>{label}</small><b>{value}</b></div>')
+    st.markdown(f'<div class="kpi-grid cols-{columns}">'+"".join(cards)+'</div>',unsafe_allow_html=True)
+
+def progress_html(value,label):
+    pct=max(0,min(100,float(value)*100))
+    st.markdown(f'<div class="dl-progress"><div class="dl-progress-head"><span>{label}</span><b>{pct:.0f}%</b></div><div class="dl-progress-track"><i style="width:{pct:.1f}%"></i></div></div>',unsafe_allow_html=True)
+
 def css():
     st.markdown("""
     <style>
@@ -40,12 +50,17 @@ def css():
     .zone-title{font-size:.72rem;font-weight:900;color:#3A6078;letter-spacing:.05em}.queue-people,.servers{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
     .client{display:inline-grid;place-items:center;width:31px;height:31px;border-radius:50%;background:#A9D9F6;border:2px solid white;box-shadow:0 3px 7px #315D7440;font-size:.65rem;font-weight:900;color:#104669}
     .client.serving{background:#9AE3BC}.station{display:flex;flex-direction:column;gap:4px;align-items:center;min-width:96px;padding:8px;border-radius:10px;border:2px solid #94CAB7;background:#ECF8F2;font-size:.68rem}.station.busy{background:#E5F3FC;border-color:#7CB9D8}.station.closed{background:#F6F0EA;border-color:#D7A96C}
-    div[data-testid="stMetric"]{background:white;border:1px solid #DFE8EF;border-radius:12px;padding:10px 12px}
     .panel{background:white;border:1px solid #DFE8EF;border-radius:14px;padding:14px;margin-bottom:10px}
     .achievement{display:inline-block;background:#FFF1BE;color:#805C09;border-radius:99px;padding:5px 9px;margin:2px;font-size:.72rem;font-weight:800}
     .status-ok{background:#E8F8EF;border-left:5px solid #1B9158;padding:9px 12px;border-radius:9px}.status-warn{background:#FFF1E1;border-left:5px solid #D98225;padding:9px 12px;border-radius:9px}
+
+    .kpi-grid{display:grid;gap:10px;margin:10px 0 14px}.kpi-grid.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi-grid.cols-5{grid-template-columns:repeat(5,minmax(0,1fr))}.kpi-grid.cols-6{grid-template-columns:repeat(6,minmax(0,1fr))}
+    .kpi-card{background:#fff;border:1px solid #dce7ee;border-radius:13px;padding:12px 14px;box-shadow:0 5px 14px #133f5f0d}.kpi-card small{display:block;color:#6f8392;font-size:.7rem}.kpi-card b{display:block;color:#123f63;font-size:1.4rem;margin-top:3px}.kpi-card.ok{background:#eaf9ef}.kpi-card.info{background:#edf6ff}.kpi-card.warn{background:#fff0f0}.kpi-card.gold{background:#fff7dc}
+    .dl-progress{margin:10px 0}.dl-progress-head{display:flex;justify-content:space-between;font-size:.73rem;color:#dcecff;margin-bottom:5px}.dl-progress-track{height:9px;background:#173d5b;border-radius:99px;overflow:hidden}.dl-progress-track i{display:block;height:100%;background:linear-gradient(90deg,#39a4ff,#73c9ff);border-radius:99px}
     #MainMenu{visibility:hidden}footer{visibility:hidden}
-    @media(max-width:900px){.facility-grid{grid-template-columns:1fr}.dl-top{align-items:flex-start;flex-direction:column}}
+    [data-testid="stSidebarNav"]{display:none!important}
+    header[data-testid="stHeader"]{background:transparent}
+    @media(max-width:900px){.facility-grid{grid-template-columns:1fr}.dl-top{align-items:flex-start;flex-direction:column}.kpi-grid.cols-4,.kpi-grid.cols-5,.kpi-grid.cols-6{grid-template-columns:repeat(2,minmax(0,1fr))}}
     </style>
     """,unsafe_allow_html=True)
 
@@ -73,7 +88,7 @@ def sidebar():
         section=st.radio("Navegación",["Inicio","Modelos","Simulación","Challenge","Comparador","Análisis Económico","Red Multietapa","Reportes"],label_visibility="collapsed")
         st.divider()
         st.markdown(f"**{st.session_state.profile_name}** · Nivel {st.session_state.level}")
-        st.progress(min(1,(st.session_state.xp%500)/500),text=f"{st.session_state.xp} XP · ★ {st.session_state.coins}")
+        progress_html(min(1,(st.session_state.xp%500)/500),f"{st.session_state.xp} XP · ★ {st.session_state.coins}")
         st.caption(f"Desafíos dominados: {len(st.session_state.completed)}/5")
         return section
 
@@ -140,8 +155,7 @@ def run_challenge_ui():
         st.info("Configura el escenario y ejecuta la primera simulación.")
         return
     frames=result["events"];idx=min(st.session_state.frame,len(frames)-1);frame=frames[idx]
-    k1,k2,k3,k4=st.columns(4)
-    k1.metric("Tiempo simulado",f"{frame['t']:.1f} min");k2.metric("Atendidos",frame["completed"]);k3.metric("En cola",frame["queue"]);k4.metric("Rechazados",frame["blocked"])
+    metric_cards([("Tiempo simulado",f"{frame['t']:.1f} min","info"),("Atendidos",frame["completed"],"ok"),("En cola",frame["queue"],"info"),("Rechazados",frame["blocked"],"warn")],4)
     st.markdown(facility_html(frame),unsafe_allow_html=True)
     ctrl1,ctrl2,ctrl3,ctrl4=st.columns([1,1,1,5])
     if ctrl1.button("◀",use_container_width=True):st.session_state.frame=max(0,idx-1);st.rerun()
@@ -162,9 +176,7 @@ def run_challenge_ui():
             st.session_state.result=evaluate_game(payload);st.rerun()
     m=result["metrics"]
     st.markdown("### Resultados proyectados al cierre")
-    cols=st.columns(6)
-    vals=[("Score",f"{result['score']}/100"),("SLA",f"{m['sla']*100:.1f}%"),("Espera",f"{m['avg_wait']:.1f} min"),("Utilización",f"{m['utilization']*100:.1f}%"),("Costo total",f"S/ {m['total_cost']:.2f}"),("Abandonos",f"{m['abandoned']:.1f}")]
-    for c,(label,val) in zip(cols,vals):c.metric(label,val)
+    metric_cards([("Score",f"{result['score']}/100","gold"),("SLA",f"{m['sla']*100:.1f}%","ok"),("Espera",f"{m['avg_wait']:.1f} min","info"),("Utilización",f"{m['utilization']*100:.1f}%","info"),("Costo total",f"S/ {m['total_cost']:.2f}","warn"),("Abandonos",f"{m['abandoned']:.1f}","warn")],6)
     status="status-ok" if result["passes"]["budget"] and result["passes"]["sla"] else "status-warn"
     st.markdown(f'<div class="{status}"><b>{"Misión cumplida" if status=="status-ok" else "Estrategia por mejorar"}</b> · '+" · ".join(result["achievements"])+"</div>",unsafe_allow_html=True)
     fig=go.Figure()
@@ -190,7 +202,7 @@ def model_lab():
             cv=st.number_input("CV servicio",0.0,4.0,1.0,.1);r=mg1_from_minutes(arrival,service,cv)
         else:
             n=st.slider("Clientes",5,100,20);df=pd.DataFrame(dd1_sequence(arrival,service,n));st.dataframe(df,use_container_width=True);st.line_chart(df.set_index("Cliente")["Espera (min)"]);return
-        cols=st.columns(5);cols[0].metric("Estado","Estable" if r.get("estable") else "Inestable");cols[1].metric("ρ",f"{r.get('rho',0):.3f}");cols[2].metric("Lq",f"{r.get('Lq',0):.2f}");cols[3].metric("Wq",f"{r.get('Wq',0)*60:.2f} min" if math.isfinite(r.get("Wq",0)) else "∞");cols[4].metric("Bloqueo",f"{r.get('P_bloqueo',0)*100:.1f}%")
+        metric_cards([("Estado","Estable" if r.get("estable") else "Inestable","ok" if r.get("estable") else "warn"),("ρ",f"{r.get('rho',0):.3f}","info"),("Lq",f"{r.get('Lq',0):.2f}","info"),("Wq",f"{r.get('Wq',0)*60:.2f} min" if math.isfinite(r.get("Wq",0)) else "∞","info"),("Bloqueo",f"{r.get('P_bloqueo',0)*100:.1f}%","warn")],5)
         st.json(r)
     except ValueError as exc:st.error(str(exc))
 
@@ -226,7 +238,7 @@ def network():
         r=simulate_network({"arrival_min":arrival,"horizon":horizon,"seed":2026,"stages":stages})
         st.session_state.network_result=r
     if "network_result" in st.session_state:
-        r=st.session_state.network_result;cols=st.columns(4);cols[0].metric("Llegadas",r["arrivals"]);cols[1].metric("Completados",r["completed"]);cols[2].metric("Throughput",f"{r['throughput_rate']:.2f}/h");cols[3].metric("Tiempo sistema",f"{r['avg_system']:.1f} min")
+        r=st.session_state.network_result;metric_cards([("Llegadas",r["arrivals"],"info"),("Completados",r["completed"],"ok"),("Throughput",f"{r['throughput_rate']:.2f}/h","info"),("Tiempo sistema",f"{r['avg_system']:.1f} min","gold")],4)
         df=pd.DataFrame(r["stages"]);st.dataframe(df,use_container_width=True)
         fig=go.Figure()
         for i,stage in enumerate(r["stages"]):fig.add_trace(go.Scatter(x=[f["t"] for f in r["frames"]],y=[f["queues"][i] for f in r["frames"]],mode="lines",name=stage["name"],line_shape="hv"))
@@ -234,7 +246,7 @@ def network():
 
 def reports():
     st.header("Reportes y progreso")
-    st.metric("Nivel",st.session_state.level);st.metric("XP",st.session_state.xp);st.metric("Monedas",st.session_state.coins)
+    metric_cards([("Nivel",st.session_state.level,"gold"),("XP",st.session_state.xp,"info"),("Monedas",st.session_state.coins,"gold")],3)
     if st.session_state.score_history:
         df=pd.DataFrame([{"Escenario":x["scenario"],"Score":x["score"],"Costo":x["metrics"]["total_cost"],"SLA":x["metrics"]["sla"]} for x in st.session_state.score_history])
         st.dataframe(df,use_container_width=True)
@@ -246,9 +258,9 @@ def home():
     st.markdown("## Decision Lab 2.0")
     st.write("Plataforma de teoría de colas que integra modelos analíticos, simulación de eventos discretos, decisiones gerenciales y gamificación.")
     scenario_gallery()
-    cols=st.columns(4)
-    for c,(n,t) in zip(cols,[("8","modelos matemáticos"),("5","escenarios gerenciales"),("2–4","etapas en redes de colas"),("4","distribuciones de servicio")]):c.metric(t,n)
-    st.info("Selecciona **Simulación** o **Challenge** en el menú lateral para operar la jornada dinámica.")
+    metric_cards([("Modelos matemáticos","8","info"),("Escenarios gerenciales","5","ok"),("Etapas en red","2–4","gold"),("Distribuciones servicio","4","info")],4)
+    st.info("El tablero operativo se muestra directamente en Inicio para que puedas evaluar la simulación sin navegar a otra sección.")
+    run_challenge_ui()
 
 css();init_state();topbar();section=sidebar()
 if section=="Inicio":home()
