@@ -139,7 +139,12 @@ jobs:
           player.run(timeout=90)
           assert not player.exception,player.exception
           assert any(x.type=="iframe" for x in player)
-          assert any(b.label=="Optimizar capacidad por SLA y costo" for b in player.button)
+          if result["model"] in {"D/D/1","M/M/1","M/M/1/K","M/G/1","G/G/1"}:
+              assert not any(b.label=="Optimizar capacidad por SLA y costo" for b in player.button)
+          else:
+              assert any(b.label=="Optimizar capacidad por SLA y costo" for b in player.button)
+          assert any(b.label=="Informe PDF" for b in player.button)
+          assert any(b.label=="Resultados Excel" for b in player.button)
           print("Decision Lab 3.0 AppTest OK")
           PY
       - name: Start Streamlit
