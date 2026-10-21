@@ -10,6 +10,7 @@ on:
       - 'django_app/portal/queue_v3.py'
       - 'tests/test_queue_v3.py'
       - 'tests/test_empirical_report_v3.py'
+      - 'tests_browser/v3_streamlit_smoke.py'
       - 'bank_three_scene.py'
       - 'tests/test_bank_three_scene.py'
       - 'streamlit_sector_scenes.py'
@@ -164,6 +165,19 @@ jobs:
       - name: Verify app HTML
         run: |
           curl -fsS http://127.0.0.1:8501/ | grep -q "Streamlit"
+      - name: Install Chromium browser automation
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Actual Streamlit + Three.js browser smoke
+        run: python tests_browser/v3_streamlit_smoke.py
+      - name: Upload decision lab 3.0 browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: decision-lab-3-webgl-ui
+          path: visual-artifacts/
+          if-no-files-found: ignore
       - name: Print log on failure
         if: failure()
         run: cat /tmp/streamlit.log || true
