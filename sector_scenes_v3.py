@@ -69,6 +69,13 @@ ENVIRONMENT_JS = r"""
       box(.12,.11,1.13,steel,[x,.16,1.46],fork);
     }
     features.forklift=1;
+    // Fachada industrial: vigas, balizas de seguridad y pasos de peatones.
+    for(const x of [-8.2,-2.7,2.7,8.2]){
+      const tower=box(.16,3.12,.15,steel,[x,1.58,-8.1]);
+      box(.48,.16,.25,mat(0xffca55,{emissive:0xbc8a22,emissiveIntensity:.32}),[x,3.16,-8.0]);
+    }
+    for(const x of [-7.7,7.7])for(let z=4;z<8;z+=.68)paint(x,z,.85,.23,mat(0xe6e9e8));
+    features.safetyMarkers=2;
     sign('INGRESO DE CAMIONES',-7.5,2.47,9.53,3.15,.41,0x135f80);
     sign('SALIDA DE DESPACHOS',7.5,2.47,9.53,3.25,.41,0x1b7855);
   } else {
@@ -96,6 +103,11 @@ ENVIRONMENT_JS = r"""
       box(3.5,.97,.59,wood,[8.45,.48,4.6]);
       box(3.53,.11,.73,accent,[8.45,1.02,4.6]);
       sign('INFORMES',8.5,1.5,4.94,2.35,.33,0x164c68);
+      // Monitores de turnos e iluminación indirecta del área de atención.
+      box(2.70,1.28,.13,mat(0x203e52),[8.70,2.12,-9.19]);
+      sign('TURNOS   A-015',8.7,2.20,-9.08,2.5,.52,0xdef0ff);
+      for(const x of [-6.5,0,6.5])box(3.1,.10,.46,mat(0xf3e2bf),[x,3.55,-7.0]);
+      features.turnMonitor=1;
     } else if(sector==='hospital'){
       // Puesto de triaje, banco de pacientes y corredor asistencial.
       box(3.05,.96,.77,mat(0x80b8ae),[-8.8,.49,5.55]);
@@ -108,6 +120,11 @@ ENVIRONMENT_JS = r"""
       sign('ADMISIÓN',-8.4,1.49,7.67,1.30,.25,0x127b72);
       sign('✚ URGENCIAS',0,1.58,-9.43,3.4,.42,0xffffff);
       for(let z=-6;z<8;z+=2.7)paint(0,z,.06,1.1,mat(0x70b9b0));
+      // Guía sanitaria para pacientes y luz clínica sobre los boxes.
+      for(const x of [-5.6,0,5.6])box(2.6,.075,.46,mat(0xf0ffff),[x,3.52,-7.0]);
+      box(1.05,.55,.06,mat(0xd8f2ee),[9.35,2.4,-9.31]);
+      sign('URG',9.35,2.42,-9.23,.86,.34,0x218b89);
+      features.medicalSigns=1;
       // Botiquines en pared junto al pasillo asistencial.
       for(const x of [-9.95,9.95]){
         box(.78,.65,.22,mat(0xffffff),[x,1.86,-6.7]);
@@ -133,6 +150,13 @@ ENVIRONMENT_JS = r"""
       sign('FRUTAS FRESCAS',-8.85,1.55,5.97,2.9,.34,0x216c4b);
       for(const x of [7.8,8.85,9.9])box(.81,.58,.69,mat(0x3d906d),[x,.30,5.8]);
       sign('PROMOCIONES',8.8,2.48,6.13,2.6,.41,0x1c8052);
+      // Carteles suspendidos y bandas identificadoras de pasillos.
+      for(const x of [-9.2,9.2]){
+        box(.08,.92,.08,steel,[x,3.20,-2.7]);
+        box(2.0,.55,.08,accent,[x,2.76,-2.7]);
+        sign('OFERTAS',x,2.76,-2.62,1.77,.32,0xffffff);
+      }
+      features.hangingSigns=2;
       features.checkoutDecor=1;
     }
   }
