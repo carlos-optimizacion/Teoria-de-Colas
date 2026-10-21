@@ -47,6 +47,8 @@ def css():
     .panel-title{background:white;border:1px solid #dfe8ee;border-radius:12px 12px 0 0;padding:10px 12px;margin-top:8px}.panel-title b,.panel-title span{display:block}.panel-title b{color:#153f61}.panel-title span{font-size:.68rem;color:#708494;margin-top:2px}
     .sim-head h2{font-size:1.2rem;margin:0;color:#103D66}.sim-head p{margin:2px 0 0;font-size:.78rem;color:#657C91}
     .facility{background:linear-gradient(180deg,#EEF6F8,#DCEBEF);border-left:1px solid #DDE8EF;border-right:1px solid #DDE8EF;padding:10px 14px}
+    .process-wrap{background:#eef5f8;border:1px solid #d6e4eb;border-top:0;padding:12px 14px 15px}.process-status{display:flex;align-items:center;gap:8px;background:white;border:1px solid #dce7ed;border-radius:10px;padding:8px 11px;margin-bottom:10px;font-size:.72rem}.process-status b{color:#173f60}.process-status>span:last-child{color:#61798b}.state-dot{width:9px;height:9px;border-radius:50%;background:#91a3b1;box-shadow:0 0 0 4px #91a3b126}.state-dot.running{background:#22a361;box-shadow:0 0 0 4px #22a36122;animation:pulse 1s infinite}.state-dot.paused{background:#e2a322}.state-dot.finished{background:#1776ba}.process-flow{display:grid;grid-template-columns:1fr 44px 1.4fr 44px 2.4fr 44px 1fr;align-items:stretch;gap:4px}.process-node{background:white;border:1px solid #d7e4eb;border-radius:12px;padding:10px;text-align:center;min-height:160px;position:relative;overflow:hidden}.process-node>b{display:block;font-size:.75rem;color:#153e60;margin-top:3px}.process-node>small{display:block;font-size:.62rem;color:#708493;margin:3px 0 8px}.node-icon{font-size:1.25rem;color:#2678a8;font-weight:900}.flow-arrow{display:grid;place-items:center;color:#7894a8;font-size:1.8rem;font-weight:900}.people-row{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}.person{width:32px;height:38px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center}.person i{width:16px;height:16px;border-radius:50%;background:#2e77aa;display:block;box-shadow:0 13px 0 3px #2e77aa}.person em{font-size:.52rem;font-style:normal;font-weight:900;color:white;transform:translateY(-7px);z-index:2}.person.serving i{background:#23955f;box-shadow:0 13px 0 3px #23955f}.moving-slot{height:52px;display:grid;place-items:center}.moving-in{animation:arrive 1.1s ease-in-out infinite alternate}.moving-out{animation:depart 1.1s ease-in-out infinite alternate}.station-grid{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}.station{min-width:86px;min-height:80px;border-radius:10px;border:2px solid #9cc7da;background:#eff8fc;padding:7px;display:flex;flex-direction:column;align-items:center;justify-content:center}.station b{font-size:.65rem;color:#153e60}.station small{font-size:.56rem;color:#607889}.station.busy{border-color:#4b9ac1;background:#e3f4fb}.station.free{border-color:#72bf94;background:#edf9f2}.station.closed{border-color:#c7a273;background:#f8f2ea}.station-icon{font-size:1.1rem;font-weight:900}.empty-state,.flow-placeholder{font-size:.65rem;color:#8a9aa6}.journey-progress{height:25px;background:#edf3f6;position:relative;border-top:1px solid #dbe6ec}.journey-progress i{display:block;height:5px;background:linear-gradient(90deg,#1d7fca,#44b9e9);transition:width .35s ease}.journey-progress span{position:absolute;top:8px;font-size:.55rem;color:#6a7f8e}.start-label{left:10px}.end-label{right:10px}.finish-card{display:flex;justify-content:space-between;align-items:center;gap:18px;background:linear-gradient(120deg,#0c4a70,#14718a);color:white;border-radius:14px;padding:14px 18px;margin:10px 0}.finish-card span{font-size:.58rem;letter-spacing:.12em;color:#cfe9f4}.finish-card h3{margin:2px 0;font-size:1rem;color:white}.finish-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.finish-grid div{background:#ffffff14;border:1px solid #ffffff22;border-radius:9px;padding:8px 10px;text-align:center}.finish-grid small,.finish-grid b{display:block}.finish-grid small{font-size:.55rem;color:#d5ebf3}.finish-grid b{font-size:.95rem;color:white}.section-separator{display:flex;justify-content:space-between;align-items:end;margin:17px 0 4px}.section-separator b{font-size:.72rem;letter-spacing:.08em;color:#174d6e}.section-separator span{font-size:.65rem;color:#7a8d9a}
+    @keyframes pulse{0%{box-shadow:0 0 0 2px #22a36122}70%{box-shadow:0 0 0 8px #22a36100}100%{box-shadow:0 0 0 2px #22a36122}}@keyframes arrive{from{transform:translateX(-20px);opacity:.35}to{transform:translateX(14px);opacity:1}}@keyframes depart{from{transform:translateX(-10px);opacity:1}to{transform:translateX(22px);opacity:.25}}
     .facility-grid{display:grid;grid-template-columns:1fr 2fr;gap:12px}
     .zone{background:#FFFFFFE8;border:1px solid #CDDFE8;border-radius:12px;padding:10px;min-height:200px}
     .zone-title{font-size:.72rem;font-weight:900;color:#3A6078;letter-spacing:.05em}.queue-people,.servers{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
@@ -62,7 +64,7 @@ def css():
     #MainMenu{visibility:hidden}footer{visibility:hidden}
     [data-testid="stSidebarNav"]{display:none!important}
     header[data-testid="stHeader"]{background:transparent}
-    @media(max-width:1100px){.ops-head{grid-template-columns:1fr 140px}.ops-mini{display:none}}@media(max-width:900px){.facility-grid{grid-template-columns:1fr}.dl-top{align-items:flex-start;flex-direction:column}.kpi-grid.cols-4,.kpi-grid.cols-5,.kpi-grid.cols-6{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-head{grid-template-columns:1fr}.ops-time{border-left:0;padding-left:0}.scene-banner{height:110px}}
+    @media(max-width:1200px){.process-flow{grid-template-columns:1fr 30px 1.3fr 30px 2fr 30px 1fr}.ops-head{grid-template-columns:1fr 140px}.ops-mini{display:none}}@media(max-width:900px){.facility-grid{grid-template-columns:1fr}.dl-top{align-items:flex-start;flex-direction:column}.kpi-grid.cols-4,.kpi-grid.cols-5,.kpi-grid.cols-6{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-head{grid-template-columns:1fr}.ops-time{border-left:0;padding-left:0}.scene-banner{height:110px}}
     </style>
     """,unsafe_allow_html=True)
 
@@ -70,6 +72,7 @@ def init_state():
     defaults={
         "scenario":"banco","result":None,"frame":0,"actions":[],"score_history":[],
         "xp":0,"coins":0,"level":1,"completed":set(),"saved":{},"profile_name":"Carlos",
+        "sim_status":"ready","sim_speed":1,
     }
     for k,v in defaults.items():
         if k not in st.session_state:
@@ -105,21 +108,57 @@ def scenario_gallery():
             path=SCENE_DIR/f"{key}.svg"
             if path.exists():st.image(str(path),use_container_width=True)
             if st.button(f"{cfg['sector']}\n\n{cfg['name']}",key=f"scene_{key}",use_container_width=True,type="primary" if st.session_state.scenario==key else "secondary"):
-                st.session_state.scenario=key;st.session_state.result=None;st.session_state.frame=0;st.rerun()
+                st.session_state.scenario=key;st.session_state.result=None;st.session_state.frame=0;st.session_state.sim_status="ready";st.rerun()
 
-def facility_html(frame):
+def event_text(frame):
+    kind=frame.get("kind","")
+    cid=frame.get("client")
+    messages={
+        "start":"La jornada está preparada. Pulsa Iniciar para comenzar.",
+        "arrival":f"Cliente {cid} llega al sistema y busca atención.",
+        "departure":f"Cliente {cid} termina su atención y sale del sistema.",
+        "abandon":f"Cliente {cid} abandona la cola por superar su paciencia.",
+        "action":"Se aplica una decisión de cambio de dotación.",
+        "incident_start":"Ocurre un incidente operativo que modifica la capacidad o la demanda.",
+        "incident_end":"Finaliza el incidente y la operación vuelve a su condición programada.",
+        "end":"La jornada terminó. Revisa el resultado final."
+    }
+    return messages.get(kind,f"Evento operativo: {kind or 'sin evento'}")
+
+def facility_html(frame,status):
     queue=list(frame.get("queue_ids",[]))
     servers=list(frame.get("servers",[]))
     active=int(frame.get("active",0))
-    qhtml="".join(f'<span class="client">{x}</span>' for x in queue[:18]) or "<span style='color:#8194A4;font-size:.75rem'>Sin clientes esperando</span>"
-    sht=[]
-    for i,cid in enumerate(servers):
-        if i>=active and cid is None:continue
-        cls="busy" if cid is not None else ("closed" if i>=active else "")
-        body=f'<span class="client serving">{cid}</span>' if cid is not None else ("Cierre pendiente" if i>=active else "Libre")
-        sht.append(f'<div class="station {cls}"><b>Puesto {i+1}</b>{body}</div>')
-    return f"""<div class="facility"><div class="facility-grid"><div class="zone"><div class="zone-title">SALA DE ESPERA · {frame.get('queue',0)}</div><div class="queue-people">{qhtml}</div></div>
-    <div class="zone"><div class="zone-title">PUESTOS OPERATIVOS · {frame.get('busy',0)} ocupados / {active} activos</div><div class="servers">{''.join(sht)}</div></div></div></div>"""
+    kind=frame.get("kind","")
+    cid=frame.get("client")
+    qhtml="".join(f'<span class="person qperson" title="Cliente {x}"><i>●</i><em>{x}</em></span>' for x in queue[:14]) or "<span class='empty-state'>Sin clientes esperando</span>"
+    stations=[]
+    for i,cust in enumerate(servers):
+        if i>=active and cust is None:
+            continue
+        if cust is not None:
+            cls="busy"
+            body=f'<span class="person serving"><i>●</i><em>{cust}</em></span><small>Atendiendo</small>'
+        elif i>=active:
+            cls="closed";body="<span class='station-icon'>×</span><small>Cierre pendiente</small>"
+        else:
+            cls="free";body="<span class='station-icon'>✓</span><small>Libre</small>"
+        stations.append(f'<div class="station {cls}"><b>Puesto {i+1}</b>{body}</div>')
+    incoming = f'<span class="person moving-in"><i>●</i><em>{cid}</em></span>' if kind=="arrival" and cid else "<span class='flow-placeholder'>—</span>"
+    outgoing = f'<span class="person moving-out"><i>●</i><em>{cid}</em></span>' if kind=="departure" and cid else "<span class='flow-placeholder'>—</span>"
+    badge={"ready":"PREPARADO","running":"EN CURSO","paused":"PAUSADO","finished":"FINALIZADO"}.get(status,status.upper())
+    return f"""<div class="process-wrap">
+      <div class="process-status"><span class="state-dot {status}"></span><b>{badge}</b><span>{event_text(frame)}</span></div>
+      <div class="process-flow">
+        <div class="process-node arrivals"><div class="node-icon">↓</div><b>LLEGADAS</b><small>{frame.get('arrivals',0)} acumuladas</small><div class="moving-slot">{incoming}</div></div>
+        <div class="flow-arrow"><span>→</span></div>
+        <div class="process-node queue-node"><div class="node-icon">≋</div><b>COLA</b><small>{frame.get('queue',0)} esperando</small><div class="people-row">{qhtml}</div></div>
+        <div class="flow-arrow"><span>→</span></div>
+        <div class="process-node service-node"><div class="node-icon">▦</div><b>SERVICIO</b><small>{frame.get('busy',0)} ocupados / {active} activos</small><div class="station-grid">{''.join(stations)}</div></div>
+        <div class="flow-arrow"><span>→</span></div>
+        <div class="process-node exit-node"><div class="node-icon">✓</div><b>SALIDA</b><small>{frame.get('completed',0)} atendidos</small><div class="moving-slot">{outgoing}</div></div>
+      </div>
+    </div>"""
 
 def scene_data_uri(key):
     path=SCENE_DIR/f"{key}.svg"
@@ -144,41 +183,72 @@ def run_challenge_ui():
     if st.session_state.result is None or st.session_state.result.get("scenario")!=key:
         st.session_state.actions=[]
         st.session_state.result=default_result(key)
-        st.session_state.frame=min(20,len(st.session_state.result["events"])-1)
+        st.session_state.frame=0
+        st.session_state.sim_status="ready"
 
     result=st.session_state.result
-    frames=result["events"]
-    idx=min(st.session_state.frame,len(frames)-1)
-    frame=frames[idx]
-    scene_uri=scene_data_uri(key)
+    m=result["metrics"]
 
-    st.markdown(f"""<div class="ops-shell">
-      <div class="ops-head">
-        <div class="ops-title"><span class="ops-icon">◫</span><div><h2>Simulación: {cfg['sector']} ({cfg['model']})</h2><p>{cfg['name']} · jornada de 8 horas · decisiones dinámicas</p></div></div>
-        <div class="ops-time"><small>Tiempo de simulación</small><b>{frame['t']:.1f} min</b><span>Evento {idx}/{len(frames)-1}</span></div>
-        <div class="ops-mini ok"><small>Clientes atendidos</small><b>{frame['completed']}</b></div>
-        <div class="ops-mini info"><small>En cola</small><b>{frame['queue']}</b></div>
-        <div class="ops-mini warn"><small>Rechazados</small><b>{frame['blocked']}</b></div>
-      </div>
-      <div class="scene-banner">{f'<img src="{scene_uri}" alt="{cfg["sector"]}">' if scene_uri else ''}<div class="scene-banner-shade"><b>{cfg['sector'].upper()}</b><span>{cfg['name']}</span></div></div>
-    </div>""",unsafe_allow_html=True)
+    @st.fragment(run_every=0.65)
+    def simulation_player():
+        frames=st.session_state.result["events"]
+        idx=min(st.session_state.frame,len(frames)-1)
+        status=st.session_state.sim_status
+        if status=="running":
+            step=max(1,int(st.session_state.sim_speed))
+            if idx < len(frames)-1:
+                idx=min(len(frames)-1,idx+step)
+                st.session_state.frame=idx
+            if idx>=len(frames)-1 or frames[idx].get("kind")=="end":
+                st.session_state.sim_status="finished"
+                status="finished"
+        frame=frames[idx]
+        scene_uri=scene_data_uri(key)
+        pct=100*idx/max(1,len(frames)-1)
 
-    st.markdown(facility_html(frame),unsafe_allow_html=True)
+        st.markdown(f"""<div class="ops-shell">
+          <div class="ops-head">
+            <div class="ops-title"><span class="ops-icon">◫</span><div><h2>Simulación: {cfg['sector']} ({cfg['model']})</h2><p>{cfg['name']} · jornada de {int(st.session_state.result['config']['duration']/60)} horas</p></div></div>
+            <div class="ops-time"><small>Tiempo simulado</small><b>{frame['t']:.1f} min</b><span>{pct:.0f}% de la jornada</span></div>
+            <div class="ops-mini ok"><small>Atendidos</small><b>{frame['completed']}</b></div>
+            <div class="ops-mini info"><small>En cola</small><b>{frame['queue']}</b></div>
+            <div class="ops-mini warn"><small>Rechazados</small><b>{frame['blocked']}</b></div>
+          </div>
+          <div class="scene-banner">{f'<img src="{scene_uri}" alt="{cfg["sector"]}">' if scene_uri else ''}<div class="scene-banner-shade"><b>{cfg['sector'].upper()}</b><span>{cfg['name']}</span></div></div>
+          <div class="journey-progress"><i style="width:{pct:.1f}%"></i><span class="start-label">INICIO · 0 min</span><span class="end-label">FIN · {int(st.session_state.result['config']['duration'])} min</span></div>
+        </div>""",unsafe_allow_html=True)
 
-    ctrl1,ctrl2,ctrl3,ctrl4=st.columns([1,1,1,6])
-    if ctrl1.button("◀",use_container_width=True,key="step_back"):
-        st.session_state.frame=max(0,idx-1);st.rerun()
-    if ctrl2.button("▶",use_container_width=True,key="step_fwd"):
-        st.session_state.frame=min(len(frames)-1,idx+1);st.rerun()
-    if ctrl3.button("≫ +10",use_container_width=True,key="step_10"):
-        st.session_state.frame=min(len(frames)-1,idx+10);st.rerun()
-    chosen=ctrl4.slider("Tiempo / evento",0,len(frames)-1,idx,key="timeline")
-    if chosen!=idx:
-        st.session_state.frame=chosen;st.rerun()
+        st.markdown(facility_html(frame,status),unsafe_allow_html=True)
 
+        b1,b2,b3,b4,b5,b6=st.columns([1.1,1,1,1,1.2,4.5])
+        if status in ("ready","paused"):
+            label="▶ Iniciar" if status=="ready" else "▶ Continuar"
+            if b1.button(label,key="player_start",use_container_width=True,type="primary"):
+                st.session_state.sim_status="running";st.rerun(scope="fragment")
+        else:
+            if b1.button("⏸ Pausa",key="player_pause",use_container_width=True,disabled=status=="finished"):
+                st.session_state.sim_status="paused";st.rerun(scope="fragment")
+        if b2.button("◀ Paso",key="player_prev",use_container_width=True,disabled=idx==0):
+            st.session_state.sim_status="paused";st.session_state.frame=max(0,idx-1);st.rerun(scope="fragment")
+        if b3.button("Paso ▶",key="player_next",use_container_width=True,disabled=idx>=len(frames)-1):
+            st.session_state.sim_status="paused";st.session_state.frame=min(len(frames)-1,idx+1);st.rerun(scope="fragment")
+        if b4.button("↺ Reiniciar",key="player_reset",use_container_width=True):
+            st.session_state.frame=0;st.session_state.sim_status="ready";st.rerun(scope="fragment")
+        if b5.button("⏭ Final",key="player_end",use_container_width=True,disabled=status=="finished"):
+            st.session_state.frame=len(frames)-1;st.session_state.sim_status="finished";st.rerun(scope="fragment")
+        speed=b6.select_slider("Velocidad",options=[1,2,4,8],value=st.session_state.sim_speed,key="speed_control",format_func=lambda x:f"{x}×")
+        st.session_state.sim_speed=speed
+
+        if status=="finished":
+            st.markdown(f"""<div class="finish-card"><div><span>JORNADA FINALIZADA</span><h3>{cfg['sector']} · resultado operativo</h3></div>
+            <div class="finish-grid"><div><small>Atendidos</small><b>{frame['completed']}</b></div><div><small>SLA final</small><b>{m['sla']*100:.1f}%</b></div><div><small>Costo</small><b>S/ {m['total_cost']:.0f}</b></div><div><small>Score</small><b>{result['score']}/100</b></div></div></div>""",unsafe_allow_html=True)
+
+    simulation_player()
+
+    st.markdown('<div class="section-separator"><b>DECISIÓN Y RESULTADOS</b><span>Configura, evalúa e interviene sin perder la secuencia de la jornada.</span></div>',unsafe_allow_html=True)
     left,center,right=st.columns([1.02,1.0,1.18],gap="medium")
     with left:
-        st.markdown('<div class="panel-title"><b>Parámetros del escenario</b><span>Configuración operativa</span></div>',unsafe_allow_html=True)
+        st.markdown('<div class="panel-title"><b>1 · Preparar escenario</b><span>Define la condición inicial antes de iniciar.</span></div>',unsafe_allow_html=True)
         with st.form("scenario_parameters",clear_on_submit=False):
             p1,p2=st.columns(2)
             arrival=p1.number_input("Interarribo (min)",.1,240.0,float(result["config"]["arrival_min"]),.1)
@@ -193,7 +263,7 @@ def run_challenge_ui():
             sla_min=p7.number_input("SLA espera ≤ min",.1,240.0,float(result["config"]["sla_min"]),.5)
             sla_target=p8.number_input("Meta SLA",0.0,1.0,float(result["config"]["sla_target"]),.01)
             reps=st.slider("Réplicas",1,50,int(result["replications"]))
-            submitted=st.form_submit_button("Evaluar y simular",type="primary",use_container_width=True)
+            submitted=st.form_submit_button("Aplicar configuración y volver al inicio",type="primary",use_container_width=True)
         if submitted:
             payload={"scenario":key,"staffing":[int(uniform)]*8,"replications":reps,"seed":2026,
                      "arrival_min":arrival,"service_min":service,"capacity":capacity,"staff_hour":staff_cost,
@@ -202,57 +272,56 @@ def run_challenge_ui():
                      "priority_share":result.get("options",{}).get("priority_share",0),
                      "service_distribution":result.get("options",{}).get("service_distribution","exponential"),
                      "service_cv":result.get("options",{}).get("service_cv",1),
-                     "actions":st.session_state.actions}
-            st.session_state.result=evaluate_game(payload)
-            st.session_state.frame=min(idx,len(st.session_state.result["events"])-1)
-            st.session_state.score_history.append({"scenario":key,"score":st.session_state.result["score"],"metrics":st.session_state.result["metrics"]})
-            update_progress(st.session_state.result)
+                     "actions":[]}
+            st.session_state.result=evaluate_game(payload);st.session_state.actions=[];st.session_state.frame=0;st.session_state.sim_status="ready"
             st.rerun()
 
     with center:
-        st.markdown('<div class="panel-title"><b>Resultados en tiempo real</b><span>Proyección al cierre</span></div>',unsafe_allow_html=True)
-        m=result["metrics"]
+        st.markdown('<div class="panel-title"><b>2 · Resultado esperado</b><span>Proyección estadística de la configuración.</span></div>',unsafe_allow_html=True)
         metric_cards([("Wq",f"{m['avg_wait']:.1f} min","info"),("SLA",f"{m['sla']*100:.1f}%","ok"),
                       ("Lq",f"{m['avg_queue']:.2f}","gold"),("ρ",f"{m['utilization']*100:.1f}%","info"),
                       ("Costo",f"S/ {m['total_cost']:.0f}","warn"),("Score",f"{result['score']}/100","gold")],3)
         status="status-ok" if result["passes"]["budget"] and result["passes"]["sla"] else "status-warn"
-        st.markdown(f'<div class="{status}"><b>{"Misión cumplida" if status=="status-ok" else "Estrategia por mejorar"}</b><br><span>SLA objetivo: {result["config"]["sla_target"]*100:.0f}% · Presupuesto: S/ {result["config"]["budget"]:.0f}</span></div>',unsafe_allow_html=True)
-        if result["achievements"]:
-            st.markdown("".join(f'<span class="achievement">★ {a}</span>' for a in result["achievements"]),unsafe_allow_html=True)
+        st.markdown(f'<div class="{status}"><b>{"Configuración viable" if status=="status-ok" else "Configuración por mejorar"}</b><br><span>Meta SLA {result["config"]["sla_target"]*100:.0f}% · Presupuesto S/ {result["config"]["budget"]:.0f}</span></div>',unsafe_allow_html=True)
 
     with right:
-        st.markdown('<div class="panel-title"><b>Cola y servidores</b><span>Evolución de la jornada</span></div>',unsafe_allow_html=True)
+        st.markdown('<div class="panel-title"><b>3 · Evolución de la cola</b><span>Comportamiento durante toda la jornada.</span></div>',unsafe_allow_html=True)
         fig=go.Figure()
         fig.add_trace(go.Scatter(x=[x["t"] for x in result["series"]],y=[x["queue"] for x in result["series"]],mode="lines",name="Cola",line_shape="hv"))
         fig.add_trace(go.Scatter(x=[x["t"] for x in result["series"]],y=[x["busy"] for x in result["series"]],mode="lines",name="En servicio",line_shape="hv"))
         fig.update_layout(template="plotly_white",height=275,margin=dict(t=18,l=38,r=10,b=35),xaxis_title="Tiempo (min)",yaxis_title="Clientes",legend=dict(orientation="h",y=1.12))
         st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 
-    with st.expander("Decisiones dinámicas y opciones avanzadas",expanded=False):
-        d1,d2,d3,d4=st.columns(4)
-        patience=d1.number_input("Paciencia media (0=sin abandono)",0.0,240.0,float(result.get("options",{}).get("patience_min",0)),1.0,key="adv_patience")
-        priority=d2.number_input("Proporción prioritaria",0.0,1.0,float(result.get("options",{}).get("priority_share",0)),.05,key="adv_priority")
-        dist=d3.selectbox("Distribución servicio",["exponential","deterministic","gamma","lognormal"],index=["exponential","deterministic","gamma","lognormal"].index(result.get("options",{}).get("service_distribution","exponential")),key="adv_dist")
-        cv=d4.number_input("CV servicio",.05,4.0,float(result.get("options",{}).get("service_cv",1)),.05,key="adv_cv")
-        i1,i2=st.columns([1,2])
-        new_servers=i1.number_input("Nueva dotación",1,int(cfg["max_servers"]),int(frame["active"]),1,key="intervention_servers")
-        if i2.button("Aplicar desde el siguiente minuto",use_container_width=True,key="apply_intervention"):
-            minute=max(1,min(int(result["config"]["duration"])-1,int(frame["t"])+1))
-            actions=[a for a in st.session_state.actions if a["minute"]<minute]
-            actions.append({"minute":minute,"servers":int(new_servers)})
+    with st.expander("Intervención durante la jornada",expanded=False):
+        current_frame=st.session_state.result["events"][min(st.session_state.frame,len(st.session_state.result["events"])-1)]
+        i1,i2,i3=st.columns([1,1,2])
+        new_servers=i1.number_input("Nueva dotación",1,int(cfg["max_servers"]),int(current_frame["active"]),1,key="intervention_servers")
+        minute=i2.number_input("Aplicar desde minuto",1,int(result["config"]["duration"])-1,max(1,int(current_frame["t"])+1),1,key="intervention_minute")
+        if i3.button("Aplicar decisión y recalcular",use_container_width=True,key="apply_intervention"):
+            actions=[a for a in st.session_state.actions if a["minute"]!=int(minute)]
+            actions.append({"minute":int(minute),"servers":int(new_servers)})
             st.session_state.actions=sorted(actions,key=lambda x:x["minute"])
+            payload=dict(result["config"])
+            payload.update(result.get("options",{}))
+            payload.update({"scenario":key,"staffing":result["staffing"],"replications":result["replications"],"seed":2026,"actions":st.session_state.actions})
+            st.session_state.result=evaluate_game(payload);st.session_state.frame=0;st.session_state.sim_status="ready";st.rerun()
+        if st.session_state.actions:
+            st.caption("Decisiones programadas: "+" · ".join(f"min {a['minute']} → {a['servers']} servidores" for a in st.session_state.actions))
+
+    with st.expander("Opciones avanzadas del comportamiento",expanded=False):
+        a1,a2,a3,a4=st.columns(4)
+        patience=a1.number_input("Paciencia media",0.0,240.0,float(result.get("options",{}).get("patience_min",0)),1.0,key="adv_patience")
+        priority=a2.number_input("Proporción prioritaria",0.0,1.0,float(result.get("options",{}).get("priority_share",0)),.05,key="adv_priority")
+        dist=a3.selectbox("Distribución servicio",["exponential","deterministic","gamma","lognormal"],index=["exponential","deterministic","gamma","lognormal"].index(result.get("options",{}).get("service_distribution","exponential")),key="adv_dist")
+        cv=a4.number_input("CV servicio",.05,4.0,float(result.get("options",{}).get("service_cv",1)),.05,key="adv_cv")
+        if st.button("Aplicar comportamiento y reiniciar",key="apply_advanced"):
             payload=dict(result["config"])
             payload.update({"scenario":key,"staffing":result["staffing"],"replications":result["replications"],"seed":2026,
                             "patience_min":patience,"priority_share":priority,"service_distribution":dist,"service_cv":cv,
                             "actions":st.session_state.actions})
-            st.session_state.result=evaluate_game(payload);st.rerun()
+            st.session_state.result=evaluate_game(payload);st.session_state.frame=0;st.session_state.sim_status="ready";st.rerun()
 
-    e1,e2=st.columns([1,3])
-    with e1:
-        st.download_button("Descargar partida JSON",json.dumps(result,ensure_ascii=False,indent=2),file_name=f"decision-lab-{key}.json",mime="application/json",use_container_width=True)
-    with e2:
-        st.caption("Motor de eventos discretos reproducible · métricas finales sobre réplicas · escena visual sobre una réplica.")
-
+    st.download_button("Descargar partida JSON",json.dumps(result,ensure_ascii=False,indent=2),file_name=f"decision-lab-{key}.json",mime="application/json")
 
 def model_lab():
     st.header("Modelos matemáticos")
