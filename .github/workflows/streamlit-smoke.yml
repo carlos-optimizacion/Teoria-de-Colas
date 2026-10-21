@@ -85,7 +85,18 @@ jobs:
           labels=[b.label for b in at.button]
           assert "▶ Iniciar simulación desde 0 min" in labels, labels
           assert "Guardar y validar configuración" not in labels, labels
-          print("AppTest workflow OK: strict config -> open simulation -> preview")
+          preview_text="\n".join(m.value for m in at.markdown)
+          assert "BANCO 3D" in preview_text and "VISTA 3D INTERACTIVA" in preview_text, "No se mostró la previsualización 3D"
+          assert "sector-scene sector-banco" not in preview_text, "Regresión: se mostró la vista antigua 2D"
+          start=[b for b in at.button if b.label=="▶ Iniciar simulación desde 0 min"][0]
+          start.click()
+          at.run(timeout=30)
+          if at.exception:
+              raise AssertionError(at.exception)
+          running_text="\n".join(m.value for m in at.markdown)
+          assert "BANCO 3D" in running_text
+          assert "sector-scene sector-banco" not in running_text
+          print("AppTest workflow OK: config -> preview 3D -> player 3D; legacy 2D absent")
           PY
       - name: Start Streamlit
         run: |
