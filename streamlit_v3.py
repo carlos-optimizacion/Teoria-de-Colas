@@ -17,7 +17,7 @@ if str(DJANGO) not in sys.path:
 
 from portal.queue_v3 import MODELS, evaluate, optimize, optimize_shifts, replay_replica
 from portal.empirical_v3 import import_workbook
-from portal.challenge_engine import SCENARIOS
+from portal.challenge_engine import SCENARIOS, ACTIVE_SCENARIOS
 from bank_three_scene import bank_scene_html
 from streamlit_sector_scenes import render_sector_scene, SECTOR_UI
 from report_v3 import report_pdf, report_xlsx
@@ -60,7 +60,10 @@ def run():
     if state.v3_step=="configure":
         st.subheader("1 · Ingreso de datos y modelo matemático")
         st.info("Primero ingresa y valida tus datos. El escenario 3D permanecerá oculto hasta guardar la configuración.")
-        sc_options=list(SCENARIOS)
+        sc_options=list(ACTIVE_SCENARIOS)
+        # Recuperar sesiones que todavía conservan la opción retirada.
+        if state.get("v3_sector") not in sc_options:
+            state["v3_sector"] = sc_options[0]
         sector=st.selectbox("Escenario operativo",sc_options,format_func=lambda k:SCENARIOS[k]["sector"],key="v3_sector")
         mode=st.radio("Tipo de simulación",list(LABELS),format_func=lambda k:LABELS[k],
                       horizontal=True,key="v3_mode")
@@ -251,6 +254,12 @@ def run():
             st.rerun()
         return
 
+    if state.get("v3_scenario") not in ACTIVE_SCENARIOS:
+        state.v3_step = "configure"
+        state.v3_result = None
+        state.v3_payload = None
+        state.v3_scenario = ACTIVE_SCENARIOS[0]
+        st.rerun()
     result=state.v3_result
     raw=state.v3_payload
     sector=state.v3_scenario
