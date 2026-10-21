@@ -11,7 +11,7 @@ def _clean(value):
     return str(value).replace("—","-").replace("→","->").replace("≥",">=").replace("ρ","rho").replace("λ","lambda")
 
 
-def report_xlsx(result: dict, optimization: dict | None = None) -> bytes:
+def report_xlsx(result: dict, optimization: dict | None = None, dynamic: dict | None = None) -> bytes:
     """Exporta parámetros, estadísticas y eventos de la réplica visualizada."""
     stream=io.BytesIO()
     with pd.ExcelWriter(stream,engine="xlsxwriter") as writer:
@@ -42,6 +42,8 @@ def report_xlsx(result: dict, optimization: dict | None = None) -> bytes:
         theory=result.get("theory",{})
         if theory.get("available"):
             pd.DataFrame(theory["metrics"].items(),columns=["Indicador","Valor teórico"]).to_excel(writer,sheet_name="Teoria",index=False)
+        if dynamic:
+            pd.DataFrame([{"bloque":i+1,"inicio_min":i*60,"servidores":c} for i,c in enumerate(dynamic["schedule"])]).to_excel(writer,sheet_name="Turnos_Opt",index=False)
         if optimization:
             pd.DataFrame(optimization["alternatives"]).to_excel(writer,sheet_name="Optimizador",index=False)
             writer.sheets["Optimizador"].freeze_panes(1,0)
@@ -49,7 +51,7 @@ def report_xlsx(result: dict, optimization: dict | None = None) -> bytes:
     return stream.getvalue()
 
 
-def report_pdf(result: dict, optimization: dict | None = None) -> bytes:
+def report_pdf(result: dict, optimization: dict | None = None, dynamic: dict | None = None) -> bytes:
     """Informe técnico-gerencial con análisis temporal y trazabilidad básica."""
     import os
     import tempfile
@@ -146,6 +148,11 @@ def report_pdf(result: dict, optimization: dict | None = None) -> bytes:
         paragraph("Recomendacion por menor costo con SLA medio: "+
                   (str(win["servers"])+" servidores" if win else "no hay alternativa factible"))
         paragraph(optimization["caveat"])
+    if dynamic:
+        title("Optimización por turnos (heurística)")
+        for i,c in enumerate(dynamic["schedule"]):
+            row(f"Bloque {i+1} [{i*60},{min(result['horizon'],(i+1)*60)}) min",f"{c} servidores")
+        paragraph(dynamic.get("caveat",dynamic.get("message","")))
     title("Reproducibilidad")
     paragraph("Configuracion original y resultados completos disponibles en el archivo "
               "Excel y el JSON del mismo experimento. "
