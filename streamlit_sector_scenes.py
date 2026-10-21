@@ -104,7 +104,7 @@ def render_sector_scene(scenario_key, frame, status):
           <div class="sector-arrow">→</div>
           <div class="sector-zone queue-zone"><span class="zone-kicker">02</span><b>{ui["queue"]}</b><small>{frame.get("queue",0)} esperando</small><div class="sector-people-row">{_people(queue_ids,scenario_key)}</div></div>
           <div class="sector-arrow">→</div>
-          <div class="sector-zone service-zone"><span class="zone-kicker">03</span><b>{ui["service"]}</b><small>{busy} ocupados · {active} activos</small><div class="sector-units">{''.join(stations)}</div></div>
+          <div class="sector-zone service-zone"><span class="zone-kicker">03</span><b>{ui["service"]}</b><small>{busy} ocupados · {active} activos</small><div class="sector-units units-{min(active,8)}">{''.join(stations)}</div></div>
           <div class="sector-arrow">→</div>
           <div class="sector-zone exit-zone"><span class="zone-kicker">04</span><b>{ui["exit"]}</b><small>{frame.get("completed",0)} completados</small><div class="sector-slot">{outgoing}</div></div>
         </div>
