@@ -16,6 +16,7 @@ from queue_core import (
     mms_from_minutes,mmsk_from_minutes,mg1_from_minutes,dd1_sequence,
     economic_cost,evaluate_mms_capacity,recommend_mms_capacity,erlang_b
 )
+from streamlit_visual_logic import station_descriptors
 
 st.set_page_config(page_title="Decision Lab 2.0",page_icon="◈",layout="wide",initial_sidebar_state="expanded")
 
@@ -134,11 +135,8 @@ def facility_html(frame,status):
     cid=frame.get("client")
     qhtml="".join(f'<span class="person qperson" title="Cliente {x}"><i>●</i><em>{x}</em></span>' for x in queue[:14]) or "<span class='empty-state'>Sin clientes esperando</span>"
     stations=[]
-    for i,cust in enumerate(servers):
-        configured=i<active
-        draining=(not configured and cust is not None)
-        if not configured and not draining:
-            continue
+    for item in station_descriptors(frame):
+        i=item["number"]-1;cust=item["client"];configured=item["configured"];draining=item["draining"]
         if draining:
             cls="closed busy"
             body=f'<span class="person serving"><i>●</i><em>{cust}</em></span><small>Cierre pendiente</small>'
