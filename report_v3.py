@@ -39,6 +39,9 @@ def report_xlsx(result: dict, optimization: dict | None = None) -> bytes:
         pd.DataFrame(cfg.items(),columns=["Campo","Valor"]).to_excel(writer,sheet_name="Configuracion",index=False)
         writer.sheets["Configuracion"].set_column(0,0,30)
         writer.sheets["Configuracion"].set_column(1,1,60)
+        theory=result.get("theory",{})
+        if theory.get("available"):
+            pd.DataFrame(theory["metrics"].items(),columns=["Indicador","Valor teórico"]).to_excel(writer,sheet_name="Teoria",index=False)
         if optimization:
             pd.DataFrame(optimization["alternatives"]).to_excel(writer,sheet_name="Optimizador",index=False)
             writer.sheets["Optimizador"].freeze_panes(1,0)
@@ -100,6 +103,14 @@ def report_pdf(result: dict, optimization: dict | None = None) -> bytes:
     paragraph("IC exploratorios mediante aproximacion normal sobre medias de replicas. "
               "Con muestras pequenas o indicadores limitados en [0,1], "
               "la cobertura puede diferir del nivel nominal.")
+    theory=result.get("theory",{})
+    title("Validacion matematica")
+    if theory.get("available"):
+        paragraph(theory["condition"])
+        for k,v in theory["metrics"].items():
+            row(k,f"{v:.5f}" if isinstance(v,float) else v)
+    else:
+        paragraph(theory.get("reason","No existe comparacion teorica exacta"))
     title("Evolucion temporal de la primera replica")
     series=result["series"]
     path=None
