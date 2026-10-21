@@ -109,39 +109,53 @@ def run():
         }
         st.caption("**Modelo seleccionado:** "+explain.get(model,model))
         st.markdown("**Paso 2 · Define la demanda, los recursos y la duración**")
-        with st.form("v3_configuration"):
-            customers=15
-            interval=60.
-            service=float(cfg["service_min"])
-            if mode!="empirical":
-                way=st.radio("¿Cómo prefieres describir las llegadas?",
-                             ["Cantidad de clientes por intervalo","Tiempo entre llegadas"],
-                             horizontal=True,help="Son dos formas alternativas de expresar la misma demanda media.")
-                if way=="Cantidad de clientes por intervalo":
-                    p1,p2=st.columns(2)
-                    customers=p1.number_input(
-                        "Clientes que llegan" if mode=="deterministic" else "Clientes esperados (en promedio)",
-                        min_value=1,max_value=10000,value=15,step=1,
-                        help="Determinística: cantidad programada. Estocástica: cantidad media, no un valor garantizado.")
-                    interval=p2.number_input("Durante cuántos minutos",min_value=.1,max_value=10080.,
-                                              value=60.,step=5.)
-                    avg_gap=interval/customers
-                else:
-                    avg_gap=st.number_input(
-                        "Tiempo entre llegadas (min)"
-                        if mode=="deterministic" else "Tiempo medio entre llegadas (min)",
-                        min_value=.005,max_value=10080.,value=4.,step=.5,
-                        help="Determinística: el intervalo siempre es igual; estocástica: es un promedio.")
-                st.caption(f"**Demanda configurada:** un cliente cada {avg_gap:.2f} min "
-                           +("(exactamente)" if mode=="deterministic" else "(en promedio)"))
+        # Fuera de st.form: el selector y sus campos reaccionan inmediatamente.
+        # Dentro de st.form, Streamlit retiene los cambios hasta pulsar Enviar.
+        service=float(cfg["service_min"])
+        if mode!="empirical":
+            way=st.radio(
+                "¿Cómo prefieres describir las llegadas?",
+                ["Cantidad de clientes por intervalo","Tiempo entre llegadas"],
+                horizontal=True,
+                key="v3_arrival_way",
+                help="Son dos formas de expresar la misma tasa de llegadas; elige una sola.",
+            )
+            if way=="Cantidad de clientes por intervalo":
+                p1,p2=st.columns(2)
+                customers=p1.number_input(
+                    "Clientes que llegan" if mode=="deterministic" else "Clientes esperados (en promedio)",
+                    min_value=1,max_value=10000,value=15,step=1,key="v3_demand_customers",
+                    help="Determinística: frecuencia de llegada constante. Estocástica: valor medio, no garantizado.",
+                )
+                interval=p2.number_input(
+                    "Durante cuántos minutos",min_value=.1,max_value=10080.,
+                    value=60.,step=5.,key="v3_demand_window",
+                )
+                avg_gap=interval/customers
+                st.caption(f"**Equivalencia:** {customers} clientes por {interval:g} minutos "
+                           f"= 1 cliente cada {avg_gap:.2f} min "
+                           +("(frecuencia constante)." if mode=="deterministic" else "(en promedio)."))
             else:
-                avg_gap=float(sample_data["avg_interarrival"]) if sample_data and sample_data["valid"] else float(cfg["arrival_min"])
-                service=float(sample_data["avg_service"]) if sample_data and sample_data["valid"] else float(cfg["service_min"])
-                st.caption("Los intervalos entre llegadas y los tiempos de atención se calcularán desde el Excel. "
-                           "No tienes que introducirlos ni elegir una distribución manualmente.")
-                if sample_data and sample_data["valid"]:
-                    st.metric("Interarribo observado (promedio)",f"{avg_gap:.2f} min")
-                    st.metric("Servicio observado (promedio)",f"{service:.2f} min")
+                avg_gap=st.number_input(
+                    "Tiempo entre llegadas (min)" if mode=="deterministic"
+                    else "Tiempo medio entre llegadas (min)",
+                    min_value=.005,max_value=10080.,value=4.,step=.5,
+                    key="v3_demand_gap",
+                    help="Determinística: intervalo fijo. Estocástica: media del intervalo aleatorio.",
+                )
+                st.caption(f"**Equivalencia:** un cliente cada {avg_gap:.2f} min "
+                           f"= {60/avg_gap:.2f} clientes por 60 min "
+                           +("(frecuencia constante)." if mode=="deterministic" else "(en promedio)."))
+        else:
+            avg_gap=float(sample_data["avg_interarrival"]) if sample_data and sample_data["valid"] else float(cfg["arrival_min"])
+            service=float(sample_data["avg_service"]) if sample_data and sample_data["valid"] else float(cfg["service_min"])
+            st.caption("Las llegadas y los tiempos de atención se calculan del Excel validado, "
+                       "sin volver a ingresarlos manualmente.")
+            if sample_data and sample_data["valid"]:
+                p1,p2=st.columns(2)
+                p1.metric("Interarribo observado (promedio)",f"{avg_gap:.2f} min")
+                p2.metric("Servicio observado (promedio)",f"{service:.2f} min")
+        with st.form("v3_configuration"):
             p3,p4=st.columns(2)
             if mode=="empirical":
                 p3.caption(f"Duración media de atención leída del Excel: **{service:.2f} min**")
