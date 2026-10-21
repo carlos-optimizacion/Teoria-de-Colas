@@ -86,18 +86,17 @@ jobs:
           assert "▶ Iniciar simulación desde 0 min" in labels, labels
           assert "Guardar y validar configuración" not in labels, labels
           preview_text="\n".join(m.value for m in at.markdown)
-          print("PREVIEW MARKDOWN DIAGNOSTIC:", repr(preview_text[-5500:]))
-          print("PREVIEW MARKDOWN COUNT:", len(at.markdown))
-          assert "BANCO 3D" in preview_text, "No se mostró el encabezado Banco 3D"
-          assert "sector-scene sector-banco" not in preview_text, "Regresión: se mostró la vista antigua 2D"
+          assert "BANCO 3D" in preview_text, "Falta el encabezado de la previsualización 3D"
+          assert "sector-scene sector-banco" not in preview_text, "Regresión: vista 2D anterior"
+          assert any(x.type=="iframe" for x in at), "No se montó el reproductor Three.js"
           start=[b for b in at.button if b.label=="▶ Iniciar simulación desde 0 min"][0]
           start.click()
           at.run(timeout=30)
           if at.exception:
               raise AssertionError(at.exception)
           running_text="\n".join(m.value for m in at.markdown)
-          assert "BANCO 3D" in running_text
-          assert "sector-scene sector-banco" not in running_text
+          assert any(x.type=="iframe" for x in at), "No se montó el reproductor 3D durante la simulación"
+          assert "sector-scene sector-banco" not in running_text, "Regresión a la escena 2D"
           print("AppTest workflow OK: config -> preview 3D -> player 3D; legacy 2D absent")
           PY
       - name: Start Streamlit
