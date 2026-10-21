@@ -22,6 +22,8 @@ def analytic(spec):
     Medias W y Wq se devuelven en minutos a diferencia de queue_core
     (horas); L/Lq/P/rho conservan sus unidades.
     """
+    if len(set(spec.staffing))>1:
+        return {"available":False,"reason":"La dotación varía por franja; no corresponde usar fórmulas estacionarias de capacidad constante."}
     if spec.mode == "empirical":
         return {"available":False,"reason":"Las distribuciones empíricas no han sido certificadas como Markovianas; se reporta DES."}
     result = None
