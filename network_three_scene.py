@@ -5,6 +5,7 @@ tiempos de llegada, atención, transferencias ni métricas.
 """
 from __future__ import annotations
 import json
+from visual_quality_v3 import embed_quality
 
 
 def network_scene_html(result: dict, *, preview: bool = False) -> str:
@@ -33,7 +34,7 @@ def network_scene_html(result: dict, *, preview: bool = False) -> str:
     }
     data = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
     data = data.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
-    return HTML.replace("/*__NETWORK_PAYLOAD__*/", "const payload=" + data + ";")
+    return embed_quality(HTML.replace("/*__NETWORK_PAYLOAD__*/", "const payload=" + data + ";"))
 
 
 HTML = r"""<!doctype html>
@@ -56,8 +57,8 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 .overlay{position:absolute;left:12px;top:12px;background:#123e5ddc;color:white;padding:8px 10px;border-radius:9px;font-size:11px;pointer-events:none;max-width:80%}
 .loading{position:absolute;inset:0;display:grid;place-items:center;background:#e9f5fa;z-index:5;text-align:center;padding:22px}
 .nodes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:8px;background:#f4f9fb;max-height:215px;overflow:auto}
-.node{border:1px solid #d4e2e8;border-top:4px solid #2e9d82;background:white;border-radius:8px;padding:6px 9px;min-width:0}
-.node.active{background:#edf8fb;outline:1px solid #2a8eb8}
+.node{border:1px solid #d4e2e8;border-top:4px solid #2e9d82;background:white;border-radius:8px;padding:7px 10px;min-width:0;box-shadow:0 2px 8px #16486712;transition:background .16s,border-color .16s}
+.node.active{background:#edf8fb;outline:2px solid #2a8eb8;box-shadow:0 4px 15px #19699924}
 .node.warn{border-top-color:#f09a41}.node.bad{border-top-color:#ce6450}
 .node h4{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 0 4px}
 .node .values{font-size:10px;color:#5c7888;display:grid;grid-template-columns:repeat(2,1fr);gap:2px}
@@ -87,13 +88,15 @@ canvas{width:100%;height:100%;display:block;touch-action:none}
 <div class="player">
 <div><button id="play" class="primary">▶ Reproducir</button><button id="reset">↺ Inicio</button></div>
 <input type="range" id="seek" min="0" max="0" step="1" value="0" aria-label="Instante de simulación"/>
-<div><select id="speed" aria-label="Velocidad"><option value="2">2×</option><option value="6" selected>6×</option><option value="15">15×</option><option value="30">30×</option></select></div>
+<div><select id="speed" aria-label="Velocidad"><option value="2">2×</option><option value="6" selected>6×</option><option value="15">15×</option><option value="30">30×</option></select>
+<select id="quality" aria-label="Calidad gráfica" title="Nitidez o rendimiento"><option value="auto">Calidad automática</option><option value="high">Alta definición</option><option value="balanced">Equilibrada</option><option value="economy">Ahorro de GPU</option></select></div>
 </div>
 <div class="legend"><span>Servicio normal</span><span>Congestión media</span><span>Congestión alta</span><span>Se muestran hasta 10 entidades por cola; los contadores incluyen el total real.</span></div>
 </div>
 <script type="module">
 import * as THREE from "three";
 import {OrbitControls} from "three/addons/controls/OrbitControls.js";
+/*__QUALITY__*/
 /*__NETWORK_PAYLOAD__*/
 const byId=(x)=>document.getElementById(x);
 const stages=payload.stages, frames=payload.frames,n=stages.length;
@@ -103,15 +106,13 @@ camera.position.set(0,n>5?24:18,n>5?24:20);camera.lookAt(0,0,0);
 // Acercamiento inicial adaptativo: con pocas etapas, utilizar el lienzo disponible.
 camera.zoom=n<=3?1.65:n<=5?1.35:1.0;camera.updateProjectionMatrix();
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const quality=setupVisualQuality(THREE,renderer,scene,byId("stage"),"network");
+byId("quality").addEventListener("change",e=>{quality.apply(e.target.value);resize();});
 byId("stage").appendChild(renderer.domElement);
 const orbit=new OrbitControls(camera,renderer.domElement);
 orbit.enableDamping=true;orbit.maxPolarAngle=Math.PI/2.06;
 orbit.target.set(0,0,0);orbit.minDistance=8;orbit.maxDistance=65;
-scene.add(new THREE.HemisphereLight(0xffffff,0x7d99aa,2.5));
-const keyLight=new THREE.DirectionalLight(0xffffff,2.3);keyLight.position.set(-8,21,12);
-keyLight.castShadow=true;keyLight.shadow.mapSize.set(2048,2048);scene.add(keyLight);
+// Luz ambiental, key y fill compartidas con todos los sectores.
 const material=(c)=>new THREE.MeshStandardMaterial({color:c,roughness:.76,metalness:.04});
 const floor=material(0xeaf2f5),navy=material(0x1b4e69),metal=material(0x9db6c2),
 green=material(0x36a889),amber=material(0xe9a34c),red=material(0xd86753);
@@ -120,18 +121,19 @@ function box(w,h,d,mat,x,y,z,parent=scene){
  m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
 }
 function textSprite(text,width=3.5,color="#143e58"){
- const can=document.createElement("canvas");can.width=640;can.height=100;
- const ctx=can.getContext("2d");ctx.fillStyle="#ffffff";ctx.fillRect(0,0,640,100);
+ const can=document.createElement("canvas");can.width=1280;can.height=200;
+ const ctx=can.getContext("2d");ctx.scale(2,2);ctx.fillStyle="#ffffff";ctx.fillRect(0,0,640,100);
  ctx.fillStyle=color;ctx.font="bold 35px system-ui,sans-serif";
  const txt=String(text);
  let label=txt;while(ctx.measureText(label).width>580&&label.length>2)label=label.slice(0,-2)+"…";
  ctx.fillText(label,26,65);
  const t=new THREE.CanvasTexture(can);t.colorSpace=THREE.SRGBColorSpace;
+ t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
  const p=new THREE.Mesh(new THREE.PlaneGeometry(width,.55),
  new THREE.MeshBasicMaterial({map:t,transparent:true,side:THREE.DoubleSide}));
  p.rotation.x=-.15;return p;
 }
-const cols=Math.min(5,n);
+const cols=Math.min(5,n),nodeMesh=[];
 const positions=stages.map((st,i)=>{
  if(n<=5)return {x:(i-(n-1)/2)*4.1,z:0};
  const row=Math.floor(i/5),col=i%5;
@@ -153,6 +155,7 @@ for(let i=0;i<n;i++){
  const post=box(.16,1.6,.16,navy,-1.64,.84,-1.46,node);
  const lamp=box(.52,.19,.34,green,1.40,1.60,-1.22,node);
  node.userData.lamp=lamp;
+ nodeMesh.push(node);
 }
 for(let i=0;i<n-1;i++){
  const a=positions[i],b=positions[i+1];
@@ -166,7 +169,10 @@ for(let i=0;i<n-1;i++){
 }
 const unit=(color)=>{
  const group=new THREE.Group();
- const head=new THREE.Mesh(new THREE.SphereGeometry(.17,10,8),material(0xe8b88e));head.position.y=.93;group.add(head);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.17,16,12),material(0xe8b88e));head.position.y=.93;group.add(head);
+ box(.15,.07,.05,material(0xf1f7fb),0,.74,.14,group);
+ const eyes=material(0x334550);
+ for(const sx of [-1,1])box(.025,.022,.013,eyes,sx*.06,.98,.161,group);
  box(.32,.43,.25,material(color),0,.54,0,group);
  for(const x of [-.11,.11])box(.10,.33,.10,navy,x,.19,0,group);
  return group;
@@ -194,6 +200,10 @@ function applyFrame(i){
    const occ=Number(f.busy[j]),q=Number(f.queues[j]);
    const hot=occ/stages[j].servers>=.85 && q>0;
    const med=q>0;const tile=byId("node-"+j);
+   // El color visual refleja ocupación de una etapa y su congestión actual.
+   const status=hot?0xd86753:med?0xe9a34c:0x36a889;
+   const signal=nodeMesh[j].userData.lamp.material;
+   signal.color.setHex(status);signal.emissive.setHex(status);signal.emissiveIntensity=.28;
    tile.className="node"+(hot?" bad":med?" warn":"")+(j===payload.bottleneck?" active":"");
    tile.querySelector(".q").textContent=q;
    tile.querySelector(".b").textContent=occ+"/"+stages[j].servers;

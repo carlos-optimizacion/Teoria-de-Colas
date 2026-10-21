@@ -19,6 +19,18 @@ with sync_playwright() as p:
     assert inner.locator(".node").count()==3
     assert inner.locator("canvas").evaluate("(el)=>el.width>0 && el.height>0")
     assert not inner.locator("#loading").count()
+    quality=inner.locator("#quality")
+    assert quality.count()==1
+    assert stage.get_attribute("data-quality-mode")=="auto"
+    quality.select_option("high")
+    high_scale=float(stage.get_attribute("data-render-scale"))
+    assert high_scale>=1.3
+    assert stage.get_attribute("data-shadow-resolution")=="2048"
+    quality.select_option("economy")
+    eco_scale=float(stage.get_attribute("data-render-scale"))
+    assert high_scale>eco_scale
+    assert stage.get_attribute("data-shadow-resolution")=="512"
+    quality.select_option("auto")
     Path("visual-artifacts").mkdir(exist_ok=True)
     page.screenshot(path="visual-artifacts/network-3d-preview.png",full_page=True)
     page.locator("iframe").first.screenshot(path="visual-artifacts/network-3d-preview-iframe.png")

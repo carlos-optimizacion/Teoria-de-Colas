@@ -40,6 +40,22 @@ with sync_playwright() as p:
         assert stage.get_attribute("data-station-type")==station,(key,stage.get_attribute("data-station-type"))
         assert int(stage.get_attribute("data-stations"))==4,(key,stage.get_attribute("data-stations"))
         assert inner.locator("#loading").count()==0,f"Escena 3D no terminó de cargar: {key}"
+        quality=inner.locator("#quality")
+        assert quality.count()==1,key
+        assert stage.get_attribute("data-quality-mode")=="auto",key
+        assert stage.get_attribute("data-visual-quality") in ("high","balanced"),key
+        quality.select_option("high")
+        high_scale=float(stage.get_attribute("data-render-scale"))
+        assert high_scale>=1.3,key
+        assert stage.get_attribute("data-visual-quality")=="high",key
+        assert stage.get_attribute("data-shadow-resolution")=="2048",key
+        quality.select_option("economy")
+        eco_scale=float(stage.get_attribute("data-render-scale"))
+        assert high_scale>eco_scale,(key,high_scale,eco_scale)
+        assert stage.get_attribute("data-visual-quality")=="economy",key
+        assert stage.get_attribute("data-shadow-resolution")=="512",key
+        assert inner.locator("canvas").evaluate("(el)=>el.width>0&&el.height>0"),key
+        quality.select_option("auto")
         features=json.loads(stage.get_attribute("data-features"))
         if key=="banco":
             assert features["seats"]>=3 and features["racks"]==0
