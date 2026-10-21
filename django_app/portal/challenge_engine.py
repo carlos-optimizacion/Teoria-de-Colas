@@ -211,6 +211,72 @@ def events_iterator(heap):
     while heap:
         yield heappop(heap)
 
+def _game_score(metrics, cfg):
+    """Única regla de puntuación, independiente del motor de eventos."""
+    budget = metrics["staff_cost"] <= cfg["budget"]
+    service = metrics["sla"] >= cfg["sla_target"]
+    baseline = cfg["budget"] + cfg["lost_cost"] * max(1, metrics["arrivals"]) * .3
+    cost_score = max(0, 1-min(1, metrics["total_cost"]/max(baseline,1e-12)))
+    loss_score = 1-(metrics["blocked"]+metrics["abandoned"])/max(1, metrics["arrivals"])
+    resilience = 1-metrics["unserved_at_close"]/max(1, metrics["admitted"])
+    score = round(35*cost_score+30*(1 if cfg["sla_target"]==0 else min(1,metrics["sla"]/cfg["sla_target"]))
+        +20*loss_score+15*resilience,1)
+    if not budget or not service:
+        score = min(score,69.9)
+    achievements = []
+    if budget: achievements.append("Disciplina presupuestaria")
+    if service: achievements.append("Calidad de servicio")
+    if metrics["blocked"] == 0: achievements.append("Sin rechazos")
+    if metrics["abandoned"] == 0: achievements.append("Sin abandonos")
+    if budget and service: achievements.append("Misión cumplida")
+    return score, {"budget":budget,"sla":service}, achievements
+
+
+def _evaluate_with_queue_v3(cfg, staffing, options, replications, seed, key, actions):
+    """Ruta central válida solo sin incidentes, prioridades, paciencia o intervenciones.
+
+    Rechaza explícitamente características no soportadas por queue_v3 en vez
+    de eliminarlas silenciosamente. El motor usa semillas y eventos canónicos.
+    """
+    if (cfg["incident"] != "none" or actions or options["priority_share"]>0
+            or options["patience_min"]>0):
+        raise ValueError("El motor central no admite reglas adicionales en este adaptador")
+    from .queue_v3 import evaluate as evaluate_queue
+    distro=options["service_distribution"]
+    model="M/M/c/K" if distro=="exponential" else "M/G/c"
+    # Capacidad finita y servicio no exponencial: la parametrización del motor
+    # central no incluye M/G/c/K; conservar el motor de desafíos en ese caso.
+    if distro!="exponential":
+        raise ValueError("La distribución general con capacidad finita necesita el motor especializado")
+    raw={
+        "model":model,"mode":"parametric","servers":max(staffing),
+        "staffing":staffing,"capacity":cfg["capacity"],"horizon":cfg["duration"],
+        "replications":replications,"seed":seed,
+        "arrival_mean":cfg["arrival_min"],"service_mean":cfg["service_min"],
+        "service_dist":"exponential","sla_min":cfg["sla_min"],
+        "sla_target":cfg["sla_target"],"server_hour":cfg["staff_hour"],
+        "wait_hour":cfg["wait_hour"],"lost_cost":cfg["lost_cost"],
+    }
+    result=evaluate_queue(raw)
+    metrics=dict(result["metrics"])
+    metrics["abandoned"]=0
+    metrics["p_abandon"]=0.
+    confidence=dict(result["confidence_95"])
+    confidence["p_abandon"]={"mean":0.,"low":0.,"high":0.,
+        "method":"Sin abandono configurado"}
+    score,passes,achievements=_game_score(metrics,cfg)
+    return {
+        "scenario":key,"title":cfg["name"],"config":cfg,"staffing":staffing,
+        "actions":[],"options":options,"replications":result["replications_effective"],
+        "metrics":metrics,"confidence_95":confidence,"score":score,
+        "achievements":achievements,"passes":passes,"events":result["events"],
+        "series":result["series"],"engine":"queue_v3","core_model":model,
+        "method":"Motor central queue_v3; M/M/c/K, FCFS, horizonte finito, "
+                 "sin incidentes ni abandonos; SLA sobre admitidos incluidos pendientes. "
+                 "La representación 3D procede del primer ensayo.",
+    }
+
+
 def evaluate_game(payload):
     """Evaluate a single decision strategy; no side effects or server-side persistence."""
     if not isinstance(payload, dict):
@@ -219,6 +285,11 @@ def evaluate_game(payload):
     if key not in SCENARIOS:
         raise ValueError("Escenario no identificado")
     cfg = dict(SCENARIOS[key])
+    if "incident" in payload:
+        incident=str(payload["incident"])
+        if incident not in {"none","demanda","ausencia","averia"}:
+            raise ValueError("Tipo de incidente desconocido")
+        cfg["incident"]=incident
     override_specs={
         "arrival_min":(.1,240),"service_min":(.1,240),"staff_hour":(0,10000),
         "wait_hour":(0,10000),"lost_cost":(0,100000),"sla_min":(.1,240),
@@ -243,6 +314,12 @@ def evaluate_game(payload):
         "priority_share":_number(payload.get("priority_share",0),"priority_share",0,1),
         "service_distribution":service_distribution,
         "service_cv":_number(payload.get("service_cv",1),"service_cv",.05,4)}
+    # En desafíos sin reglas especiales utilizar exactamente el motor central.
+    # Los incidentes y extensiones avanzadas conservan la dinámica histórica.
+    if (cfg["incident"]=="none" and not actions
+            and options["patience_min"]==0 and options["priority_share"]==0
+            and service_distribution=="exponential"):
+        return _evaluate_with_queue_v3(cfg,staffing,options,replications,seed,key,actions)
     runs = [_run(cfg, staffing, actions, seed + i*1709, options) for i in range(replications)]
     columns = ("arrivals","admitted","blocked","abandoned","completed","started","unserved_at_close",
         "avg_wait","avg_system","sla","p_block","p_abandon","utilization","avg_queue",
@@ -256,24 +333,10 @@ def evaluate_game(payload):
         high = min(1,mean(values)+error) if error is not None and name in ("sla","p_block","p_abandon") else (mean(values)+error if error is not None else None)
         confidence[name] = {"mean":metrics[name], "low":round(low,4) if low is not None else None,
             "high":round(high,4) if high is not None else None, "method":"intervalo normal exploratorio 95%"}
-    budget = metrics["staff_cost"] <= cfg["budget"]
-    service = metrics["sla"] >= cfg["sla_target"]
-    baseline = cfg["budget"] + cfg["lost_cost"]*max(1,metrics["arrivals"])*.3
-    cost_score = max(0,1-min(1,metrics["total_cost"]/baseline))
-    loss_score = 1-(metrics["blocked"]+metrics["abandoned"])/max(1,metrics["arrivals"])
-    resilience = 1-metrics["unserved_at_close"]/max(1,metrics["admitted"])
-    score = round(35*cost_score+30*min(1,metrics["sla"]/cfg["sla_target"])
-        +20*loss_score+15*resilience,1)
-    if not budget or not service:
-        score = min(score,69.9)
-    achievements = []
-    if budget: achievements.append("Disciplina presupuestaria")
-    if service: achievements.append("Calidad de servicio")
-    if metrics["blocked"] == 0: achievements.append("Sin rechazos")
-    if metrics["abandoned"] == 0: achievements.append("Sin abandonos")
-    if budget and service: achievements.append("Misión cumplida")
+    score,passes,achievements=_game_score(metrics,cfg)
     return {"scenario":key, "title":cfg["name"],"config":cfg,
         "staffing":staffing,"actions":actions,"options":options,"replications":replications,"metrics":metrics,
         "confidence_95":confidence,"score":score,"achievements":achievements,
-        "passes":{"budget":budget,"sla":service},"events":runs[0]["events"],"series":runs[0]["series"],
+        "passes":passes,"events":runs[0]["events"],"series":runs[0]["series"],
+        "engine":"challenge_extended","core_model":None,
         "method":("Prioridad no expropiativa" if options["priority_share"]>0 else "FIFO")+", servicio "+options["service_distribution"]+", horizonte finito; SLA sobre admitidos, incluidos pendientes y abandonos; promedios de réplicas independientes, visualización de la primera réplica."}
