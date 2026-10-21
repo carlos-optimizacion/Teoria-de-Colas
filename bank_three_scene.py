@@ -28,6 +28,7 @@ def bank_scene_html(events: list[dict], config: dict, *, preview: bool = False) 
             "capacity": config.get("capacity", 0),
             "duration": config.get("duration", 0),
             "servers": int(initial["active"]),
+            "model": str(config.get("model", "M/M/s/K")),
         },
     }
     # Prevent a JSON value ever closing the enclosing script tag.
@@ -51,7 +52,7 @@ BANK_HTML = r"""<!doctype html>
 .header{background:#103858;color:#fff;display:flex;justify-content:space-between;align-items:center;padding:12px 17px;gap:12px}
 .brand{display:flex;align-items:center;gap:11px}.brand-mark{display:grid;place-items:center;border-radius:12px;background:#2e8cb5;border:1px solid #ffffff55;font-size:23px;width:45px;height:45px}.brand b{display:block;letter-spacing:.035em;font-size:15px}.brand small{color:#bedce8;display:block;font-size:11px;margin-top:3px}
 .config{display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-end}.config span{font-size:11px;background:#ffffff16;border:1px solid #ffffff2e;padding:6px 10px;border-radius:20px;white-space:nowrap}
-.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding:10px 13px;background:#f5fafc;border-bottom:1px solid #d7e5ed}
+.stats{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;padding:10px 13px;background:#f5fafc;border-bottom:1px solid #d7e5ed}
 .kpi{background:#fff;border:1px solid #deebf0;border-radius:11px;padding:8px 11px;min-width:0}.kpi small{font-size:10px;display:block;color:#647f90;white-space:nowrap}.kpi b{font-size:21px;color:#173f60;font-variant-numeric:tabular-nums;line-height:1.2}.kpi.time b{font-size:19px}.kpi.warn b{color:#bb683d}
 .stage{position:relative;flex:1;min-height:280px;background:radial-gradient(ellipse at 45% 30%,#cbe8f5 0%,#d7e5ec 65%,#afc8d5 100%);overflow:hidden}
 canvas{display:block;width:100%;height:100%;touch-action:none}
@@ -63,8 +64,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .controls{display:flex;gap:5px;flex-wrap:wrap}.controls button,.controls select{background:#eef6fa;color:#194b67;border:1px solid #cbdfe9;padding:8px 10px;border-radius:8px;font-weight:750;cursor:pointer;font-size:12px}.controls button.main{background:#1379ad;color:#fff;border-color:#1379ad}.controls button:disabled{opacity:.4;cursor:not-allowed}
 .seek{min-width:0}.seek input{width:100%;accent-color:#147fae;cursor:pointer}.seek-labels{display:flex;justify-content:space-between;color:#7390a1;font-size:10px}
 .state{font-size:11px;font-weight:800;white-space:nowrap;color:#146d91}.state.ready{color:#8d6b18}.state.finished{color:#287c55}
-.footer{display:flex;justify-content:space-between;gap:7px;padding:5px 15px 9px;font-size:10px;color:#5e7e91;background:#fff}
-@media(max-width:800px){.header{align-items:flex-start;flex-direction:column}.config{justify-content:flex-start}.stats{grid-template-columns:repeat(3,1fr)}.player{grid-template-columns:1fr;gap:7px}.stage-hint{font-size:10px}.footer{display:block}.bank3d{min-height:650px}.kpi b{font-size:18px}}
+.livegraphs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:7px 12px;background:#f5fafc;border-top:1px solid #d8e8f0}.graph{min-width:0;background:#fff;border:1px solid #dce9f1;border-radius:9px;padding:6px 10px}.graph b{font-size:10px;color:#476578;display:block;margin-bottom:1px}.graph svg{display:block;width:100%;height:58px;cursor:crosshair}.graph path.line{fill:none;stroke:#2484b2;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.graph .cursor{stroke:#da8138;stroke-width:1.4;stroke-dasharray:3 3}.footer{display:flex;justify-content:space-between;gap:7px;padding:5px 15px 9px;font-size:10px;color:#5e7e91;background:#fff}
+@media(max-width:800px){.livegraphs{grid-template-columns:1fr}.header{align-items:flex-start;flex-direction:column}.config{justify-content:flex-start}.stats{grid-template-columns:repeat(3,1fr)}.player{grid-template-columns:1fr;gap:7px}.stage-hint{font-size:10px}.footer{display:block}.bank3d{min-height:650px}.kpi b{font-size:18px}}
 </style>
 </head>
 <body>
@@ -79,12 +80,15 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="kpi"><small>Clientes esperando</small><b id="stat-queue">0</b></div>
   <div class="kpi"><small>Atendidos</small><b id="stat-served">0</b></div>
   <div class="kpi warn"><small>Rechazados / abandonos</small><b id="stat-lost">0</b></div>
+  <div class="kpi"><small>Espera media Wq(t)</small><b id="stat-wait">0</b></div>
+  <div class="kpi"><small>Utilización ρ(t)</small><b id="stat-rho">0%</b></div>
  </div>
  <div class="stage" id="stage">
   <div id="loading" class="loading">Preparando agencia bancaria 3D…</div>
   <div class="stage-hint">Arrastra para girar · Rueda para acercar · La posición y ocupación provienen de la simulación Python</div>
   <div class="zone-labels"><span>01 · Ingreso / turnero</span><span>02 · Sala de espera</span><span>03 · Ventanillas de atención</span><span>04 · Salida</span></div>
  </div>
+ <div class="livegraphs"><div class="graph"><b>Clientes en cola · Q(t)</b><svg id="graph-queue" viewBox="0 0 420 72" preserveAspectRatio="none" aria-label="Evolución de cola"><path class="line" d="" /><line class="cursor" x1="0" x2="0" y1="0" y2="72"/></svg></div><div class="graph"><b>Ventanillas ocupadas · B(t)</b><svg id="graph-busy" viewBox="0 0 420 72" preserveAspectRatio="none" aria-label="Evolución de ocupación"><path class="line" d="" /><line class="cursor" x1="0" x2="0" y1="0" y2="72"/></svg></div></div>
  <div class="player">
   <div class="controls">
    <button class="main" id="play">▶ Iniciar</button>
@@ -96,12 +100,36 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   <div class="seek"><input id="seek" type="range" min="0" max="0" value="0" aria-label="Elegir evento"><div class="seek-labels"><span id="event-count">Evento 0 / 0</span><span id="event-kind">Preparado</span></div></div>
   <span id="state" class="state ready">ESCENA LISTA</span>
  </div>
- <div class="footer"><span>Modelo M/M/s/K y distribuciones configuradas en el motor Python. Reproducción acelerada por eventos.</span><span id="visual-limit"></span></div>
+ <div class="footer"><span id="model-foot">Modelo del motor Python · reproducción acelerada por eventos.</span><span id="visual-limit"></span></div>
 </div>
 <script type="module">
 /*__PAYLOAD__*/
 const frames=payload.frames, cfg=payload.config, preview=payload.preview;
+const graphTime=Math.max(1,Number(cfg.duration)||Number(frames[frames.length-1]?.t)||1);
+const maxGraphQueue=Math.max(1,...frames.map(f=>Number(f.queue||0)));
+const maxGraphBusy=Math.max(1,Number(cfg.servers)||1);
+function graphUpdate(i){
+  for(const [key,field,maxValue] of [['queue','queue',maxGraphQueue],['busy','busy',maxGraphBusy]]){
+    const svg=document.getElementById('graph-'+key);
+    if(!svg)continue;
+    const samples=frames.slice(0,i+1);
+    const x=f=>Math.min(420,420*Math.max(0,Number(f.t||0))/graphTime);
+    const y=f=>66-58*Math.max(0,Number(f[field]||0))/maxValue;
+    let d='';
+    for(let j=0;j<samples.length;j++){
+      const f=samples[j];
+      if(j===0)d='M '+x(f).toFixed(2)+' '+y(f).toFixed(2);
+      else d+=' H '+x(f).toFixed(2)+' V '+y(f).toFixed(2);
+    }
+    svg.querySelector('path').setAttribute('d',d);
+    const marker=svg.querySelector('line');
+    marker.setAttribute('x1',x(samples[samples.length-1]).toFixed(2));
+    marker.setAttribute('x2',x(samples[samples.length-1]).toFixed(2));
+  }
+}
+
 const $=id=>document.getElementById(id);
+$('model-foot').textContent='Modelo '+cfg.model+' · eventos y gráficos sincronizados con el motor Python.';
 $('config').innerHTML='<span>Ventanillas: <b>'+cfg.servers+'</b></span><span>Interarribo: <b>'+Number(cfg.arrival_min).toFixed(1)+' min</b></span><span>Servicio: <b>'+Number(cfg.service_min).toFixed(1)+' min</b></span><span>Capacidad total: <b>'+cfg.capacity+'</b></span>';
 let idx=0,playing=false,speed=1,accumulator=0,last=0;
 const maxVisibleClients=42;
@@ -256,6 +284,9 @@ try{
    $('stat-queue').textContent=Number(f.queue||0);
    $('stat-served').textContent=Number(f.completed||0);
    $('stat-lost').textContent=Number(f.blocked||0)+Number(f.abandoned||0);
+   $('stat-wait').textContent=(Number(f.avg_wait_so_far||0)).toFixed(2)+' min';
+   $('stat-rho').textContent=(100*Number(f.utilization_so_far||0)).toFixed(1)+'%';
+   graphUpdate(idx);
    $('event-count').textContent='Evento '+idx+' / '+(frames.length-1);
    const titles={start:'Inicio de jornada',arrival:'Llegada de cliente',departure:'Atención terminada',decision:'Cambio de dotación',shift:'Cambio de turno',incident:'Incidente',end:'Fin de jornada',abandon:'Abandono'};
    $('event-kind').textContent=titles[f.kind]||String(f.kind||'Evento');
@@ -279,6 +310,18 @@ try{
  $('next').addEventListener('click',()=>{setPlaying(false);applyFrame(idx+1);});
  $('speed').addEventListener('change',()=>{speed=Number($('speed').value)||1;});
  $('seek').addEventListener('input',()=>{setPlaying(false);applyFrame(Number($('seek').value));});
+ for(const name of ['queue','busy']){
+   const svg=$('graph-'+name);
+   svg.addEventListener('click',event=>{
+      if(preview)return;
+      const rect=svg.getBoundingClientRect();
+      const target=(event.clientX-rect.left)/Math.max(1,rect.width)*graphTime;
+      let best=0,distance=Infinity;
+      frames.forEach((frame,i)=>{const gap=Math.abs(Number(frame.t||0)-target);
+         if(gap<distance){distance=gap;best=i;}});
+      setPlaying(false);applyFrame(best);
+   });
+ }
  function resize(){const rect=stage.getBoundingClientRect();if(rect.width<1||rect.height<1)return;camera.aspect=rect.width/rect.height;camera.updateProjectionMatrix();renderer.setSize(rect.width,rect.height,false);}
  new ResizeObserver(resize).observe(stage);resize();
  applyFrame(0);
