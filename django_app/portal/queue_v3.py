@@ -92,6 +92,7 @@ class Specification:
     arrivals_emp: tuple[float, ...]
     services_emp: tuple[float, ...]
     exact_arrivals: tuple[float, ...]
+    staffing: tuple[int, ...]
 
 
 def validate(raw: dict) -> Specification:
@@ -155,6 +156,11 @@ def validate(raw: dict) -> Specification:
         raise ValueError("Llegadas programadas: ordenar y ubicar dentro del horizonte")
     if mode == "empirical" and (len(ae) < 2 or len(se) < 2):
         raise ValueError("Se requieren al menos dos interarribos y dos tiempos de atención válidos")
+    periods=math.ceil(horizon/60)
+    plan=raw.get("staffing",[servers]*periods)
+    if not isinstance(plan,(list,tuple)) or len(plan)!=periods:
+        raise ValueError(f"Dotación por franjas: se requieren {periods} bloques de hasta 60 minutos")
+    staffing=tuple(_integer(v,"Dotación de franja",1,servers) for v in plan)
     if len(ae) > 100000 or len(se) > 100000 or len(exact) > MAX_EVENTS // 2:
         raise ValueError("Demasiados datos para una ejecución interactiva")
     return Specification(model, mode, horizon, replications, seed, servers, capacity,
@@ -164,7 +170,7 @@ def validate(raw: dict) -> Specification:
                          _number(raw.get("server_hour", 25), "Costo servidor/hora", 0, 100000),
                          _number(raw.get("wait_hour", 10), "Costo espera/hora", 0, 100000),
                          _number(raw.get("lost_cost", 50), "Costo por rechazo", 0, 100000),
-                         ae, se, exact)
+                         ae, se, exact, staffing)
 
 
 def _arrivals(spec: Specification, seed: int) -> list[float]:
@@ -200,17 +206,19 @@ def simulate_one(spec: Specification, seed: int) -> dict:
         heapq.heappush(ev_heap, (t, priority, sequence, kind, cid, slot))
     for cid, t in enumerate(arrivals, 1):
         put(t, 2, "arrival", cid)
+    for block in range(1,len(spec.staffing)):
+        put(block*60,1,"shift")
     busy = [None] * spec.servers
     queue: list[int] = []
     waits: list[float] = []
     systems: list[float] = []
     arrival_at = {cid: t for cid, t in enumerate(arrivals, 1)}
     processed = completed = blocked = started = compliant = 0
-    wait_area = busy_area = queue_area = 0.
+    wait_area = busy_area = queue_area = staff_area = capacity_area = 0.
     last = 0.
     max_queue = 0
     frames = [{"t":0., "kind":"start","client":None,"queue":0,"queue_ids":[],"busy":0,
-               "servers":list(busy),"active":spec.servers,"arrivals":0,"completed":0,
+               "servers":list(busy),"active":spec.staffing[0],"arrivals":0,"completed":0,
                "blocked":0,"abandoned":0,"avg_wait_so_far":0., "utilization_so_far":0.}]
     while ev_heap:
         t, _, _, kind, cid, slot = heapq.heappop(ev_heap)
@@ -220,7 +228,11 @@ def simulate_one(spec: Specification, seed: int) -> dict:
         if dt < -1e-9:
             raise RuntimeError("Cronología de eventos no monótona")
         queue_area += len(queue) * dt
-        busy_area += sum(b is not None for b in busy) * dt
+        occupied_before=sum(b is not None for b in busy)
+        busy_area += occupied_before * dt
+        available_before=spec.staffing[min(int(last//60),len(spec.staffing)-1)]
+        capacity_area += max(available_before,occupied_before)*dt
+        staff_area += available_before*dt
         wait_area += len(queue) * dt
         last = t
         if kind == "arrival":
@@ -234,7 +246,9 @@ def simulate_one(spec: Specification, seed: int) -> dict:
             completed += 1
             systems.append(t - arrival_at[cid])
             busy[slot] = None
-        for i, customer in enumerate(busy):
+        active=spec.staffing[min(int(t//60),len(spec.staffing)-1)]
+        for i in range(active):
+            customer=busy[i]
             if customer is not None or not queue:
                 continue
             next_id = queue.pop(0)
@@ -248,23 +262,28 @@ def simulate_one(spec: Specification, seed: int) -> dict:
         current_busy = sum(x is not None for x in busy)
         frames.append({"t":round(t,6),"kind":kind,"client":cid,
                        "queue":len(queue),"queue_ids":list(queue[:42]),"busy":current_busy,
-                       "servers":list(busy),"active":spec.servers,
+                       "servers":list(busy),"active":active,
                        "arrivals":processed,"completed":completed,"blocked":blocked,
                        "abandoned":0,"avg_wait_so_far":round(mean(waits),5) if waits else 0.,
-                       "utilization_so_far":round(busy_area/(spec.servers*t),6) if t else 0.})
+                       "utilization_so_far":round(busy_area/capacity_area,6) if capacity_area else 0.})
         if len(frames) > MAX_EVENTS:
             raise ValueError("Demasiados eventos para representar. Reduzca duración o intensidad")
     remain = spec.horizon - last
     queue_area += len(queue) * remain
-    busy_area += sum(x is not None for x in busy) * remain
+    occupied_at_close=sum(x is not None for x in busy)
+    busy_area += occupied_at_close * remain
+    available_at_close=spec.staffing[min(int(last//60),len(spec.staffing)-1)]
+    capacity_area += max(available_at_close,occupied_at_close)*remain
+    staff_area += available_at_close*remain
+    final_active=spec.staffing[-1]
     frames.append({"t":float(spec.horizon),"kind":"end","client":None,
                    "queue":len(queue),"queue_ids":list(queue[:42]),
-                   "busy":sum(x is not None for x in busy),"servers":list(busy),"active":spec.servers,
+                   "busy":sum(x is not None for x in busy),"servers":list(busy),"active":final_active,
                    "arrivals":processed,"completed":completed,"blocked":blocked,"abandoned":0,
                    "avg_wait_so_far":round(mean(waits),5) if waits else 0.,
-                   "utilization_so_far":round(busy_area/(spec.servers*spec.horizon),6)})
+                   "utilization_so_far":round(busy_area/capacity_area,6) if capacity_area else 0.})
     left = processed - completed - blocked
-    server_cost = spec.servers * spec.horizon / 60 * spec.server_hour
+    server_cost = staff_area / 60 * spec.server_hour
     waiting_cost = queue_area / 60 * spec.wait_hour
     lost_cost = blocked * spec.lost_cost
     return {"arrivals":processed, "completed":completed,"started":started,
@@ -272,7 +291,7 @@ def simulate_one(spec: Specification, seed: int) -> dict:
             "avg_wait":mean(waits) if waits else 0.,"avg_system":mean(systems) if systems else 0.,
             "sla":compliant/(processed-blocked) if processed>blocked else 0.,
             "sla_denominator":"clientes admitidos, incluidos pendientes al cierre",
-            "utilization":busy_area/(spec.servers*spec.horizon),
+            "utilization":busy_area/capacity_area if capacity_area else 0.,
             "avg_queue":queue_area/spec.horizon,"max_queue":max_queue,
             "p_block":blocked/processed if processed else 0.,
             "staff_cost":server_cost,"waiting_cost":waiting_cost,
@@ -315,7 +334,7 @@ def evaluate(raw: dict, *, include_runs: bool = True) -> dict:
     theory = analytic(spec)
     return {"theory":theory,"model":spec.model,"mode":spec.mode,"horizon":spec.horizon,
             "replications_requested":spec.replications,"replications_effective":n,
-            "seed":spec.seed,"servers":spec.servers,"capacity":spec.capacity,
+            "seed":spec.seed,"servers":spec.servers,"staffing":list(spec.staffing),"capacity":spec.capacity,
             "parameters":dict(raw),"metrics":metrics,"confidence_95":confidence,
             "events":first["events"],"series":first["series"],
             "runs":runs if include_runs else [],
@@ -334,6 +353,7 @@ def optimize(raw: dict, maximum: int, *, target: float | None = None) -> dict:
             continue
         data = dict(raw)
         data["servers"] = c
+        data["staffing"] = [c]*math.ceil(spec.horizon/60)
         if MODELS[spec.model][3]:
             data["capacity"] = c if MODELS[spec.model][4] else max(c, int(raw.get("capacity", c)))
         result = evaluate(data, include_runs=False)
@@ -351,3 +371,55 @@ def optimize(raw: dict, maximum: int, *, target: float | None = None) -> dict:
     return {"objective":"menor costo total con SLA medio objetivo",
             "target":objective,"alternatives":trials,"recommended":winner,
             "caveat":"La factibilidad usa la media estimada. Revisar IC y supuestos antes de decidir."}
+
+
+def optimize_shifts(raw: dict, maximum: int, *, target: float | None = None) -> dict:
+    """Dotación por horas: búsqueda local reproducible, NO óptimo global certificado.
+
+    Parte del máximo permitido y prueba reducir servidores en cada intervalo
+    manteniendo el SLA medio. Mismas semillas para comparar alternativas.
+    """
+    base=validate(raw)
+    limit=_integer(maximum,"Máximo de servidores",1,40)
+    if MODELS[base.model][2] is not None:
+        raise ValueError("Modelo de servidor único: no admite optimización multiventanilla")
+    target=base.sla_target if target is None else _number(target,"SLA objetivo",0,1)
+    periods=math.ceil(base.horizon/60)
+    data=dict(raw)
+    data["servers"]=limit
+    data["staffing"]=[limit]*periods
+    if MODELS[base.model][3]:
+        data["capacity"]=limit if MODELS[base.model][4] else max(limit,int(raw.get("capacity",limit)))
+    trial=evaluate(data,include_runs=False)
+    best=trial["metrics"]["total_cost"]
+    before=trial["metrics"]["sla"]
+    visits=0
+    if before<target:
+        return {"feasible":False,"schedule":list(data["staffing"]),"cost":best,
+                "sla":before,"evaluations":1,
+                "message":"No se alcanzó el SLA con la dotación máxima; no se optimizó."}
+    # Dos pasadas: un método de coordenadas evita una búsqueda exponencial.
+    for _ in range(2):
+        improved=False
+        for block in range(periods):
+            while data["staffing"][block]>1:
+                proposed=dict(data)
+                plan=list(data["staffing"])
+                plan[block]-=1
+                proposed["staffing"]=plan
+                result=evaluate(proposed,include_runs=False)
+                visits+=1
+                metrics=result["metrics"]
+                if metrics["sla"]>=target and metrics["total_cost"] < best-1e-8:
+                    data=proposed
+                    best=metrics["total_cost"]
+                    trial=result
+                    improved=True
+                else:
+                    break
+        if not improved:
+            break
+    return {"feasible":True,"schedule":list(data["staffing"]),
+            "cost":best,"sla":trial["metrics"]["sla"],"evaluations":visits+1,
+            "max_servers":limit,"horizon":base.horizon,
+            "caveat":"Heurística de reducción por franjas de 60 minutos; no garantiza el óptimo global."}
