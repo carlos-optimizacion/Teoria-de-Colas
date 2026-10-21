@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 from sector_scenes_v3 import ENVIRONMENT_JS
+from visual_quality_v3 import embed_quality
 
 
 def bank_scene_html(events: list[dict], config: dict, *, preview: bool = False) -> str:
@@ -36,7 +37,8 @@ def bank_scene_html(events: list[dict], config: dict, *, preview: bool = False) 
     # Prevent a JSON value ever closing the enclosing script tag.
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     payload = payload.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
-    return BANK_HTML.replace("/*__PAYLOAD__*/", "const payload = " + payload + ";").replace("/*__ENVIRONMENT__*/", ENVIRONMENT_JS)
+    html = BANK_HTML.replace("/*__PAYLOAD__*/", "const payload = " + payload + ";").replace("/*__ENVIRONMENT__*/", ENVIRONMENT_JS)
+    return embed_quality(html)
 
 
 BANK_HTML = r"""<!doctype html>
@@ -98,6 +100,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
    <button id="next" title="Evento siguiente">Evento ▶</button>
    <button id="reset">↺ Inicio</button>
    <select id="speed" aria-label="Velocidad de reproducción"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select>
+   <select id="quality" aria-label="Calidad gráfica" title="Equilibra nitidez y velocidad"><option value="auto">Calidad automática</option><option value="high">Alta definición</option><option value="balanced">Equilibrada</option><option value="economy">Ahorro de GPU</option></select>
   </div>
   <div class="seek"><input id="seek" type="range" min="0" max="0" value="0" aria-label="Elegir evento"><div class="seek-labels"><span id="event-count">Evento 0 / 0</span><span id="event-kind">Preparado</span></div></div>
   <span id="state" class="state ready">ESCENA LISTA</span>
@@ -173,23 +176,19 @@ try{
  const THREE=await import('three');
  const addon=await import('three/addons/controls/OrbitControls.js');
  const OrbitControls=addon.OrbitControls;
+ /*__QUALITY__*/
  const stage=$('stage'),scene=new THREE.Scene();
  scene.background=new THREE.Color(sector==='logistica'?0xc6dce5:sector==='hospital'?0xe2f1ef:sector==='supermercado'?0xf0e9dd:0xddeaf1);
  const camera=new THREE.PerspectiveCamera(42,1,0.1,200);
- camera.position.set(15.5,16.5,19);
+ camera.position.set(sector==='logistica'?17:15.5,sector==='logistica'?17.5:16.5,sector==='hospital'?17.8:19);
  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
- renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.6));
- renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
- renderer.outputColorSpace=THREE.SRGBColorSpace;
- renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.4;
+ const quality=setupVisualQuality(THREE,renderer,scene,stage,sector);
+ $('quality').addEventListener('change',e=>{quality.apply(e.target.value);resize();});
  stage.insertBefore(renderer.domElement,stage.firstChild);
  const controls=new OrbitControls(camera,renderer.domElement);
  controls.target.set(0,0,-.45);controls.enableDamping=true;controls.dampingFactor=.06;controls.enablePan=false;
  controls.minDistance=13;controls.maxDistance=36;controls.minPolarAngle=.25;controls.maxPolarAngle=1.48;controls.update();
- scene.add(new THREE.HemisphereLight(0xeaf8ff,0x9fbbca,2.0));
- const sun=new THREE.DirectionalLight(0xfff6e8,2.7);sun.position.set(6,15,9);sun.castShadow=true;
- sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-16;sun.shadow.camera.right=16;
- sun.shadow.camera.top=16;sun.shadow.camera.bottom=-16;sun.shadow.normalBias=.035;scene.add(sun);
+ // Iluminación definida en setupVisualQuality.
  const mat=(color,other={})=>new THREE.MeshStandardMaterial(Object.assign({color,roughness:.72,metalness:.06},other));
  const navy=mat(0x194966),blue=mat(0x267da5),cream=mat(0xf8f8f2),glass=mat(0x83d5f2,{transparent:true,opacity:.29,roughness:.1,metalness:.05,depthWrite:false});
  const tile=mat(0xe7edf0),gold=mat(0xd5a95b,{metalness:.4,roughness:.3}),wood=mat(0xb67d53),steel=mat(0x7b91a1,{metalness:.45,roughness:.32});
@@ -198,11 +197,12 @@ try{
  const cyl=(r1,r2,h,m,p,parent)=>add(new THREE.CylinderGeometry(r1,r2,h,12),m,p,parent);
  const sphere=(r,m,p,parent)=>add(new THREE.SphereGeometry(r,16,12),m,p,parent);
  const label=(text,w,h,color=0x173f61,fontSize=54)=>{
-   const can=document.createElement('canvas');can.width=512;can.height=128;
-   const ctx=can.getContext('2d');ctx.clearRect(0,0,512,128);
+   const can=document.createElement('canvas');can.width=1024;can.height=256;
+   const ctx=can.getContext('2d');ctx.scale(2,2);ctx.clearRect(0,0,512,128);
    ctx.fillStyle='#'+color.toString(16).padStart(6,'0');ctx.font='bold '+fontSize+'px system-ui';
    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,256,64,498);
    const tx=new THREE.CanvasTexture(can);tx.colorSpace=THREE.SRGBColorSpace;
+   tx.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
    return new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tx,transparent:true,side:THREE.DoubleSide,depthWrite:false}));
  };
  /*__ENVIRONMENT__*/
@@ -302,8 +302,13 @@ try{
    const g=new THREE.Group();const tone=[0xe6a978,0xc48b63,0xf0c3a4,0xa46f53][Math.abs(Number(id.toString().replace(/\D/g,''))||0)%4];
    const shirt=mat(color),skin=mat(tone),pants=mat(0x293c58),shoe=mat(0x242b35);
    cyl(.30,.37,.83,shirt,[0,1.03,0],g);
+   cyl(.22,.22,.12,skin,[0,1.47,0],g);
+   box(.23,.08,.04,mat(0xf7fbfc),[0,1.43,.30],g);
    sphere(.225,skin,[0,1.70,0],g);
    const hair=sphere(.233,mat(0x3a3030),[0,1.81,-.018],g);hair.scale.set(1,.42,1);
+   const eyes=mat(0x273542);
+   for(const side of [-1,1])sphere(.022,eyes,[side*.075,1.72,.210],g);
+   box(.09,.018,.014,mat(0xa56d61),[0,1.625,.221],g);
    for(const s of [-1,1]){
      const arm=cyl(.08,.1,.68,shirt,[s*.38,1.04,0],g);arm.rotation.z=s*.19;
      cyl(.115,.14,.68,pants,[s*.16,.36,0],g);
@@ -330,6 +335,7 @@ try{
    // En logística los clientes del modelo representan camiones, no personas.
    const truck=new THREE.Group(),paint=mat(color),dark=mat(0x2c3c49);
    box(.78,.51,1.23,paint,[0,.53,-.12],truck);
+   for(const side of [-1,1])box(.018,.40,1.02,mat(0xe3e7eb),[side*.398,.56,-.14],truck);
    box(.78,.68,.54,paint,[0,.62,.73],truck);
    box(.63,.31,.055,mat(0x89bfd5,{metalness:.18,roughness:.26}),[0,.75,1.01],truck);
    for(const side of [-1,1])for(const z of [-.62,.68]){
@@ -337,6 +343,11 @@ try{
      tire.rotation.z=Math.PI/2;
    }
    box(.72,.055,.10,steel,[0,.30,1.02],truck);
+   for(const side of [-1,1]){
+     box(.13,.10,.038,mat(0xffe8b1,{emissive:0xb88736,emissiveIntensity:.45}),[side*.27,.46,1.015],truck);
+     box(.13,.08,.04,mat(0xc85d54),[side*.27,.55,-.775],truck);
+     box(.11,.18,.055,steel,[side*.46,.74,.74],truck);
+   }
    truck.scale.set(.90,.90,.90);
    return truck;
  }
@@ -348,7 +359,10 @@ try{
    for(const [i,c] of counters)if(!desired.has(i)){scene.remove(c.group);counters.delete(i);}
    if(current!==configured){configured=current;for(const c of counters.values()){scene.remove(c.group);}counters.clear();}
    for(const i of desired)if(!counters.has(i))buildCounter(i,current,serverList[i],i>=current);
-   for(const [i,c] of counters)c.dot.material.color.setHex(i>=current?0xe59e53:(serverList[i]!=null?0xf1bd50:0x29b679));
+   for(const [i,c] of counters){
+     const color=i>=current?0xe59e53:(serverList[i]!=null?0xf1bd50:0x29b679);
+     c.dot.material.color.setHex(color);c.dot.material.emissive.setHex(color);c.dot.material.emissiveIntensity=.27;
+   }
    stage.dataset.stations=String(counters.size);
    stage.dataset.stationType={banco:'teller-window',hospital:'clinical-box',supermercado:'checkout-lane',
      logistica:'loading-dock'}[sector]||'legacy';
