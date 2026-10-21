@@ -14,7 +14,7 @@ FULL = ("registro_id","sucursal_id","cliente_anon","llegada_ts","estado",
         "tipo_servicio","prioridad","motivo_no_atencion","fuente","observaciones")
 RECORD_SHEETS = {"BASICO":("02_Registro_Basico", BASIC),
                  "COMPLETO":("03_Registro_Completo",FULL)}
-VALID_STATES = {"ATENDIDO","ABANDONO","RECHAZO","DESCONOCIDO","ESPERA_AL_CORTE","SERVICIO_AL_CORTE"}
+VALID_STATES = {"ATENDIDO","ABANDONO","RECHAZO","DESCONOCIDO","EN_ESPERA_AL_CORTE","EN_SERVICIO_AL_CORTE"}
 
 
 def import_workbook(data: bytes) -> dict:
@@ -84,8 +84,9 @@ def import_workbook(data: bytes) -> dict:
         if str(r.get("sucursal_id","")).strip()!=branch:
             problems.append(f"Fila {excel_row}: sucursal_id diferente de configuración")
         state=str(r.get("estado","")).strip().upper()
-        if state not in VALID_STATES:
-            problems.append(f"Fila {excel_row}: estado inválido {state}")
+        permitted = VALID_STATES if level=="COMPLETO" else {"ATENDIDO","ABANDONO","RECHAZO","DESCONOCIDO"}
+        if state not in permitted:
+            problems.append(f"Fila {excel_row}: estado inválido {state} para nivel {level}")
         t=pd.to_datetime(r.get("llegada_ts"),errors="coerce")
         if pd.isna(t) or not start<=t<end:
             problems.append(f"Fila {excel_row}: llegada fuera del intervalo observado")
@@ -113,12 +114,12 @@ def import_workbook(data: bytes) -> dict:
                     problems.append(f"Fila {excel_row}: {state} exige hora de salida >= llegada")
                 if not pd.isna(t0) or not pd.isna(t1):
                     problems.append(f"Fila {excel_row}: {state} no puede tener intervalos de atención")
-            elif state=="SERVICIO_AL_CORTE":
+            elif state=="EN_SERVICIO_AL_CORTE":
                 if pd.isna(t0) or slot.lower() in {"nan",""} or t0<t or not pd.isna(t1):
-                    problems.append(f"Fila {excel_row}: SERVICIO_AL_CORTE exige inicio y ventanilla, sin fin")
-            elif state=="ESPERA_AL_CORTE":
+                    problems.append(f"Fila {excel_row}: EN_SERVICIO_AL_CORTE exige inicio y ventanilla, sin fin")
+            elif state=="EN_ESPERA_AL_CORTE":
                 if not pd.isna(t0) or not pd.isna(t1):
-                    problems.append(f"Fila {excel_row}: ESPERA_AL_CORTE no debe tener servicio")
+                    problems.append(f"Fila {excel_row}: EN_ESPERA_AL_CORTE no debe tener servicio")
         else:
             secs=pd.to_numeric(r.get("servicio_seg"),errors="coerce")
             if state=="ATENDIDO":
@@ -128,6 +129,40 @@ def import_workbook(data: bytes) -> dict:
                     durations.append(float(secs)/60)
             elif not pd.isna(secs):
                 problems.append(f"Fila {excel_row}: servicio_seg solo corresponde a ATENDIDO")
+    if str(settings.get("INCLUYE_TURNOS","NO")).strip().upper()=="SI":
+        if "04_Turnos" not in file.sheet_names:
+            problems.append("La configuración exige turnos, pero falta 04_Turnos")
+        else:
+            shifts=pd.read_excel(file,sheet_name="04_Turnos",header=5).dropna(subset=["ventanilla_id"])
+            if shifts.empty:
+                problems.append("INCLUYE_TURNOS=SI exige intervalos operativos en 04_Turnos")
+            else:
+                calendars={}
+                for idx,row in shifts.iterrows():
+                    slot=str(row.get("ventanilla_id","")).strip()
+                    if str(row.get("sucursal_id","")).strip()!=branch:
+                        problems.append(f"Turnos fila {int(idx)+7}: sucursal incorrecta")
+                    begin=pd.to_datetime(row.get("inicio_ts"),errors="coerce")
+                    finish=pd.to_datetime(row.get("fin_ts"),errors="coerce")
+                    if pd.isna(begin) or pd.isna(finish) or finish<=begin:
+                        problems.append(f"Turnos fila {int(idx)+7}: periodo inválido")
+                        continue
+                    calendars.setdefault(slot,[]).append((begin,finish))
+                for slot,seq in calendars.items():
+                    seq.sort()
+                    for (_,old_end),(new_start,_) in zip(seq,seq[1:]):
+                        if new_start < old_end:
+                            problems.append(f"Turnos: solapamiento para {slot}")
+                if level=="COMPLETO":
+                    for slot,seq in occupied.items():
+                        if slot not in calendars:
+                            problems.append(f"Atenciones de {slot}: no existe horario operativo")
+                            continue
+                        for started,finished,excel_row in seq:
+                            if not any(a<=started and finished<=b for a,b in calendars[slot]):
+                                problems.append(f"Fila {excel_row}: atención fuera del turno de {slot}")
+    elif level=="COMPLETO" and occupied:
+        warnings.append("Sin turnos certificados: la utilización observada por servidor no puede establecerse")
     if level=="COMPLETO":
         for slot,intervals in occupied.items():
             ordered=sorted(intervals)
