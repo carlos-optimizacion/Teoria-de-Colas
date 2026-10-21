@@ -45,6 +45,7 @@ def css():
     .sim-head{display:flex;justify-content:space-between;gap:12px;align-items:center;background:#fff;border:1px solid #DDE8EF;border-radius:14px 14px 0 0;padding:12px 15px}
     .ops-shell{background:white;border:1px solid #dbe7ee;border-radius:16px 16px 0 0;overflow:hidden;box-shadow:0 8px 24px #153d5b12;margin-top:8px}.ops-head{display:grid;grid-template-columns:minmax(280px,1.5fr) 150px repeat(3,125px);gap:8px;align-items:center;padding:12px 14px}.ops-title{display:flex;align-items:center;gap:10px}.ops-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:11px;background:#e7f3ff;color:#176fa6;font-size:22px}.ops-title h2{margin:0;font-size:1.05rem;color:#123f63}.ops-title p{margin:2px 0 0;font-size:.7rem;color:#6f8291}.ops-time{border-left:1px solid #dce7ee;padding-left:10px}.ops-time small,.ops-time span{display:block;font-size:.65rem;color:#718595}.ops-time b{display:block;font-size:1rem;color:#123f63;margin:2px 0}.ops-mini{border-radius:10px;padding:9px 10px;text-align:center}.ops-mini small{font-size:.62rem;display:block}.ops-mini b{font-size:1.15rem;display:block;margin-top:2px}.ops-mini.ok{background:#e9f8ef;color:#167849}.ops-mini.info{background:#eaf4ff;color:#176ba4}.ops-mini.warn{background:#fff0f0;color:#b54449}.scene-banner{height:150px;position:relative;overflow:hidden;background:#dcebf1}.scene-banner img{width:100%;height:100%;object-fit:cover;display:block}.scene-banner-shade{position:absolute;left:0;bottom:0;right:0;padding:12px 18px;background:linear-gradient(0deg,#0d345ab8,transparent);color:white}.scene-banner-shade b{display:block;font-size:1rem}.scene-banner-shade span{font-size:.72rem}
     .panel-title{background:white;border:1px solid #dfe8ee;border-radius:12px 12px 0 0;padding:10px 12px;margin-top:8px}.panel-title b,.panel-title span{display:block}.panel-title b{color:#153f61}.panel-title span{font-size:.68rem;color:#708494;margin-top:2px}
+    .scenario-context{display:flex;align-items:center;justify-content:space-between;gap:16px;background:linear-gradient(100deg,#123f62,#1b6e86);color:white;padding:13px 17px}.scenario-context b,.scenario-context span{display:block}.scenario-context b{font-size:.9rem;letter-spacing:.08em}.scenario-context span{font-size:.68rem;color:#d5eaf3;margin-top:2px}.configured-capacity{text-align:center;min-width:130px;background:#ffffff14;border:1px solid #ffffff2b;border-radius:10px;padding:7px 12px}.configured-capacity small,.configured-capacity strong{display:block}.configured-capacity small{font-size:.5rem;letter-spacing:.08em;color:#cfe8f3}.configured-capacity strong{font-size:1.45rem;line-height:1.05;color:white}
     .sim-head h2{font-size:1.2rem;margin:0;color:#103D66}.sim-head p{margin:2px 0 0;font-size:.78rem;color:#657C91}
     .facility{background:linear-gradient(180deg,#EEF6F8,#DCEBEF);border-left:1px solid #DDE8EF;border-right:1px solid #DDE8EF;padding:10px 14px}
     .process-wrap{background:#eef5f8;border:1px solid #d6e4eb;border-top:0;padding:12px 14px 15px}.process-status{display:flex;align-items:center;gap:8px;background:white;border:1px solid #dce7ed;border-radius:10px;padding:8px 11px;margin-bottom:10px;font-size:.72rem}.process-status b{color:#173f60}.process-status>span:last-child{color:#61798b}.state-dot{width:9px;height:9px;border-radius:50%;background:#91a3b1;box-shadow:0 0 0 4px #91a3b126}.state-dot.running{background:#22a361;box-shadow:0 0 0 4px #22a36122;animation:pulse 1s infinite}.state-dot.paused{background:#e2a322}.state-dot.finished{background:#1776ba}.process-flow{display:grid;grid-template-columns:1fr 44px 1.4fr 44px 2.4fr 44px 1fr;align-items:stretch;gap:4px}.process-node{background:white;border:1px solid #d7e4eb;border-radius:12px;padding:10px;text-align:center;min-height:160px;position:relative;overflow:hidden}.process-node>b{display:block;font-size:.75rem;color:#153e60;margin-top:3px}.process-node>small{display:block;font-size:.62rem;color:#708493;margin:3px 0 8px}.node-icon{font-size:1.25rem;color:#2678a8;font-weight:900}.flow-arrow{display:grid;place-items:center;color:#7894a8;font-size:1.8rem;font-weight:900}.people-row{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}.person{width:32px;height:38px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center}.person i{width:16px;height:16px;border-radius:50%;background:#2e77aa;display:block;box-shadow:0 13px 0 3px #2e77aa}.person em{font-size:.52rem;font-style:normal;font-weight:900;color:white;transform:translateY(-7px);z-index:2}.person.serving i{background:#23955f;box-shadow:0 13px 0 3px #23955f}.moving-slot{height:52px;display:grid;place-items:center}.moving-in{animation:arrive 1.1s ease-in-out infinite alternate}.moving-out{animation:depart 1.1s ease-in-out infinite alternate}.station-grid{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}.station{min-width:86px;min-height:80px;border-radius:10px;border:2px solid #9cc7da;background:#eff8fc;padding:7px;display:flex;flex-direction:column;align-items:center;justify-content:center}.station b{font-size:.65rem;color:#153e60}.station small{font-size:.56rem;color:#607889}.station.busy{border-color:#4b9ac1;background:#e3f4fb}.station.free{border-color:#72bf94;background:#edf9f2}.station.closed{border-color:#c7a273;background:#f8f2ea}.station-icon{font-size:1.1rem;font-weight:900}.empty-state,.flow-placeholder{font-size:.65rem;color:#8a9aa6}.journey-progress{height:25px;background:#edf3f6;position:relative;border-top:1px solid #dbe6ec}.journey-progress i{display:block;height:5px;background:linear-gradient(90deg,#1d7fca,#44b9e9);transition:width .35s ease}.journey-progress span{position:absolute;top:8px;font-size:.55rem;color:#6a7f8e}.start-label{left:10px}.end-label{right:10px}.finish-card{display:flex;justify-content:space-between;align-items:center;gap:18px;background:linear-gradient(120deg,#0c4a70,#14718a);color:white;border-radius:14px;padding:14px 18px;margin:10px 0}.finish-card span{font-size:.58rem;letter-spacing:.12em;color:#cfe9f4}.finish-card h3{margin:2px 0;font-size:1rem;color:white}.finish-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.finish-grid div{background:#ffffff14;border:1px solid #ffffff22;border-radius:9px;padding:8px 10px;text-align:center}.finish-grid small,.finish-grid b{display:block}.finish-grid small{font-size:.55rem;color:#d5ebf3}.finish-grid b{font-size:.95rem;color:white}.section-separator{display:flex;justify-content:space-between;align-items:end;margin:17px 0 4px}.section-separator b{font-size:.72rem;letter-spacing:.08em;color:#174d6e}.section-separator span{font-size:.65rem;color:#7a8d9a}
@@ -134,16 +135,19 @@ def facility_html(frame,status):
     qhtml="".join(f'<span class="person qperson" title="Cliente {x}"><i>●</i><em>{x}</em></span>' for x in queue[:14]) or "<span class='empty-state'>Sin clientes esperando</span>"
     stations=[]
     for i,cust in enumerate(servers):
-        if i>=active and cust is None:
+        configured=i<active
+        draining=(not configured and cust is not None)
+        if not configured and not draining:
             continue
-        if cust is not None:
+        if draining:
+            cls="closed busy"
+            body=f'<span class="person serving"><i>●</i><em>{cust}</em></span><small>Cierre pendiente</small>'
+        elif cust is not None:
             cls="busy"
             body=f'<span class="person serving"><i>●</i><em>{cust}</em></span><small>Atendiendo</small>'
-        elif i>=active:
-            cls="closed";body="<span class='station-icon'>×</span><small>Cierre pendiente</small>"
         else:
             cls="free";body="<span class='station-icon'>✓</span><small>Libre</small>"
-        stations.append(f'<div class="station {cls}"><b>Puesto {i+1}</b>{body}</div>')
+        stations.append(f'<div class="station {cls}" data-station="{i+1}" data-configured="{str(configured).lower()}"><b>Puesto {i+1}</b>{body}</div>')
     incoming = f'<span class="person moving-in"><i>●</i><em>{cid}</em></span>' if kind=="arrival" and cid else "<span class='flow-placeholder'>—</span>"
     outgoing = f'<span class="person moving-out"><i>●</i><em>{cid}</em></span>' if kind=="departure" and cid else "<span class='flow-placeholder'>—</span>"
     badge={"ready":"PREPARADO","running":"EN CURSO","paused":"PAUSADO","finished":"FINALIZADO"}.get(status,status.upper())
@@ -154,7 +158,7 @@ def facility_html(frame,status):
         <div class="flow-arrow"><span>→</span></div>
         <div class="process-node queue-node"><div class="node-icon">≋</div><b>COLA</b><small>{frame.get('queue',0)} esperando</small><div class="people-row">{qhtml}</div></div>
         <div class="flow-arrow"><span>→</span></div>
-        <div class="process-node service-node"><div class="node-icon">▦</div><b>SERVICIO</b><small>{frame.get('busy',0)} ocupados / {active} activos</small><div class="station-grid">{''.join(stations)}</div></div>
+        <div class="process-node service-node"><div class="node-icon">▦</div><b>SERVICIO</b><small>{active} servidor{"es" if active!=1 else ""} configurado{"s" if active!=1 else ""} · {frame.get('busy',0)} ocupado{"s" if frame.get('busy',0)!=1 else ""}</small><div class="station-grid">{''.join(stations)}</div></div>
         <div class="flow-arrow"><span>→</span></div>
         <div class="process-node exit-node"><div class="node-icon">✓</div><b>SALIDA</b><small>{frame.get('completed',0)} atendidos</small><div class="moving-slot">{outgoing}</div></div>
       </div>
@@ -203,7 +207,6 @@ def run_challenge_ui():
                 st.session_state.sim_status="finished"
                 status="finished"
         frame=frames[idx]
-        scene_uri=scene_data_uri(key)
         pct=100*idx/max(1,len(frames)-1)
 
         st.markdown(f"""<div class="ops-shell">
@@ -214,7 +217,7 @@ def run_challenge_ui():
             <div class="ops-mini info"><small>En cola</small><b>{frame['queue']}</b></div>
             <div class="ops-mini warn"><small>Rechazados</small><b>{frame['blocked']}</b></div>
           </div>
-          <div class="scene-banner">{f'<img src="{scene_uri}" alt="{cfg["sector"]}">' if scene_uri else ''}<div class="scene-banner-shade"><b>{cfg['sector'].upper()}</b><span>{cfg['name']}</span></div></div>
+          <div class="scenario-context"><div><b>{cfg['sector'].upper()}</b><span>{cfg['name']}</span></div><div class="configured-capacity"><small>SERVIDORES CONFIGURADOS</small><strong>{int(st.session_state.result['staffing'][min(int(frame.get('t',0)//60),7)])}</strong></div></div>
           <div class="journey-progress"><i style="width:{pct:.1f}%"></i><span class="start-label">INICIO · 0 min</span><span class="end-label">FIN · {int(st.session_state.result['config']['duration'])} min</span></div>
         </div>""",unsafe_allow_html=True)
 
